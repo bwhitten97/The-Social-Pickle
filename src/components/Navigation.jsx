@@ -10,19 +10,11 @@ const Navigation = ({ unreadNotificationCount = 0, unreadChatCount = 0 }) => {
       
       <div className="nav-links">
         <NavLink 
-          to="/matches" 
+          to="/players" 
           className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
         >
           <span className="nav-icon">👥</span>
-          Discover
-        </NavLink>
-        
-        <NavLink 
-          to="/matched-players" 
-          className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-        >
-          <span className="nav-icon">🤝</span>
-          Matches
+          Players
         </NavLink>
         
         <NavLink 
@@ -34,36 +26,12 @@ const Navigation = ({ unreadNotificationCount = 0, unreadChatCount = 0 }) => {
         </NavLink>
         
         <NavLink 
-          to="/post-game" 
-          className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-        >
-          <span className="nav-icon">➕</span>
-          Post Game
-        </NavLink>
-        
-        <NavLink 
-          to="/applicants" 
-          className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-        >
-          <span className="nav-icon">📋</span>
-          Applicants
-        </NavLink>
-        
-        <NavLink 
-          to="/my-applications" 
-          className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-        >
-          <span className="nav-icon">📝</span>
-          My Apps
-        </NavLink>
-        
-        <NavLink 
-          to="/chat" 
+          to="/messages" 
           className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
         >
           <span className="nav-icon" style={{ position: 'relative' }}>
             💬
-            {unreadChatCount > 0 && (
+            {(unreadChatCount + unreadNotificationCount) > 0 && (
               <span style={{
                 position: 'absolute',
                 top: '-8px',
@@ -80,49 +48,11 @@ const Navigation = ({ unreadNotificationCount = 0, unreadChatCount = 0 }) => {
                 fontWeight: 'bold',
                 border: '2px solid white'
               }}>
-                {unreadChatCount > 9 ? '9+' : unreadChatCount}
+                {(unreadChatCount + unreadNotificationCount) > 9 ? '9+' : (unreadChatCount + unreadNotificationCount)}
               </span>
             )}
           </span>
-          Chat
-        </NavLink>
-        
-        <NavLink 
-          to="/notifications" 
-          className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-        >
-          <span className="nav-icon" style={{ position: 'relative' }}>
-            🔔
-            {unreadNotificationCount > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: '-8px',
-                right: '-8px',
-                backgroundColor: '#ef4444',
-                color: 'white',
-                borderRadius: '50%',
-                width: '18px',
-                height: '18px',
-                fontSize: '11px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 'bold',
-                border: '2px solid white'
-              }}>
-                {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
-              </span>
-            )}
-          </span>
-          Notifications
-        </NavLink>
-        
-        <NavLink 
-          to="/profile" 
-          className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-        >
-          <span className="nav-icon">👤</span>
-          Profile
+          Messages
         </NavLink>
       </div>
     </nav>
