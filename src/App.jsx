@@ -3,13 +3,128 @@ import { useState, useEffect } from 'react';
 import Navigation from './components/Navigation';
 import './App.css';
 
-const mockPlayers = [
-  { id: 1, name: "Alex Johnson", skill: "Intermediate", availability: "Evenings", gender: "Male" },
-  { id: 2, name: "Sarah Chen", skill: "Advanced", availability: "Mornings", gender: "Female" },
-  { id: 3, name: "Mike Rodriguez", skill: "Beginner", availability: "Weekends", gender: "Male" },
-  { id: 4, name: "Emma Wilson", skill: "Intermediate", availability: "Afternoons", gender: "Female" },
-  { id: 5, name: "David Kim", skill: "Advanced", availability: "Mornings", gender: "Male" }
+  const mockPlayers = [
+  { 
+    id: 1, 
+    name: "Alex Johnson", 
+    age: 28,
+    skill: "Intermediate", 
+    availability: "Evenings", 
+    gender: "Male",
+    bio: "Love playing doubles and always looking to improve my game!",
+    location: "2.1 miles away",
+    avatar: "👨‍🦱",
+    experience: "3 years"
+  },
+  { 
+    id: 2, 
+    name: "Sarah Chen", 
+    age: 32,
+    skill: "Advanced", 
+    availability: "Mornings", 
+    gender: "Female",
+    bio: "Former tennis player who discovered pickleball 2 years ago. Competitive but fun!",
+    location: "1.8 miles away",
+    avatar: "👩‍🦰",
+    experience: "2 years"
+  },
+  { 
+    id: 3, 
+    name: "Mike Rodriguez", 
+    age: 45,
+    skill: "Beginner", 
+    availability: "Weekends", 
+    gender: "Male",
+    bio: "New to pickleball but excited to learn and meet new people!",
+    location: "0.9 miles away",
+    avatar: "👨‍🦲",
+    experience: "6 months"
+  },
+  { 
+    id: 4, 
+    name: "Emma Wilson", 
+    age: 26,
+    skill: "Intermediate", 
+    availability: "Afternoons", 
+    gender: "Female",
+    bio: "Weekend warrior looking for consistent playing partners.",
+    location: "3.2 miles away",
+    avatar: "👩‍🦱",
+    experience: "1.5 years"
+  },
+  { 
+    id: 5, 
+    name: "David Kim", 
+    age: 38,
+    skill: "Advanced", 
+    availability: "Mornings", 
+    gender: "Male",
+    bio: "Serious about the game but know how to have fun. Let's play!",
+    location: "2.7 miles away",
+    avatar: "👨‍💼",
+    experience: "4 years"
+  }
 ];
+
+// Host profiles for games (detailed information about game hosts)
+const hostProfiles = {
+  "Sarah Chen": {
+    name: "Sarah Chen",
+    age: 32,
+    skill: "Advanced",
+    experience: "2 years",
+    avatar: "👩‍🦰",
+    bio: "Former tennis player who discovered pickleball 2 years ago. I love competitive but fun games and believe in good sportsmanship!",
+    location: "1.8 miles away",
+    playingStyle: "Strategic and competitive",
+    availability: "Mornings and weekends",
+    gamesHosted: 23,
+    preferredFormat: "Doubles and Singles",
+    aboutGames: "I like to organize well-structured games with players of similar skill levels. Always bring water and a positive attitude!"
+  },
+  "Mike Rodriguez": {
+    name: "Mike Rodriguez", 
+    age: 45,
+    skill: "Beginner",
+    experience: "6 months",
+    avatar: "👨‍🦲",
+    bio: "New to pickleball but absolutely loving it! I organize beginner-friendly games and believe everyone should feel welcome.",
+    location: "0.9 miles away",
+    playingStyle: "Learning and social",
+    availability: "Weekends and evenings",
+    gamesHosted: 8,
+    preferredFormat: "Doubles - easier to learn",
+    aboutGames: "My games are perfect for beginners! We focus on having fun, learning, and building confidence. No pressure, just play!"
+  },
+  "Emma Wilson": {
+    name: "Emma Wilson",
+    age: 26, 
+    skill: "Intermediate",
+    experience: "1.5 years",
+    avatar: "👩‍🦱",
+    bio: "Weekend warrior looking for consistent playing partners. I love the social aspect of pickleball and meeting new people!",
+    location: "3.2 miles away", 
+    playingStyle: "Casual and social",
+    availability: "Afternoons and weekends",
+    gamesHosted: 15,
+    preferredFormat: "Mixed doubles",
+    aboutGames: "I organize fun, relaxed games where everyone can improve together. Great for intermediate players wanting to level up!"
+  },
+  "Alex Johnson": {
+    name: "Alex Johnson",
+    age: 28,
+    skill: "Intermediate", 
+    experience: "3 years",
+    avatar: "👨‍🦱",
+    bio: "Love playing doubles and always looking to improve my game! I'm passionate about technique and helping others improve too.",
+    location: "2.1 miles away",
+    playingStyle: "Technical and improvement-focused",
+    availability: "Evenings and early mornings", 
+    gamesHosted: 19,
+    preferredFormat: "Doubles",
+    aboutGames: "My games focus on skill development and fun competition. Great for players wanting to take their game to the next level!"
+  }
+};
 
 function AppContent() {
   const navigate = useNavigate();
@@ -19,6 +134,33 @@ function AppContent() {
   const [connections, setConnections] = useState([]);
   const [showMessage, setShowMessage] = useState('');
   const [activeMessagesTab, setActiveMessagesTab] = useState('chat');
+  
+  // Modern swipe card states
+  const [cardAnimation, setCardAnimation] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [cardOffset, setCardOffset] = useState({ x: 0, y: 0 });
+  const [swipeDirection, setSwipeDirection] = useState('');
+  
+  // Host profile viewing states
+  const [showHostProfile, setShowHostProfile] = useState(false);
+  const [selectedHost, setSelectedHost] = useState(null);
+  
+  // User profile state
+  const [userProfile, setUserProfile] = useState({
+    name: "Your Name",
+    age: 28,
+    skill: "Intermediate",
+    availability: "Evenings",
+    bio: "Write something about your pickleball journey...",
+    avatar: "👤",
+    experience: "2 years"
+  });
+
+  // Match viewing states
+  const [showMatchProfile, setShowMatchProfile] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState(null);
+
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [newMessage, setNewMessage] = useState('');
   
@@ -51,32 +193,7 @@ function AppContent() {
   const unreadChatCount = conversations.reduce((total, conv) => total + conv.unread, 0);
   const unreadNotificationCount = notifications.filter(n => !n.read).length;
 
-  // Auto-cleanup old applications
-  useEffect(() => {
-    const cleanupInterval = setInterval(() => {
-      setGameApplications(prev => {
-        const now = new Date();
-        return prev.filter(app => {
-          // Remove rejected applications that are older than 24 hours
-          if (app.status === 'rejected') {
-            const rejectedTime = new Date(app.appliedDate);
-            const timeDiff = now - rejectedTime;
-            return timeDiff < 24 * 60 * 60 * 1000; // Keep for 24 hours
-          }
-          
-          // Remove accepted applications if game date has passed
-          if (app.status === 'accepted') {
-            return !isGameDatePassed(app.gameDate, app.gameTime);
-          }
-          
-          // Keep pending applications
-          return true;
-        });
-      });
-    }, 60000); // Check every minute
 
-    return () => clearInterval(cleanupInterval);
-  }, []);
   
   // Games navigation state
   const [activeGamesTab, setActiveGamesTab] = useState('find');
@@ -236,6 +353,60 @@ function AppContent() {
     setTimeout(() => setShowMessage(''), 4000);
   };
 
+  // Function to handle viewing host profile
+  const handleViewHostProfile = (hostName) => {
+    const hostProfile = hostProfiles[hostName];
+    if (hostProfile) {
+      setSelectedHost(hostProfile);
+      setShowHostProfile(true);
+    }
+  };
+
+  // Function to handle viewing match profile
+  const handleViewMatchProfile = (match) => {
+    setSelectedMatch(match);
+    setShowMatchProfile(true);
+  };
+
+  // Function to handle messaging a match
+  const handleMessageMatch = (match) => {
+    // Check if conversation already exists
+    const existingConv = conversations.find(conv => conv.name === match.name);
+    
+    if (!existingConv) {
+      // Create new conversation
+      const newConversation = {
+        id: Date.now(),
+        name: match.name,
+        lastMessage: `Hi ${match.name}! Great to connect with you!`,
+        timestamp: new Date().toISOString(),
+        unread: 0,
+        avatar: match.avatar
+      };
+      
+      setConversations(prev => [...prev, newConversation]);
+      
+      // Add initial message
+      setChatMessages(prev => ({
+        ...prev,
+        [newConversation.id]: [
+          {
+            id: Date.now(),
+            sender: 'You',
+            message: `Hi ${match.name}! Great to connect with you!`,
+            timestamp: new Date().toISOString(),
+            isMe: true
+          }
+        ]
+      }));
+    }
+    
+    // Navigate to messages tab
+    navigate('/messages');
+    setShowMessage(`💬 Opening chat with ${match.name}!`);
+    setTimeout(() => setShowMessage(''), 3000);
+  };
+
   // Function to check if a game date has passed
   const isGameDatePassed = (gameDate, gameTime) => {
     const gameDateTime = new Date(`${gameDate} ${gameTime}`);
@@ -263,6 +434,33 @@ function AppContent() {
       return true;
     });
   };
+
+  // Auto-cleanup old applications
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      setGameApplications(prev => {
+        const now = new Date();
+        return prev.filter(app => {
+          // Remove rejected applications that are older than 24 hours
+          if (app.status === 'rejected') {
+            const rejectedTime = new Date(app.appliedDate);
+            const timeDiff = now - rejectedTime;
+            return timeDiff < 24 * 60 * 60 * 1000; // Keep for 24 hours
+          }
+          
+          // Remove accepted applications if game date has passed
+          if (app.status === 'accepted') {
+            return !isGameDatePassed(app.gameDate, app.gameTime);
+          }
+          
+          // Keep pending applications
+          return true;
+        });
+      });
+    }, 60000); // Check every minute
+
+    return () => clearInterval(cleanupInterval);
+  }, []);
 
   // Function to handle posting a new game
   const handlePostGame = () => {
@@ -296,14 +494,66 @@ function AppContent() {
   const currentPlayer = filteredPlayers[currentIndex];
 
   const handlePass = () => {
+    setCardAnimation('swipe-left');
+    setSwipeDirection('left');
     setShowMessage(`Passed on ${currentPlayer.name}`);
-    nextPlayer();
+    setTimeout(() => {
+      nextPlayer();
+      setCardAnimation('');
+      setSwipeDirection('');
+    }, 300);
   };
 
   const handleConnect = () => {
+    setCardAnimation('swipe-right');
+    setSwipeDirection('right');
     setConnections(prev => [...prev, currentPlayer]);
     setShowMessage(`🎉 Connected with ${currentPlayer.name}!`);
-    nextPlayer();
+    setTimeout(() => {
+      nextPlayer();
+      setCardAnimation('');
+      setSwipeDirection('');
+    }, 300);
+  };
+
+  // Modern drag handlers for swipe gestures
+  const handleMouseDown = (e) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX, y: e.clientY });
+    setCardOffset({ x: 0, y: 0 });
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    
+    const deltaX = e.clientX - dragStart.x;
+    const deltaY = e.clientY - dragStart.y;
+    setCardOffset({ x: deltaX, y: deltaY });
+    
+    // Set swipe direction based on drag distance
+    if (Math.abs(deltaX) > 50) {
+      setSwipeDirection(deltaX > 0 ? 'right' : 'left');
+    } else {
+      setSwipeDirection('');
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    
+    // Auto-swipe if dragged far enough
+    if (Math.abs(cardOffset.x) > 100) {
+      if (cardOffset.x > 0) {
+        handleConnect();
+      } else {
+        handlePass();
+      }
+    } else {
+      // Snap back to center
+      setCardOffset({ x: 0, y: 0 });
+      setSwipeDirection('');
+    }
   };
 
   const nextPlayer = () => {
@@ -388,38 +638,82 @@ function AppContent() {
    };
 
   return (
-    <div className="App">
+        <div className="App">
       <Navigation unreadChatCount={unreadChatCount} unreadNotificationCount={unreadNotificationCount} />
-      <main className="main-content">
-          <Routes>
-            <Route path="/" element={<Navigate to="/players" replace />} />
-            <Route path="/players" element={
-              <div style={{ padding: '20px' }}>
-                <header style={{ textAlign: 'center', marginBottom: '30px' }}>
-                  <h1>🏓 Find Your Pickleball Match!</h1>
-                  <p>Connect with pickleball players in your area</p>
-                  <div style={{ marginTop: '10px' }}>
-                    <span style={{ backgroundColor: '#10b981', color: 'white', padding: '5px 15px', borderRadius: '20px', marginRight: '10px' }}>
-                      💚 {connections.length} connections
+          <main className="main-content">
+            <Routes>
+            <Route path="/" element={<Navigate to="/discover" replace />} />
+            <Route path="/discover" element={
+              <div style={{ 
+                minHeight: '100vh',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                padding: '20px 20px 120px 20px',
+                position: 'relative'
+              }}>
+                {/* Top Navigation Bar */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '20px',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(10px)',
+                  borderRadius: '20px',
+                  padding: '15px 20px'
+                }}>
+                  <div style={{ color: 'white', fontWeight: 'bold', fontSize: '18px' }}>
+                    🏓 Discover
+                  </div>
+                  <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                    <span style={{ 
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)', 
+                      color: 'white', 
+                      padding: '8px 16px', 
+                      borderRadius: '20px',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}>
+                      💚 {connections.length}
                     </span>
-                    <button onClick={resetFeed} style={{ padding: '5px 15px', borderRadius: '20px', border: '1px solid #ccc', backgroundColor: '#f3f4f6' }}>
-                      🔄 Reset Feed
+                    <button onClick={resetFeed} style={{ 
+                      background: 'rgba(255, 255, 255, 0.2)', 
+                      color: 'white',
+                      border: 'none',
+                      padding: '8px 16px', 
+                      borderRadius: '20px',
+                      cursor: 'pointer',
+                      fontSize: '14px'
+                    }}>
+                      🔄
                     </button>
                   </div>
-                </header>
-                
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '30px' }}>
+                </div>
+
+                {/* Filter Buttons */}
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  gap: '8px', 
+                  marginBottom: '30px',
+                  flexWrap: 'wrap'
+                }}>
                   {['All', 'Beginner', 'Intermediate', 'Advanced'].map(level => (
                     <button 
                       key={level}
                       onClick={() => { setFilter(level); setCurrentIndex(0); }}
                       style={{ 
                         padding: '10px 20px', 
-                        borderRadius: '20px', 
-                        border: '1px solid #ccc', 
-                        backgroundColor: filter === level ? '#6366f1' : 'white',
-                        color: filter === level ? 'white' : 'black',
-                        cursor: 'pointer'
+                        borderRadius: '25px', 
+                        border: 'none',
+                        background: filter === level 
+                          ? 'linear-gradient(135deg, #ff6b6b, #ee5a52)' 
+                          : 'rgba(255, 255, 255, 0.2)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontWeight: filter === level ? 'bold' : 'normal',
+                        fontSize: '14px',
+                        backdropFilter: 'blur(10px)',
+                        transition: 'all 0.3s ease'
                       }}
                     >
                       {level}
@@ -427,108 +721,913 @@ function AppContent() {
                   ))}
                 </div>
 
+                {/* Message Display */}
                 {showMessage && (
                   <div style={{ 
-                    textAlign: 'center', 
-                    padding: '15px', 
-                    backgroundColor: '#dcfce7', 
-                    border: '1px solid #16a34a', 
-                    borderRadius: '10px', 
-                    marginBottom: '20px',
-                    maxWidth: '400px',
-                    margin: '0 auto 20px auto'
+                    position: 'fixed',
+                    top: '20px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 1000,
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    color: 'white',
+                    padding: '15px 25px',
+                    borderRadius: '25px',
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+                    fontWeight: 'bold',
+                    animation: 'slideDown 0.3s ease'
                   }}>
                     {showMessage}
                   </div>
                 )}
 
-                <div style={{ maxWidth: '400px', margin: '0 auto', textAlign: 'center' }}>
+                {/* Card Stack Container */}
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  alignItems: 'center',
+                  minHeight: '70vh',
+                  position: 'relative'
+                }}>
                   {currentPlayer ? (
-                    <div style={{ 
-                      border: '2px solid #e5e7eb', 
-                      borderRadius: '15px', 
-                      padding: '30px', 
-                      backgroundColor: 'white',
-                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-                    }}>
-                      <h3>🏓 {currentPlayer.name}</h3>
-                      <p><strong>Skill:</strong> {currentPlayer.skill}</p>
-                      <p><strong>Available:</strong> {currentPlayer.availability}</p>
-                      <p><strong>Gender:</strong> {currentPlayer.gender}</p>
+                    <div style={{ position: 'relative', width: '350px', height: '600px' }}>
+                      {/* Background Cards (Stack Effect) */}
+                      {filteredPlayers.slice(currentIndex + 1, currentIndex + 3).map((player, index) => (
+                        <div key={player.id} style={{
+                          position: 'absolute',
+                          width: '100%',
+                          height: '100%',
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          borderRadius: '25px',
+                          zIndex: -index - 1,
+                          transform: `scale(${0.95 - index * 0.05}) translateY(${(index + 1) * 10}px)`,
+                          opacity: 0.7 - index * 0.2,
+                          boxShadow: '0 15px 35px rgba(0, 0, 0, 0.1)'
+                        }} />
+                      ))}
                       
-                      <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '20px' }}>
-                        <button style={{ 
-                          padding: '12px 24px', 
-                          backgroundColor: '#ef4444', 
-                          color: 'white', 
-                          border: 'none', 
+                      {/* Main Card */}
+                      <div 
+                        style={{
+                          position: 'relative',
+                          width: '100%',
+                          height: '100%',
+                          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
                           borderRadius: '25px',
-                          cursor: 'pointer'
-                        }} onClick={handlePass}>
-                          👎 Pass
-                        </button>
-                        <button style={{ 
-                          padding: '12px 24px', 
-                          backgroundColor: '#10b981', 
-                          color: 'white', 
-                          border: 'none', 
-                          borderRadius: '25px',
-                          cursor: 'pointer'
-                        }} onClick={handleConnect}>
-                          👍 Connect
-                        </button>
+                          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.15)',
+                          cursor: isDragging ? 'grabbing' : 'grab',
+                          transform: `translate(${cardOffset.x}px, ${cardOffset.y}px) rotate(${cardOffset.x * 0.1}deg)`,
+                          transition: isDragging ? 'none' : 'all 0.3s ease',
+                          zIndex: 10,
+                          overflow: 'hidden'
+                        }}
+                        className={cardAnimation}
+                        onMouseDown={handleMouseDown}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}
+                        onMouseLeave={handleMouseUp}
+                      >
+                        {/* Swipe Direction Indicators */}
+                        {swipeDirection && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            zIndex: 20,
+                            fontSize: '60px',
+                            fontWeight: 'bold',
+                            color: swipeDirection === 'right' ? '#10b981' : '#ef4444',
+                            textShadow: '0 0 20px rgba(0,0,0,0.3)',
+                            animation: 'pulse 0.5s infinite'
+                          }}>
+                            {swipeDirection === 'right' ? '💚' : '❌'}
+                          </div>
+                        )}
+
+                        {/* Profile Header with Avatar */}
+                        <div style={{
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          height: '200px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          color: 'white',
+                          position: 'relative'
+                        }}>
+                          <div style={{
+                            fontSize: '80px',
+                            marginBottom: '10px',
+                            textShadow: '0 0 20px rgba(0,0,0,0.3)'
+                          }}>
+                            {currentPlayer.avatar}
+                          </div>
+                          <div style={{
+                            position: 'absolute',
+                            bottom: '15px',
+                            right: '20px',
+                            background: 'rgba(255, 255, 255, 0.2)',
+                            padding: '5px 12px',
+                            borderRadius: '15px',
+                            fontSize: '12px',
+                            backdropFilter: 'blur(10px)'
+                          }}>
+                            📍 {currentPlayer.location}
+                          </div>
+                        </div>
+
+                        {/* Profile Content */}
+                        <div style={{ padding: '25px' }}>
+                          {/* Name and Age */}
+                          <div style={{ marginBottom: '20px' }}>
+                            <h2 style={{ 
+                              margin: '0 0 5px 0', 
+                              fontSize: '28px',
+                              fontWeight: 'bold',
+                              color: '#1f2937'
+                            }}>
+                              {currentPlayer.name}, {currentPlayer.age}
+                            </h2>
+                            <div style={{ 
+                              fontSize: '16px', 
+                              color: '#6b7280',
+                              marginBottom: '15px'
+                            }}>
+                              🏓 {currentPlayer.experience} experience
+                            </div>
+                          </div>
+
+                          {/* Skill and Availability Badges */}
+                          <div style={{ 
+                            display: 'flex', 
+                            gap: '10px', 
+                            marginBottom: '20px',
+                            flexWrap: 'wrap'
+                          }}>
+                            <span style={{
+                              background: currentPlayer.skill === 'Advanced' ? '#dc2626' : 
+                                         currentPlayer.skill === 'Intermediate' ? '#ea580c' : '#16a34a',
+                              color: 'white',
+                              padding: '8px 16px',
+                              borderRadius: '20px',
+                              fontSize: '14px',
+                              fontWeight: 'bold'
+                            }}>
+                              {currentPlayer.skill}
+                            </span>
+                            <span style={{
+                              background: '#6366f1',
+                              color: 'white',
+                              padding: '8px 16px',
+                              borderRadius: '20px',
+                              fontSize: '14px',
+                              fontWeight: 'bold'
+                            }}>
+                              🕐 {currentPlayer.availability}
+                            </span>
+                          </div>
+
+                          {/* Bio */}
+                          <div style={{ marginBottom: '20px' }}>
+                            <p style={{ 
+                              fontSize: '16px', 
+                              lineHeight: '1.5',
+                              color: '#374151',
+                              margin: 0
+                            }}>
+                              {currentPlayer.bio}
+                            </p>
+                          </div>
+
+
+                        </div>
                       </div>
                     </div>
                   ) : (
-                    <div style={{ padding: '50px', textAlign: 'center' }}>
-                      <h3>🎉 No more players!</h3>
-                      <p>You've seen everyone in this category.</p>
+                    <div style={{ 
+                      textAlign: 'center',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      backdropFilter: 'blur(10px)',
+                      borderRadius: '25px',
+                      padding: '50px',
+                      color: 'white'
+                    }}>
+                      <div style={{ fontSize: '60px', marginBottom: '20px' }}>🎉</div>
+                      <h3 style={{ fontSize: '24px', marginBottom: '10px' }}>No more players!</h3>
+                      <p style={{ marginBottom: '25px', opacity: 0.8 }}>You've seen everyone in this category.</p>
                       <button onClick={resetFeed} style={{ 
+                        background: 'linear-gradient(135deg, #ff6b6b, #ee5a52)',
+                        color: 'white',
+                        border: 'none',
                         padding: '15px 30px', 
-                        backgroundColor: '#6366f1', 
-                        color: 'white', 
-                        border: 'none', 
                         borderRadius: '25px',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        fontWeight: 'bold'
                       }}>
                         🔄 Reset Feed
                       </button>
                     </div>
                   )}
                 </div>
+
+                {/* Bottom Action Buttons */}
+                {currentPlayer && (
+                  <div style={{
+                    position: 'fixed',
+                    bottom: '100px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    display: 'flex',
+                    gap: '30px',
+                    zIndex: 100
+                  }}>
+                    <button 
+                      onClick={handlePass}
+                      style={{
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '50%',
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                        color: 'white',
+                        fontSize: '24px',
+                        cursor: 'pointer',
+                        boxShadow: '0 10px 25px rgba(239, 68, 68, 0.4)',
+                        transition: 'all 0.3s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                      onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'}
+                      onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                    >
+                      ❌
+                    </button>
+                    
+                    <button 
+                      onClick={handleConnect}
+                      style={{
+                        width: '70px',
+                        height: '70px',
+                        borderRadius: '50%',
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                        color: 'white',
+                        fontSize: '28px',
+                        cursor: 'pointer',
+                        boxShadow: '0 10px 25px rgba(16, 185, 129, 0.4)',
+                        transition: 'all 0.3s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                      onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'}
+                      onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                    >
+                      💚
+                    </button>
+                  </div>
+                )}
+
+                {/* CSS Animations */}
+                <style>
+                  {`
+                    @keyframes slideDown {
+                      from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+                      to { transform: translateX(-50%) translateY(0); opacity: 1; }
+                    }
+                    
+                    @keyframes pulse {
+                      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+                      50% { transform: translate(-50%, -50%) scale(1.1); }
+                    }
+                    
+                    .swipe-left {
+                      animation: swipeLeftAnim 0.3s ease-out forwards;
+                    }
+                    
+                    .swipe-right {
+                      animation: swipeRightAnim 0.3s ease-out forwards;
+                    }
+                    
+                    @keyframes swipeLeftAnim {
+                      to { transform: translateX(-100vw) rotate(-30deg); opacity: 0; }
+                    }
+                    
+                    @keyframes swipeRightAnim {
+                      to { transform: translateX(100vw) rotate(30deg); opacity: 0; }
+                    }
+                  `}
+                </style>
               </div>
             } />
-            <Route path="/matched-players" element={
-              <div style={{ padding: '20px', textAlign: 'center' }}>
-                <h2>🤝 Your Connections</h2>
+            <Route path="/matches" element={
+              <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '30px',
+                  paddingBottom: '15px',
+                  borderBottom: '2px solid #e5e7eb'
+                }}>
+                  <h1 style={{ margin: 0, color: '#1f2937', fontSize: '2.5rem' }}>👥 Your Matches</h1>
+                  <span style={{ color: '#6b7280', fontSize: '16px' }}>
+                    {connections.length} connection{connections.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+
                 {connections.length === 0 ? (
-                  <p>No connections yet. Go to Matches to connect with players!</p>
+                  <div style={{ 
+                    padding: '60px 20px', 
+                    textAlign: 'center', 
+                    backgroundColor: 'white',
+                    borderRadius: '15px',
+                    border: '2px dashed #e5e7eb'
+                  }}>
+                    <div style={{ fontSize: '4rem', marginBottom: '16px' }}>🏓</div>
+                    <h3 style={{ color: '#1f2937', marginBottom: '8px' }}>No matches yet</h3>
+                    <p style={{ color: '#6b7280', margin: 0 }}>Start swiping in Discover to connect with players!</p>
+                  </div>
                 ) : (
-                  <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+                  <div style={{ display: 'grid', gap: '15px' }}>
                     {connections.map(player => (
                       <div key={player.id} style={{ 
-                        border: '1px solid #e5e7eb', 
-                        borderRadius: '10px', 
-                        padding: '20px', 
-                        margin: '10px 0',
-                        backgroundColor: 'white'
-                      }}>
-                        <h4>🏓 {player.name}</h4>
-                        <p>Skill: {player.skill} | Available: {player.availability}</p>
-                        <button style={{ 
-                          padding: '8px 16px', 
-                          backgroundColor: '#10b981', 
-                          color: 'white', 
-                          border: 'none', 
-                          borderRadius: '20px',
-                          cursor: 'pointer'
-                        }}>
-                          💬 Message
-                        </button>
+                        border: '2px solid #e5e7eb', 
+                        borderRadius: '15px', 
+                        padding: '25px', 
+                        backgroundColor: 'white',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        transition: 'transform 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => e.target.style.transform = 'translateY(-2px)'}
+                      onMouseLeave={(e) => e.target.style.transform = 'translateY(0px)'}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                          {/* Avatar */}
+                          <div style={{ 
+                            fontSize: '60px',
+                            width: '80px',
+                            height: '80px',
+                            borderRadius: '50%',
+                            backgroundColor: '#f3f4f6',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            border: '3px solid #e5e7eb'
+                          }}>
+                            {player.avatar}
+                          </div>
+                          
+                          {/* Player Info */}
+                          <div style={{ flex: 1 }}>
+                            <h3 style={{ margin: '0 0 8px 0', color: '#1f2937', fontSize: '22px' }}>
+                              {player.name}, {player.age}
+                            </h3>
+                            <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                              <span style={{
+                                background: player.skill === 'Advanced' ? '#dc2626' : 
+                                           player.skill === 'Intermediate' ? '#ea580c' : '#16a34a',
+                                color: 'white',
+                                padding: '4px 12px',
+                                borderRadius: '15px',
+                                fontSize: '12px',
+                                fontWeight: 'bold'
+                              }}>
+                                {player.skill}
+                              </span>
+                              <span style={{
+                                background: '#6366f1',
+                                color: 'white',
+                                padding: '4px 12px',
+                                borderRadius: '15px',
+                                fontSize: '12px',
+                                fontWeight: 'bold'
+                              }}>
+                                🕐 {player.availability}
+                              </span>
+                            </div>
+                            <p style={{ 
+                              margin: '0 0 15px 0', 
+                              color: '#6b7280', 
+                              fontSize: '14px',
+                              lineHeight: '1.5'
+                            }}>
+                              📍 {player.location} • 🏓 {player.experience} experience
+                            </p>
+                            {player.bio && (
+                              <p style={{ 
+                                margin: '0 0 15px 0', 
+                                color: '#374151', 
+                                fontSize: '14px',
+                                lineHeight: '1.4',
+                                fontStyle: 'italic'
+                              }}>
+                                "{player.bio}"
+                              </p>
+                            )}
+                          </div>
+                          
+                          {/* Action Buttons */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <button 
+                              onClick={() => handleViewMatchProfile(player)}
+                              style={{ 
+                                padding: '10px 20px', 
+                                backgroundColor: '#6366f1', 
+                                color: 'white', 
+                                border: 'none', 
+                                borderRadius: '20px',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              👤 View Profile
+                            </button>
+                            <button 
+                              onClick={() => handleMessageMatch(player)}
+                              style={{ 
+                                padding: '10px 20px', 
+                                backgroundColor: '#10b981', 
+                                color: 'white', 
+                                border: 'none', 
+                                borderRadius: '20px',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              💬 Message
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
+
+                {/* Match Profile Modal */}
+                {showMatchProfile && selectedMatch && (
+                  <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 1000,
+                    padding: '20px'
+                  }}>
+                    <div style={{
+                      backgroundColor: 'white',
+                      borderRadius: '25px',
+                      maxWidth: '450px',
+                      width: '100%',
+                      maxHeight: '90vh',
+                      overflow: 'hidden',
+                      position: 'relative',
+                      boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)'
+                    }}>
+                      {/* Close Button */}
+                      <button
+                        onClick={() => setShowMatchProfile(false)}
+                        style={{
+                          position: 'absolute',
+                          top: '15px',
+                          right: '15px',
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '50%',
+                          border: 'none',
+                          backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                          color: '#374151',
+                          fontSize: '20px',
+                          cursor: 'pointer',
+                          zIndex: 10,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        ×
+                      </button>
+
+                      {/* Profile Header */}
+                      <div style={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        height: '180px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        color: 'white',
+                        position: 'relative'
+                      }}>
+                        <div style={{
+                          fontSize: '60px',
+                          marginBottom: '10px',
+                          textShadow: '0 0 20px rgba(0,0,0,0.3)'
+                        }}>
+                          {selectedMatch.avatar}
+                        </div>
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '15px',
+                          right: '20px',
+                          background: 'rgba(255, 255, 255, 0.2)',
+                          padding: '5px 12px',
+                          borderRadius: '15px',
+                          fontSize: '12px',
+                          backdropFilter: 'blur(10px)'
+                        }}>
+                          📍 {selectedMatch.location}
+                        </div>
+                      </div>
+
+                      {/* Profile Content */}
+                      <div style={{ 
+                        padding: '25px',
+                        maxHeight: 'calc(90vh - 180px)',
+                        overflowY: 'auto'
+                      }}>
+                        {/* Name and Age */}
+                        <div style={{ marginBottom: '20px' }}>
+                          <h2 style={{ 
+                            margin: '0 0 5px 0', 
+                            fontSize: '24px',
+                            fontWeight: 'bold',
+                            color: '#1f2937'
+                          }}>
+                            {selectedMatch.name}, {selectedMatch.age}
+                          </h2>
+                          <div style={{ 
+                            fontSize: '14px', 
+                            color: '#6b7280',
+                            marginBottom: '15px'
+                          }}>
+                            🏓 {selectedMatch.experience} experience
+                          </div>
+                        </div>
+
+                        {/* Skill and Availability Badges */}
+                        <div style={{ 
+                          display: 'flex', 
+                          gap: '10px', 
+                          marginBottom: '20px',
+                          flexWrap: 'wrap'
+                        }}>
+                          <span style={{
+                            background: selectedMatch.skill === 'Advanced' ? '#dc2626' : 
+                                       selectedMatch.skill === 'Intermediate' ? '#ea580c' : '#16a34a',
+                            color: 'white',
+                            padding: '8px 16px',
+                            borderRadius: '20px',
+                            fontSize: '14px',
+                            fontWeight: 'bold'
+                          }}>
+                            {selectedMatch.skill}
+                          </span>
+                          <span style={{
+                            background: '#6366f1',
+                            color: 'white',
+                            padding: '8px 16px',
+                            borderRadius: '20px',
+                            fontSize: '14px',
+                            fontWeight: 'bold'
+                          }}>
+                            🕐 {selectedMatch.availability}
+                          </span>
+                        </div>
+
+                        {/* Bio */}
+                        <div style={{ marginBottom: '25px' }}>
+                          <h4 style={{ 
+                            fontSize: '14px', 
+                            color: '#6b7280', 
+                            textTransform: 'uppercase',
+                            letterSpacing: '1px',
+                            margin: '0 0 10px 0',
+                            fontWeight: 'bold'
+                          }}>
+                            About {selectedMatch.name.split(' ')[0]}
+                          </h4>
+                          <p style={{ 
+                            fontSize: '16px', 
+                            lineHeight: '1.5',
+                            color: '#374151',
+                            margin: 0
+                          }}>
+                            {selectedMatch.bio}
+                          </p>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <button 
+                            onClick={() => {
+                              setShowMatchProfile(false);
+                              handleMessageMatch(selectedMatch);
+                            }}
+                            style={{
+                              flex: 1,
+                              padding: '12px 20px',
+                              backgroundColor: '#10b981',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '20px',
+                              cursor: 'pointer',
+                              fontSize: '16px',
+                              fontWeight: 'bold'
+                            }}
+                          >
+                            💬 Message
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            } />
+            <Route path="/profile" element={
+              <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '30px',
+                  paddingBottom: '15px',
+                  borderBottom: '2px solid #e5e7eb'
+                }}>
+                  <h1 style={{ margin: 0, color: '#1f2937', fontSize: '2.5rem' }}>👤 Your Profile</h1>
+                </div>
+
+                <div style={{
+                  backgroundColor: 'white',
+                  borderRadius: '20px',
+                  padding: '30px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  {/* Avatar Section */}
+                  <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                    <div style={{
+                      fontSize: '80px',
+                      width: '120px',
+                      height: '120px',
+                      borderRadius: '50%',
+                      backgroundColor: '#f3f4f6',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 15px auto',
+                      border: '4px solid #e5e7eb'
+                    }}>
+                      {userProfile.avatar}
+                    </div>
+                    <div style={{ 
+                      display: 'flex', 
+                      gap: '10px', 
+                      justifyContent: 'center',
+                      flexWrap: 'wrap',
+                      marginTop: '15px'
+                    }}>
+                      {['👤', '👨', '👩', '🧑‍🦰', '👨‍🦲', '👩‍🦱', '👨‍🦱', '🧑‍🦳'].map(emoji => (
+                        <button
+                          key={emoji}
+                          onClick={() => setUserProfile({...userProfile, avatar: emoji})}
+                          style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            border: userProfile.avatar === emoji ? '3px solid #10b981' : '2px solid #e5e7eb',
+                            backgroundColor: 'white',
+                            fontSize: '20px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Profile Form */}
+                  <div style={{ display: 'grid', gap: '20px' }}>
+                    {/* Name */}
+                    <div>
+                      <label style={{ 
+                        display: 'block', 
+                        marginBottom: '8px', 
+                        fontWeight: '600', 
+                        color: '#374151' 
+                      }}>
+                        Name
+                      </label>
+                      <input
+                        type="text"
+                        value={userProfile.name}
+                        onChange={(e) => setUserProfile({...userProfile, name: e.target.value})}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '2px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '16px',
+                          outline: 'none',
+                          backgroundColor: 'white',
+                          color: '#1f2937'
+                        }}
+                      />
+                    </div>
+
+                    {/* Age */}
+                    <div>
+                      <label style={{ 
+                        display: 'block', 
+                        marginBottom: '8px', 
+                        fontWeight: '600', 
+                        color: '#374151' 
+                      }}>
+                        Age
+                      </label>
+                      <input
+                        type="number"
+                        value={userProfile.age}
+                        onChange={(e) => setUserProfile({...userProfile, age: parseInt(e.target.value)})}
+                        min="18"
+                        max="100"
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '2px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '16px',
+                          outline: 'none',
+                          backgroundColor: 'white',
+                          color: '#1f2937'
+                        }}
+                      />
+                    </div>
+
+                    {/* Skill Level */}
+                    <div>
+                      <label style={{ 
+                        display: 'block', 
+                        marginBottom: '8px', 
+                        fontWeight: '600', 
+                        color: '#374151' 
+                      }}>
+                        Skill Level
+                      </label>
+                      <select
+                        value={userProfile.skill}
+                        onChange={(e) => setUserProfile({...userProfile, skill: e.target.value})}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '2px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '16px',
+                          outline: 'none',
+                          backgroundColor: 'white',
+                          color: '#1f2937'
+                        }}
+                      >
+                        <option value="Beginner">Beginner</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Advanced">Advanced</option>
+                      </select>
+                    </div>
+
+                    {/* Experience */}
+                    <div>
+                      <label style={{ 
+                        display: 'block', 
+                        marginBottom: '8px', 
+                        fontWeight: '600', 
+                        color: '#374151' 
+                      }}>
+                        Experience
+                      </label>
+                      <select
+                        value={userProfile.experience}
+                        onChange={(e) => setUserProfile({...userProfile, experience: e.target.value})}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '2px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '16px',
+                          outline: 'none',
+                          backgroundColor: 'white',
+                          color: '#1f2937'
+                        }}
+                      >
+                        <option value="New to pickleball">New to pickleball</option>
+                        <option value="6 months">6 months</option>
+                        <option value="1 year">1 year</option>
+                        <option value="2 years">2 years</option>
+                        <option value="3 years">3 years</option>
+                        <option value="4+ years">4+ years</option>
+                      </select>
+                    </div>
+
+                    {/* Availability */}
+                    <div>
+                      <label style={{ 
+                        display: 'block', 
+                        marginBottom: '8px', 
+                        fontWeight: '600', 
+                        color: '#374151' 
+                      }}>
+                        Availability
+                      </label>
+                      <select
+                        value={userProfile.availability}
+                        onChange={(e) => setUserProfile({...userProfile, availability: e.target.value})}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '2px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '16px',
+                          outline: 'none',
+                          backgroundColor: 'white',
+                          color: '#1f2937'
+                        }}
+                      >
+                        <option value="Mornings">Mornings</option>
+                        <option value="Afternoons">Afternoons</option>
+                        <option value="Evenings">Evenings</option>
+                        <option value="Weekends">Weekends</option>
+                        <option value="Flexible">Flexible</option>
+                      </select>
+                    </div>
+
+                    {/* Bio */}
+                    <div>
+                      <label style={{ 
+                        display: 'block', 
+                        marginBottom: '8px', 
+                        fontWeight: '600', 
+                        color: '#374151' 
+                      }}>
+                        Bio
+                      </label>
+                      <textarea
+                        value={userProfile.bio}
+                        onChange={(e) => setUserProfile({...userProfile, bio: e.target.value})}
+                        rows="4"
+                        placeholder="Tell other players about yourself, your playing style, and what you're looking for..."
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '2px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '16px',
+                          outline: 'none',
+                          backgroundColor: 'white',
+                          color: '#1f2937',
+                          resize: 'vertical',
+                          fontFamily: 'inherit'
+                        }}
+                      />
+                    </div>
+
+                    {/* Save Button */}
+                    <button
+                      onClick={() => {
+                        setShowMessage('✅ Profile updated successfully!');
+                        setTimeout(() => setShowMessage(''), 3000);
+                      }}
+                      style={{
+                        padding: '15px 30px',
+                        backgroundColor: '#10b981',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '25px',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        marginTop: '10px'
+                      }}
+                    >
+                      💾 Save Profile
+                    </button>
+                  </div>
+                </div>
               </div>
             } />
             <Route path="/games" element={
@@ -1182,7 +2281,70 @@ function AppContent() {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
                               <div style={{ flex: 1 }}>
                                 <h3 style={{ margin: '0 0 10px 0', color: '#1f2937' }}>{game.title}</h3>
-                                <p style={{ margin: '5px 0', color: '#6b7280' }}>🏓 Hosted by {game.host}</p>
+                                
+                                {/* Enhanced Host Information */}
+                                <div style={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  gap: '10px', 
+                                  margin: '5px 0',
+                                  padding: '8px 0'
+                                }}>
+                                  <div style={{ fontSize: '24px' }}>{hostProfiles[game.host]?.avatar || '👤'}</div>
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ 
+                                      display: 'flex', 
+                                      alignItems: 'center', 
+                                      gap: '8px',
+                                      marginBottom: '2px',
+                                      flexWrap: 'wrap'
+                                    }}>
+                                      <span style={{ 
+                                        color: '#1f2937', 
+                                        fontWeight: '600',
+                                        fontSize: '14px'
+                                      }}>
+                                        🏓 {game.host}
+                                      </span>
+                                      <span style={{
+                                        backgroundColor: hostProfiles[game.host]?.skill === 'Advanced' ? '#dc2626' : 
+                                                       hostProfiles[game.host]?.skill === 'Intermediate' ? '#ea580c' : '#16a34a',
+                                        color: 'white',
+                                        padding: '2px 8px',
+                                        borderRadius: '10px',
+                                        fontSize: '10px',
+                                        fontWeight: 'bold'
+                                      }}>
+                                        {hostProfiles[game.host]?.skill}
+                                      </span>
+                                      <button
+                                        onClick={() => handleViewHostProfile(game.host)}
+                                        style={{
+                                          padding: '4px 12px',
+                                          backgroundColor: '#6366f1',
+                                          color: 'white',
+                                          border: 'none',
+                                          borderRadius: '12px',
+                                          cursor: 'pointer',
+                                          fontSize: '10px',
+                                          fontWeight: '600'
+                                        }}
+                                      >
+                                        View Profile
+                                      </button>
+                                    </div>
+                                    <div style={{ 
+                                      fontSize: '12px', 
+                                      color: '#6b7280',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '5px'
+                                    }}>
+                                      🎮 {hostProfiles[game.host]?.gamesHosted} games hosted
+                                    </div>
+                                  </div>
+                                </div>
+                                
                                 <p style={{ margin: '5px 0', color: '#6b7280' }}>📅 {game.date} at {game.time}</p>
                                 <p style={{ margin: '5px 0', color: '#6b7280' }}>📍 {game.location}</p>
                                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '10px' }}>
@@ -1199,23 +2361,25 @@ function AppContent() {
                                   <span style={{ color: '#6b7280', fontWeight: '600' }}>👥 {game.players} players</span>
                                 </div>
                               </div>
-                              <button 
-                                onClick={() => handleRequestToJoin(game)}
-                                disabled={hasApplied}
-                                style={{
-                                padding: '10px 20px',
-                                backgroundColor: hasApplied ? '#9ca3af' : '#10b981',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '25px',
-                                cursor: hasApplied ? 'not-allowed' : 'pointer',
-                                whiteSpace: 'nowrap',
-                                fontWeight: '600',
-                                fontSize: '14px',
-                                opacity: hasApplied ? 0.6 : 1
-                              }}>
-                                {hasApplied ? 'Applied ✓' : 'Request to Join'}
-                              </button>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
+                                <button 
+                                  onClick={() => handleRequestToJoin(game)}
+                                  disabled={hasApplied}
+                                  style={{
+                                  padding: '10px 20px',
+                                  backgroundColor: hasApplied ? '#9ca3af' : '#10b981',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '25px',
+                                  cursor: hasApplied ? 'not-allowed' : 'pointer',
+                                  whiteSpace: 'nowrap',
+                                  fontWeight: '600',
+                                  fontSize: '14px',
+                                  opacity: hasApplied ? 0.6 : 1
+                                }}>
+                                  {hasApplied ? 'Applied ✓' : 'Request to Join'}
+                                </button>
+                              </div>
                             </div>
                           </div>
                         );
@@ -1402,6 +2566,233 @@ function AppContent() {
                         <p style={{ color: '#6b7280', margin: 0 }}>Browse available games to start applying!</p>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Host Profile Modal */}
+                {showHostProfile && selectedHost && (
+                  <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 1000,
+                    padding: '20px'
+                  }}>
+                    <div style={{
+                      backgroundColor: 'white',
+                      borderRadius: '25px',
+                      maxWidth: '450px',
+                      width: '100%',
+                      maxHeight: '90vh',
+                      overflow: 'hidden',
+                      position: 'relative',
+                      boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)'
+                    }}>
+                      {/* Close Button */}
+                      <button
+                        onClick={() => setShowHostProfile(false)}
+                        style={{
+                          position: 'absolute',
+                          top: '15px',
+                          right: '15px',
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '50%',
+                          border: 'none',
+                          backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                          color: '#374151',
+                          fontSize: '20px',
+                          cursor: 'pointer',
+                          zIndex: 10,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        ×
+                      </button>
+
+                      {/* Profile Header */}
+                      <div style={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        height: '180px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        color: 'white',
+                        position: 'relative'
+                      }}>
+                        <div style={{
+                          fontSize: '60px',
+                          marginBottom: '10px',
+                          textShadow: '0 0 20px rgba(0,0,0,0.3)'
+                        }}>
+                          {selectedHost.avatar}
+                        </div>
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '15px',
+                          right: '20px',
+                          background: 'rgba(255, 255, 255, 0.2)',
+                          padding: '5px 12px',
+                          borderRadius: '15px',
+                          fontSize: '12px',
+                          backdropFilter: 'blur(10px)'
+                        }}>
+                          📍 {selectedHost.location}
+                        </div>
+                      </div>
+
+                      {/* Profile Content */}
+                      <div style={{ 
+                        padding: '25px',
+                        maxHeight: 'calc(90vh - 180px)',
+                        overflowY: 'auto'
+                      }}>
+                        {/* Name and Age */}
+                        <div style={{ marginBottom: '20px' }}>
+                          <h2 style={{ 
+                            margin: '0 0 5px 0', 
+                            fontSize: '24px',
+                            fontWeight: 'bold',
+                            color: '#1f2937'
+                          }}>
+                            {selectedHost.name}, {selectedHost.age}
+                          </h2>
+                          <div style={{ 
+                            fontSize: '14px', 
+                            color: '#6b7280',
+                            marginBottom: '15px'
+                          }}>
+                            🏓 {selectedHost.experience} experience
+                          </div>
+                        </div>
+
+                        {/* Stats Row */}
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'center',
+                          marginBottom: '20px',
+                          textAlign: 'center'
+                        }}>
+                          <div style={{
+                            padding: '15px 30px',
+                            backgroundColor: '#f8fafc',
+                            borderRadius: '15px',
+                            border: '1px solid #e2e8f0'
+                          }}>
+                            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937' }}>
+                              🎮 {selectedHost.gamesHosted}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#6b7280' }}>Games Hosted</div>
+                          </div>
+                        </div>
+
+                        {/* Skill and Availability Badges */}
+                        <div style={{ 
+                          display: 'flex', 
+                          gap: '10px', 
+                          marginBottom: '20px',
+                          flexWrap: 'wrap'
+                        }}>
+                          <span style={{
+                            background: selectedHost.skill === 'Advanced' ? '#dc2626' : 
+                                       selectedHost.skill === 'Intermediate' ? '#ea580c' : '#16a34a',
+                            color: 'white',
+                            padding: '8px 16px',
+                            borderRadius: '20px',
+                            fontSize: '14px',
+                            fontWeight: 'bold'
+                          }}>
+                            {selectedHost.skill}
+                          </span>
+                          <span style={{
+                            background: '#6366f1',
+                            color: 'white',
+                            padding: '8px 16px',
+                            borderRadius: '20px',
+                            fontSize: '14px',
+                            fontWeight: 'bold'
+                          }}>
+                            🕐 {selectedHost.availability}
+                          </span>
+                        </div>
+
+                        {/* Bio */}
+                        <div style={{ marginBottom: '20px' }}>
+                          <h4 style={{ 
+                            fontSize: '14px', 
+                            color: '#6b7280', 
+                            textTransform: 'uppercase',
+                            letterSpacing: '1px',
+                            margin: '0 0 10px 0',
+                            fontWeight: 'bold'
+                          }}>
+                            About {selectedHost.name.split(' ')[0]}
+                          </h4>
+                          <p style={{ 
+                            fontSize: '16px', 
+                            lineHeight: '1.5',
+                            color: '#374151',
+                            margin: 0
+                          }}>
+                            {selectedHost.bio}
+                          </p>
+                        </div>
+
+                        {/* Playing Style */}
+                        <div style={{ marginBottom: '20px' }}>
+                          <h4 style={{ 
+                            fontSize: '14px', 
+                            color: '#6b7280', 
+                            textTransform: 'uppercase',
+                            letterSpacing: '1px',
+                            margin: '0 0 10px 0',
+                            fontWeight: 'bold'
+                          }}>
+                            Playing Style
+                          </h4>
+                          <p style={{ 
+                            fontSize: '16px', 
+                            color: '#374151',
+                            margin: 0
+                          }}>
+                            {selectedHost.playingStyle} • Prefers {selectedHost.preferredFormat}
+                          </p>
+                        </div>
+
+                        {/* About Their Games */}
+                        <div style={{ marginBottom: '20px' }}>
+                          <h4 style={{ 
+                            fontSize: '14px', 
+                            color: '#6b7280', 
+                            textTransform: 'uppercase',
+                            letterSpacing: '1px',
+                            margin: '0 0 10px 0',
+                            fontWeight: 'bold'
+                          }}>
+                            About Their Games
+                          </h4>
+                          <p style={{ 
+                            fontSize: '16px', 
+                            lineHeight: '1.5',
+                            color: '#374151',
+                            margin: 0
+                          }}>
+                            {selectedHost.aboutGames}
+                          </p>
+                        </div>
+
+
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1836,9 +3227,9 @@ function AppContent() {
                 <p>Click "Players" to see the main section.</p>
               </div>
             } />
-          </Routes>
-        </main>
-      </div>
+            </Routes>
+          </main>
+        </div>
   )
 }
 
@@ -1846,7 +3237,7 @@ function App() {
   return (
     <Router>
       <AppContent />
-    </Router>
+      </Router>
   )
 }
 
