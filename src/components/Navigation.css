@@ -1,7 +1,7 @@
 .navigation {
-  background: white;
-  border-bottom: 1px solid #eee;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: #F5EEDC;
+  border-bottom: 1px solid rgba(62, 93, 69, 0.1);
+  box-shadow: 0 1px 3px rgba(62, 93, 69, 0.1);
   padding: 0;
   position: fixed;
   bottom: 0;
@@ -30,7 +30,7 @@
   justify-content: center;
   padding: 8px 12px;
   text-decoration: none;
-  color: #71717a;
+  color: #2C3E50;
   font-size: 12px;
   font-weight: 500;
   transition: all 0.2s ease;
@@ -40,11 +40,11 @@
 }
 
 .nav-link:hover {
-  color: #22c55e;
+  color: #3E5D45;
 }
 
 .nav-link.active {
-  color: #22c55e;
+  color: #3E5D45;
 }
 
 .nav-icon {
