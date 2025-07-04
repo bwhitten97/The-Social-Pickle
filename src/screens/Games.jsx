@@ -31,7 +31,6 @@ const Games = () => {
 
   const handlePostGame = (e) => {
     e.preventDefault();
-    // This would normally be handled by the context
     console.log('Posting new game:', newGame);
     setShowPostForm(false);
     setNewGame({
@@ -49,36 +48,210 @@ const Games = () => {
     applyToGame(gameId, currentUserId);
   };
 
-  return (
-    <div className="games-screen">
-      <div className="games-header">
-        <div className="header-content">
-          <h1>🏓 Games</h1>
-          <button 
-            className="post-game-btn"
-            onClick={() => setShowPostForm(true)}
-          >
-            <span className="btn-icon">➕</span>
-            <span className="btn-text">Post a Game</span>
-          </button>
-        </div>
-      </div>
+  // Mock additional game data for display
+  const mockGames = [
+    {
+      id: 1,
+      title: "Advanced Doubles",
+      host: { name: "Sarah Chen", avatar: "👩‍🦰", gamesHosted: 23 },
+      skillLevel: "Advanced",
+      date: "Dec 17, 2024",
+      time: "7:00 AM",
+      location: "Tennis Club",
+      type: "Doubles",
+      currentPlayers: 3,
+      maxPlayers: 4,
+      applied: true
+    },
+    {
+      id: 2,
+      title: "Beginner Friendly",
+      host: { name: "Mike Rodriguez", avatar: "🧑‍🦱", gamesHosted: 8 },
+      skillLevel: "Beginner", 
+      date: "Dec 17, 2024",
+      time: "2:00 PM",
+      location: "Community Center",
+      type: "Singles",
+      currentPlayers: 1,
+      maxPlayers: 4,
+      applied: false
+    },
+    {
+      id: 3,
+      title: "Intermediate Mixed Doubles",
+      host: { name: "Jessica Martinez", avatar: "👩‍🎓", gamesHosted: 15 },
+      skillLevel: "Intermediate",
+      date: "Dec 18, 2024", 
+      time: "6:00 PM",
+      location: "Recreation Center",
+      type: "Doubles",
+      currentPlayers: 2,
+      maxPlayers: 4,
+      applied: false
+    }
+  ];
 
+  const getSkillLevelColor = (level) => {
+    switch(level.toLowerCase()) {
+      case 'beginner': return { bg: '#3E5D45', color: '#F5EEDC' };
+      case 'intermediate': return { bg: '#F39C12', color: '#F5EEDC' };
+      case 'advanced': return { bg: '#F25C5C', color: '#F5EEDC' };
+      default: return { bg: '#3E5D45', color: '#F5EEDC' };
+    }
+  };
+
+  return (
+    <div className="games-container">
+      <main className="games-main">
+        <div className="games-content-wrapper">
+          
+          {/* Page Title + Actions */}
+          <section className="games-header-section">
+            <h1 className="games-title">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-title-icon">
+                <path d="M8 2v4"></path>
+                <path d="M16 2v4"></path>
+                <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+                <path d="M3 10h18"></path>
+              </svg>
+              Games
+            </h1>
+
+            <div className="games-actions">
+              <button 
+                className="games-find-btn"
+                onClick={() => setShowPostForm(true)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-btn-icon">
+                  <path d="m21 21-4.34-4.34"></path>
+                  <circle cx="11" cy="11" r="8"></circle>
+                </svg>
+                Post a Game
+              </button>
+
+              <div className="games-nav-links">
+                <a href="#" className="games-nav-link">My Games ({myGames.length})</a>
+                <a href="#" className="games-nav-link">My Requests ({applications.length})</a>
+              </div>
+            </div>
+          </section>
+
+          {/* Available Games Heading */}
+          <h2 className="games-section-title">Available Games</h2>
+
+          {/* Game Cards */}
+          <section className="games-cards-section">
+            {mockGames.map((game, index) => {
+              const skillColors = getSkillLevelColor(game.skillLevel);
+              
+              return (
+                <article key={game.id} className="games-card">
+                  <h3 className="games-card-title">{game.title}</h3>
+
+                  <div className="games-card-content">
+                    {/* Host */}
+                    <div className="games-host-row">
+                      <span className="games-avatar" aria-hidden="true">{game.host.avatar}</span>
+                      <span className="games-host-name">{game.host.name}</span>
+                      <span 
+                        className="games-skill-badge"
+                        style={{ backgroundColor: skillColors.bg, color: skillColors.color }}
+                      >
+                        {game.skillLevel}
+                      </span>
+                      <button className="games-profile-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-profile-icon">
+                          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        Profile
+                      </button>
+                    </div>
+
+                    <div className="games-host-stats">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-stats-icon">
+                        <line x1="6" x2="10" y1="11" y2="11"></line>
+                        <line x1="8" x2="8" y1="9" y2="13"></line>
+                        <line x1="15" x2="15.01" y1="12" y2="12"></line>
+                        <line x1="18" x2="18.01" y1="10" y2="10"></line>
+                        <path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"></path>
+                      </svg>
+                      {game.host.gamesHosted} games hosted
+                    </div>
+
+                    <div className="games-datetime">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-datetime-icon">
+                        <path d="M16 14v2.2l1.6 1"></path>
+                        <path d="M16 2v4"></path>
+                        <path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"></path>
+                        <path d="M3 10h5"></path>
+                        <path d="M8 2v4"></path>
+                        <circle cx="16" cy="16" r="6"></circle>
+                      </svg>
+                      {game.date} • {game.time}
+                    </div>
+
+                    <div className="games-location">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-location-icon">
+                        <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                      </svg>
+                      {game.location}
+                    </div>
+
+                    <div className="games-details-row">
+                      <span className="games-type-badge">{game.type}</span>
+                      <div className="games-players">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-players-icon">
+                          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                          <path d="M16 3.128a4 4 0 0 1 0 7.744"></path>
+                          <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                          <circle cx="9" cy="7" r="4"></circle>
+                        </svg>
+                        {game.currentPlayers} / {game.maxPlayers} players
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
+                  {game.applied ? (
+                    <button disabled className="games-applied-btn">
+                      Applied
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-check-icon">
+                        <path d="M20 6 9 17l-5-5"></path>
+                      </svg>
+                    </button>
+                  ) : (
+                    <button 
+                      className="games-join-btn"
+                      onClick={() => handleRequestToJoin(game.id)}
+                    >
+                      Request to Join
+                    </button>
+                  )}
+                </article>
+              );
+            })}
+          </section>
+        </div>
+      </main>
+
+      {/* Post Game Modal */}
       {showPostForm && (
-        <div className="post-form-overlay">
-          <div className="post-form-modal">
-            <div className="modal-header">
+        <div className="games-modal-overlay">
+          <div className="games-modal">
+            <div className="games-modal-header">
               <h2>Post a New Game</h2>
               <button 
-                className="close-btn"
+                className="games-close-btn"
                 onClick={() => setShowPostForm(false)}
               >
                 ✕
               </button>
             </div>
             
-            <form onSubmit={handlePostGame} className="post-form">
-              <div className="form-group">
+            <form onSubmit={handlePostGame} className="games-form">
+              <div className="games-form-group">
                 <label>Game Title</label>
                 <input
                   type="text"
@@ -89,7 +262,7 @@ const Games = () => {
                 />
               </div>
               
-              <div className="form-group">
+              <div className="games-form-group">
                 <label>Location</label>
                 <input
                   type="text"
@@ -100,8 +273,8 @@ const Games = () => {
                 />
               </div>
               
-              <div className="form-row">
-                <div className="form-group">
+              <div className="games-form-row">
+                <div className="games-form-group">
                   <label>Date</label>
                   <input
                     type="date"
@@ -111,7 +284,7 @@ const Games = () => {
                   />
                 </div>
                 
-                <div className="form-group">
+                <div className="games-form-group">
                   <label>Time</label>
                   <input
                     type="time"
@@ -122,8 +295,8 @@ const Games = () => {
                 </div>
               </div>
               
-              <div className="form-row">
-                <div className="form-group">
+              <div className="games-form-row">
+                <div className="games-form-group">
                   <label>Max Players</label>
                   <select
                     value={newGame.maxPlayers}
@@ -136,7 +309,7 @@ const Games = () => {
                   </select>
                 </div>
                 
-                <div className="form-group">
+                <div className="games-form-group">
                   <label>Skill Level</label>
                   <select
                     value={newGame.skillLevel}
@@ -150,7 +323,7 @@ const Games = () => {
                 </div>
               </div>
               
-              <div className="form-group">
+              <div className="games-form-group">
                 <label>Description (Optional)</label>
                 <textarea
                   value={newGame.description}
@@ -160,15 +333,15 @@ const Games = () => {
                 />
               </div>
               
-              <div className="form-actions">
+              <div className="games-form-actions">
                 <button 
                   type="button" 
-                  className="cancel-btn"
+                  className="games-cancel-btn"
                   onClick={() => setShowPostForm(false)}
                 >
                   Cancel
                 </button>
-                <button type="submit" className="submit-btn">
+                <button type="submit" className="games-submit-btn">
                   Post Game
                 </button>
               </div>
@@ -176,124 +349,6 @@ const Games = () => {
           </div>
         </div>
       )}
-
-      <div className="games-content">
-        {/* My Games Section */}
-        <section className="games-section">
-          <div className="section-header">
-            <h2>My Games</h2>
-            <span className="game-count">{myGames.length}</span>
-          </div>
-          
-          {myGames.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">🏓</div>
-              <h3>No games posted yet</h3>
-              <p>Click "Post a Game" to organize your first pickleball game!</p>
-            </div>
-          ) : (
-            <div className="games-grid">
-              {myGames.map(game => (
-                <div key={game.id} className="game-card my-game">
-                  <div className="game-header">
-                    <h3 className="game-title">{game.title}</h3>
-                    <span className="host-badge">Host</span>
-                  </div>
-                  
-                  <div className="game-details">
-                    <div className="detail-item">
-                      <span className="detail-icon">📍</span>
-                      <span>{game.location}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-icon">📅</span>
-                      <span>{game.date} at {game.time}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-icon">👥</span>
-                      <span>{game.maxPlayers} players max</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-icon">🏅</span>
-                      <span className="skill-level">{game.skillLevel}</span>
-                    </div>
-                  </div>
-                  
-                  {game.description && (
-                    <p className="game-description">{game.description}</p>
-                  )}
-                  
-                  <div className="game-actions">
-                    <button className="applicants-btn">
-                      👥 View Applicants ({getApplicationCount(game.id)})
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Find a Game Section */}
-        <section className="games-section">
-          <div className="section-header">
-            <h2>Find a Game</h2>
-            <span className="game-count">{otherGames.length}</span>
-          </div>
-          
-          {otherGames.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">🔍</div>
-              <h3>No games available</h3>
-              <p>Check back later for new games in your area!</p>
-            </div>
-          ) : (
-            <div className="games-grid">
-              {otherGames.map(game => (
-                <div key={game.id} className="game-card">
-                  <div className="game-header">
-                    <h3 className="game-title">{game.title}</h3>
-                    <span className="host-name">by {game.hostName}</span>
-                  </div>
-                  
-                  <div className="game-details">
-                    <div className="detail-item">
-                      <span className="detail-icon">📍</span>
-                      <span>{game.location}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-icon">📅</span>
-                      <span>{game.date} at {game.time}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-icon">👥</span>
-                      <span>{game.maxPlayers} players max</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-icon">🏅</span>
-                      <span className="skill-level">{game.skillLevel}</span>
-                    </div>
-                  </div>
-                  
-                  {game.description && (
-                    <p className="game-description">{game.description}</p>
-                  )}
-                  
-                  <div className="game-actions">
-                    <button 
-                      className={`join-btn ${hasApplied(game.id) ? 'applied' : ''}`}
-                      onClick={() => handleRequestToJoin(game.id)}
-                      disabled={hasApplied(game.id)}
-                    >
-                      {hasApplied(game.id) ? '✓ Applied' : '🙋‍♂️ Request to Join'}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
     </div>
   );
 };
