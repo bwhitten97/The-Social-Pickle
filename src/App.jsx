@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'r
 import { useState, useEffect } from 'react';
 import Navigation from './components/Navigation';
 import Discover from './screens/Discover';
+import Games from './screens/Games';
 import './App.css';
 
   const mockPlayers = [
@@ -1803,6 +1804,7 @@ function AppContent() {
                 </div>
               </div>
             } />
+            <Route path="/games-new" element={<Games />} />
             <Route path="/games" element={
               <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto' }}>
                 {/* Games Header */}
