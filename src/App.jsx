@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Navigation from './components/Navigation';
+import Discover from './screens/Discover';
 import './App.css';
 
   const mockPlayers = [
@@ -643,7 +644,8 @@ function AppContent() {
           <main className="main-content">
             <Routes>
             <Route path="/" element={<Navigate to="/discover" replace />} />
-            <Route path="/discover" element={
+            <Route path="/discover" element={<Discover />} />
+            <Route path="/discover-old" element={
               <div style={{ 
                 minHeight: '100vh',
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',

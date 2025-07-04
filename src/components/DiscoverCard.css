@@ -1,0 +1,214 @@
+/* DiscoverCard animations */
+@keyframes discover-card-fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes discover-card-pulse-soft {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.94);
+  }
+}
+
+/* Fade in effects with staggered timing */
+.discover-fade-in:nth-child(1) {
+  animation: discover-card-fadeInUp 0.5s 0.05s both;
+}
+
+.discover-fade-in:nth-child(2) {
+  animation: discover-card-fadeInUp 0.5s 0.15s both;
+}
+
+.discover-fade-in:nth-child(3) {
+  animation: discover-card-fadeInUp 0.5s 0.25s both;
+}
+
+.discover-fade-in:nth-child(4) {
+  animation: discover-card-fadeInUp 0.5s 0.35s both;
+}
+
+/* Main card */
+.discover-card {
+  width: 100%;
+  max-width: 384px; /* sm:max-w-md */
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(135deg, #3E5D45 0%, #2C3E50 100%);
+}
+
+@media (min-width: 640px) {
+  .discover-card {
+    max-width: 448px;
+  }
+}
+
+/* Avatar section */
+.discover-card-avatar-section {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-top: 40px;
+  padding-bottom: 24px;
+  align-items: center;
+  background-color: #3E5D45;
+  animation: discover-card-fadeInUp 0.5s 0.05s both;
+}
+
+.discover-card-avatar {
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+}
+
+.discover-card-distance {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 500;
+  background-color: rgba(245, 238, 220, 0.3);
+  color: #F5EEDC;
+}
+
+.discover-card-map-icon {
+  width: 12px;
+  height: 12px;
+}
+
+/* Details section */
+.discover-card-details {
+  background-color: #F5EEDC;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  padding: 24px;
+  padding-bottom: 40px;
+}
+
+.discover-card-name {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: #3E5D45;
+  margin: 0;
+  margin-bottom: 4px;
+}
+
+.discover-card-experience {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  margin-bottom: 16px;
+  color: #2C3E50;
+}
+
+.discover-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.discover-card-tag {
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 9999px;
+  background-color: rgba(245, 238, 220, 0.6);
+  color: #3E5D45;
+}
+
+/* Divider */
+.discover-card-divider {
+  width: 100%;
+  height: 1px;
+  background-color: rgba(62, 93, 69, 0.1);
+  margin-bottom: 32px;
+}
+
+/* Action buttons */
+.discover-card-actions {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+}
+
+.discover-card-dislike-btn,
+.discover-card-like-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.discover-card-dislike-btn:active,
+.discover-card-like-btn:active {
+  transform: scale(0.95);
+}
+
+.discover-card-dislike-btn {
+  background-color: #F25C5C;
+  color: #F5EEDC;
+}
+
+.discover-card-dislike-btn:focus-visible {
+  outline: 2px solid #F25C5C;
+  outline-offset: 2px;
+}
+
+.discover-card-like-btn {
+  background-color: #3E5D45;
+  color: #F5EEDC;
+}
+
+.discover-card-like-btn:focus-visible {
+  outline: 2px solid #3E5D45;
+  outline-offset: 2px;
+}
+
+.discover-card-btn-animate {
+  animation: discover-card-pulse-soft 0.35s ease-out;
+}
+
+/* Responsive design */
+@media (prefers-reduced-motion: reduce) {
+  .discover-fade-in,
+  .discover-card-avatar-section {
+    animation: none;
+  }
+  
+  .discover-card-btn-animate {
+    animation: none;
+  }
+}
+
+/* SVG icons sizing */
+.discover-card-dislike-btn svg,
+.discover-card-like-btn svg {
+  width: 24px;
+  height: 24px;
+} 
