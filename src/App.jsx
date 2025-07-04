@@ -64,6 +64,126 @@ import './App.css';
     location: "2.7 miles away",
     avatar: "👨‍💼",
     experience: "4 years"
+  },
+  { 
+    id: 6, 
+    name: "Jessica Martinez", 
+    age: 29,
+    skill: "Intermediate", 
+    availability: "Evenings", 
+    gender: "Female",
+    bio: "Pickleball enthusiast who loves the social aspect of the game. Always down for post-game coffee!",
+    location: "1.2 miles away",
+    avatar: "👩‍🎓",
+    experience: "2.5 years"
+  },
+  { 
+    id: 7, 
+    name: "Ryan Thompson", 
+    age: 35,
+    skill: "Beginner", 
+    availability: "Mornings", 
+    gender: "Male",
+    bio: "Just started playing last month and already addicted! Looking for patient partners to learn with.",
+    location: "2.8 miles away",
+    avatar: "👨‍🏫",
+    experience: "3 months"
+  },
+  { 
+    id: 8, 
+    name: "Priya Patel", 
+    age: 24,
+    skill: "Advanced", 
+    availability: "Afternoons", 
+    gender: "Female",
+    bio: "Former badminton player transitioning to pickleball. Love the fast-paced competitive games!",
+    location: "1.5 miles away",
+    avatar: "👩‍💻",
+    experience: "1 year"
+  },
+  { 
+    id: 9, 
+    name: "Carlos Santos", 
+    age: 41,
+    skill: "Intermediate", 
+    availability: "Weekends", 
+    gender: "Male",
+    bio: "Family man who plays on weekends. Great with mixed doubles and always brings good energy!",
+    location: "3.1 miles away",
+    avatar: "👨‍👨‍👧‍👦",
+    experience: "2 years"
+  },
+  { 
+    id: 10, 
+    name: "Amy Foster", 
+    age: 52,
+    skill: "Advanced", 
+    availability: "Mornings", 
+    gender: "Female",
+    bio: "Retired teacher who discovered pickleball and fell in love. Competitive but encouraging to newer players.",
+    location: "0.7 miles away",
+    avatar: "👩‍🏫",
+    experience: "5 years"
+  },
+  { 
+    id: 11, 
+    name: "Jake Miller", 
+    age: 22,
+    skill: "Beginner", 
+    availability: "Evenings", 
+    gender: "Male",
+    bio: "College student new to pickleball. Athletic background but still learning the ropes. Very coachable!",
+    location: "4.1 miles away",
+    avatar: "👨‍🎓",
+    experience: "2 months"
+  },
+  { 
+    id: 12, 
+    name: "Maria Gonzalez", 
+    age: 36,
+    skill: "Intermediate", 
+    availability: "Afternoons", 
+    gender: "Female",
+    bio: "Love the strategy of pickleball! Always working on my third shot drop and looking for doubles partners.",
+    location: "2.3 miles away",
+    avatar: "👩‍⚕️",
+    experience: "3 years"
+  },
+  { 
+    id: 13, 
+    name: "Tom Bradley", 
+    age: 59,
+    skill: "Advanced", 
+    availability: "Mornings", 
+    gender: "Male",
+    bio: "Former tennis pro who switched to pickleball 3 years ago. Love teaching and playing competitive matches.",
+    location: "1.9 miles away",
+    avatar: "👨‍💼",
+    experience: "3 years"
+  },
+  { 
+    id: 14, 
+    name: "Lisa Chang", 
+    age: 31,
+    skill: "Beginner", 
+    availability: "Weekends", 
+    gender: "Female",
+    bio: "Recently moved to the area and trying pickleball for the first time. Excited to meet new people!",
+    location: "2.6 miles away",
+    avatar: "👩‍🔬",
+    experience: "1 month"
+  },
+  { 
+    id: 15, 
+    name: "Marcus Johnson", 
+    age: 27,
+    skill: "Intermediate", 
+    availability: "Evenings", 
+    gender: "Male",
+    bio: "Software developer by day, pickleball player by night! Love the mental strategy aspect of the game.",
+    location: "3.8 miles away",
+    avatar: "👨‍💻",
+    experience: "2.5 years"
   }
 ];
 
@@ -132,7 +252,47 @@ function AppContent() {
   const [players, setPlayers] = useState(mockPlayers);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [filter, setFilter] = useState('All');
-  const [connections, setConnections] = useState([]);
+  const [connections, setConnections] = useState([
+    { 
+      id: 6, 
+      name: "Jessica Martinez", 
+      age: 29,
+      skill: "Intermediate", 
+      availability: "Evenings", 
+      gender: "Female",
+      bio: "Pickleball enthusiast who loves the social aspect of the game. Always down for post-game coffee!",
+      location: "1.2 miles away",
+      avatar: "👩‍🎓",
+      experience: "2.5 years",
+      matchedAt: "2024-01-14T09:30:00Z"
+    },
+    { 
+      id: 8, 
+      name: "Priya Patel", 
+      age: 24,
+      skill: "Advanced", 
+      availability: "Afternoons", 
+      gender: "Female",
+      bio: "Former badminton player transitioning to pickleball. Love the fast-paced competitive games!",
+      location: "1.5 miles away",
+      avatar: "👩‍💻",
+      experience: "1 year",
+      matchedAt: "2024-01-13T16:45:00Z"
+    },
+    { 
+      id: 12, 
+      name: "Maria Gonzalez", 
+      age: 36,
+      skill: "Intermediate", 
+      availability: "Afternoons", 
+      gender: "Female",
+      bio: "Love the strategy of pickleball! Always working on my third shot drop and looking for doubles partners.",
+      location: "2.3 miles away",
+      avatar: "👩‍⚕️",
+      experience: "3 years",
+      matchedAt: "2024-01-12T14:20:00Z"
+    }
+  ]);
   const [showMessage, setShowMessage] = useState('');
   const [activeMessagesTab, setActiveMessagesTab] = useState('chat');
   
@@ -508,7 +668,8 @@ function AppContent() {
   const handleConnect = () => {
     setCardAnimation('swipe-right');
     setSwipeDirection('right');
-    setConnections(prev => [...prev, currentPlayer]);
+    const newMatch = { ...currentPlayer, matchedAt: new Date().toISOString() };
+    setConnections(prev => [...prev, newMatch]);
     setShowMessage(`🎉 Connected with ${currentPlayer.name}!`);
     setTimeout(() => {
       nextPlayer();
