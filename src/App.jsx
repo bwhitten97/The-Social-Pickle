@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Navigation from './components/Navigation';
 import Discover from './screens/Discover';
 import Games from './screens/Games';
+import Chat from './screens/Chat';
 import Matches from './screens/Matches';
 import { GameProvider } from './context/GameContext';
 import './App.css';
@@ -191,12 +192,7 @@ function AppContent() {
           } />
           <Route path="/games" element={<Games />} />
           <Route path="/matches" element={<Matches />} />
-          <Route path="/messages" element={
-            <div style={{ padding: '20px', textAlign: 'center' }}>
-              <h2>💬 Messages</h2>
-              <p>Your messages will appear here.</p>
-            </div>
-          } />
+          <Route path="/messages" element={<Chat />} />
           <Route path="/profile" element={
             <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
               <div style={{

@@ -8,6 +8,41 @@ const Chat = () => {
   const [selectedGameId, setSelectedGameId] = useState(null);
   
   const userChatRooms = getUserChatRooms();
+  
+  // Debug: Log the chat rooms
+  console.log('User chat rooms:', userChatRooms);
+  console.log('User chat rooms length:', userChatRooms.length);
+  
+  // Dummy chats for demonstration
+  const dummyChats = [
+    {
+      id: 1,
+      name: "Jessica Martinez",
+      lastMessage: "Looking forward to our game tomorrow! 🏓",
+      timestamp: "2 hours ago",
+      avatar: "JM",
+      unread: 2
+    },
+    {
+      id: 2,
+      name: "Priya Patel", 
+      lastMessage: "Thanks for the great match today!",
+      timestamp: "1 day ago",
+      avatar: "PP",
+      unread: 0
+    },
+    {
+      id: 3,
+      name: "Maria Gonzalez",
+      lastMessage: "What time should we meet at the courts?",
+      timestamp: "3 days ago", 
+      avatar: "MG",
+      unread: 1
+    }
+  ];
+  
+  // Use real chat rooms if available, otherwise show dummy chats
+  const chatsToShow = userChatRooms.length > 0 ? userChatRooms : dummyChats;
 
   const handleRoomSelect = (gameId) => {
     setSelectedGameId(gameId);
@@ -33,35 +68,88 @@ const Chat = () => {
       </div>
 
       <div className="chat-content">
-        {userChatRooms.length > 0 ? (
+        {chatsToShow.length > 0 ? (
           <div className="chat-rooms-list">
-            <h3>Your Game Chats</h3>
+            <h3>Your Messages</h3>
             <div className="rooms-grid">
-              {userChatRooms.map(room => {
-                const game = games.find(g => g.id === room.gameId);
-                return (
-                  <div 
-                    key={room.id} 
-                    className="room-card"
-                    onClick={() => handleRoomSelect(room.gameId)}
-                  >
-                    <div className="room-header">
-                      <h4>{room.gameName}</h4>
-                      <span className="participants-count">
-                        {room.participants.length} players
-                      </span>
-                    </div>
-                    {game && (
-                      <div className="room-details">
-                        <p>📅 {new Date(game.date).toLocaleDateString()}</p>
-                        <p>🕐 {game.time}</p>
+              {chatsToShow.map(chat => {
+                // Check if this is a real chat room (has gameId property) or dummy chat
+                if (chat.hasOwnProperty('gameId')) {
+                  // Real chat room from GameContext
+                  if (chat.gameId === null) {
+                    // Direct message chat room
+                    return (
+                      <div 
+                        key={chat.id} 
+                        className="room-card chat-card"
+                        onClick={() => {/* Handle direct message chat click */}}
+                      >
+                        <div className="chat-avatar">
+                          {chat.gameName.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <div className="chat-info">
+                          <div className="chat-header">
+                            <h4>{chat.gameName}</h4>
+                            <span className="chat-timestamp">
+                              {chat.lastMessageTime ? new Date(chat.lastMessageTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Just now'}
+                            </span>
+                          </div>
+                          <p className="chat-last-message">{chat.lastMessage || 'Start a conversation'}</p>
+                          <span className="chat-unread-badge">1</span>
+                        </div>
                       </div>
-                    )}
-                    <div className="room-action">
-                      <span>Click to open chat →</span>
+                    );
+                  } else {
+                    // Game chat room
+                    const game = games.find(g => g.id === chat.gameId);
+                    return (
+                      <div 
+                        key={chat.id} 
+                        className="room-card"
+                        onClick={() => handleRoomSelect(chat.gameId)}
+                      >
+                        <div className="room-header">
+                          <h4>{chat.gameName}</h4>
+                          <span className="participants-count">
+                            {chat.participants.length} players
+                          </span>
+                        </div>
+                        {game && (
+                          <div className="room-details">
+                            <p>📅 {new Date(game.date).toLocaleDateString()}</p>
+                            <p>🕐 {game.time}</p>
+                          </div>
+                        )}
+                        <div className="room-action">
+                          <span>Click to open chat →</span>
+                        </div>
+                      </div>
+                    );
+                  }
+                } else {
+                  // Dummy chat (has name, lastMessage, etc. but no gameId)
+                  return (
+                    <div 
+                      key={chat.id} 
+                      className="room-card chat-card"
+                      onClick={() => {/* Handle dummy chat click */}}
+                    >
+                      <div className="chat-avatar">
+                        {chat.avatar}
+                      </div>
+                      <div className="chat-info">
+                        <div className="chat-header">
+                          <h4>{chat.name}</h4>
+                          <span className="chat-timestamp">{chat.timestamp}</span>
+                        </div>
+                        <p className="chat-last-message">{chat.lastMessage}</p>
+                        {chat.unread > 0 && (
+                          <span className="chat-unread-badge">{chat.unread}</span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
+                  );
+                }
               })}
             </div>
           </div>

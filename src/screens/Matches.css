@@ -133,6 +133,14 @@
   gap: 1rem;
 }
 
+@media (min-width: 640px) {
+  .matches-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
 .matches-name {
   font-size: 1.125rem;
   font-weight: 600;
@@ -145,13 +153,20 @@
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+  margin-left: auto;
+}
+
+@media (min-width: 640px) {
+  .matches-actions {
+    flex-shrink: 0;
+  }
 }
 
 .matches-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  padding: 0.625rem 1.25rem;
   border-radius: 9999px;
   font-size: 0.875rem;
   font-weight: 600;
@@ -159,6 +174,7 @@
   border: none;
   cursor: pointer;
   text-decoration: none;
+  min-height: 2.5rem;
 }
 
 .matches-btn:focus {
@@ -189,8 +205,12 @@
 }
 
 .matches-btn-icon {
-  width: 1rem;
-  height: 1rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* Badges */
@@ -299,6 +319,8 @@
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
+  margin: auto;
+  position: relative;
 }
 
 .matches-modal-header {
@@ -333,6 +355,7 @@
 
 .matches-modal-content {
   padding: 1.5rem;
+  background-color: white;
 }
 
 .matches-modal-avatar {
@@ -390,6 +413,9 @@
   font-family: inherit;
   resize: vertical;
   min-height: 100px;
+  background-color: white;
+  box-sizing: border-box;
+  color: #2C3E50;
 }
 
 .matches-message-form textarea:focus {

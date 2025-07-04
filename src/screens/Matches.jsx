@@ -3,7 +3,7 @@ import { useGameContext } from '../context/GameContext';
 import './Matches.css';
 
 const Matches = () => {
-  const { matchedPlayers } = useGameContext();
+  const { matchedPlayers, sendMessage: sendMessageToContext } = useGameContext();
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
@@ -116,9 +116,13 @@ const Matches = () => {
 
   const sendMessage = (message) => {
     console.log(`Sending message to ${selectedMatch.name}: ${message}`);
-    // TODO: Implement actual messaging functionality
-    alert(`Message sent to ${selectedMatch.name}!`);
-    closeMessageModal();
+    const result = sendMessageToContext(selectedMatch.name, message);
+    if (result.success) {
+      alert(`Message sent to ${selectedMatch.name}!`);
+      closeMessageModal();
+    } else {
+      alert('Failed to send message. Please try again.');
+    }
   };
 
   return (
@@ -191,7 +195,7 @@ const Matches = () => {
                               stroke="currentColor" 
                               strokeWidth="2"
                             >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.959 8.959 0 01-4.906-1.444L3 21l2.444-5.094A8.959 8.959 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                             </svg>
                             Message
                           </button>

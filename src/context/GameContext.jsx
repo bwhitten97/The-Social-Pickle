@@ -97,8 +97,46 @@ const mockApplications = [
 export const GameProvider = ({ children }) => {
   const [games, setGames] = useState(mockGames);
   const [applications, setApplications] = useState(mockApplications);
-  const [chatRooms, setChatRooms] = useState([]);
+  const [chatRooms, setChatRooms] = useState([
+    {
+      id: 'chat-jessica-martinez',
+      gameId: null,
+      gameName: 'Jessica Martinez',
+      participants: ['Alex Thompson', 'Jessica Martinez'],
+      createdAt: new Date().toISOString(),
+      lastMessage: 'Looking forward to our game tomorrow! 🏓',
+      lastMessageTime: new Date().toISOString()
+    },
+    {
+      id: 'chat-priya-patel',
+      gameId: null,
+      gameName: 'Priya Patel',
+      participants: ['Alex Thompson', 'Priya Patel'],
+      createdAt: new Date().toISOString(),
+      lastMessage: 'Thanks for the great match today!',
+      lastMessageTime: new Date().toISOString()
+    },
+    {
+      id: 'chat-maria-gonzalez',
+      gameId: null,
+      gameName: 'Maria Gonzalez',
+      participants: ['Alex Thompson', 'Maria Gonzalez'],
+      createdAt: new Date().toISOString(),
+      lastMessage: 'What time should we meet at the courts?',
+      lastMessageTime: new Date().toISOString()
+    }
+  ]);
   const [matchedPlayers, setMatchedPlayers] = useState([]);
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      from: 'Jessica Martinez',
+      to: 'Alex Thompson',
+      message: 'Looking forward to our game tomorrow! 🏓',
+      timestamp: new Date().toISOString(),
+      read: false
+    }
+  ]);
   const currentUserId = "current-user";
   const currentUserName = "Alex Thompson";
   const currentUserSkill = "Intermediate";
@@ -227,10 +265,19 @@ export const GameProvider = ({ children }) => {
   };
 
   const getUserChatRooms = () => {
-    return chatRooms.filter(room => 
+    console.log('Getting user chat rooms...');
+    console.log('Current user ID:', currentUserId);
+    console.log('Current user name:', currentUserName);
+    console.log('All chat rooms:', chatRooms);
+    
+    const filteredRooms = chatRooms.filter(room => 
       room.participants.includes(currentUserId) || 
-      room.participants.includes('host-user')
+      room.participants.includes('host-user') ||
+      room.participants.includes(currentUserName)
     );
+    
+    console.log('Filtered chat rooms:', filteredRooms);
+    return filteredRooms;
   };
 
   const getChatRoom = (gameId) => {
@@ -244,11 +291,63 @@ export const GameProvider = ({ children }) => {
     }]);
   };
 
+  const sendMessage = (recipientName, messageText) => {
+    const newMessage = {
+      id: Date.now(),
+      from: currentUserName,
+      to: recipientName,
+      message: messageText,
+      timestamp: new Date().toISOString(),
+      read: false
+    };
+    
+    setMessages(prev => [...prev, newMessage]);
+    
+    // Also create a chat room entry if it doesn't exist
+    const chatId = `chat-${recipientName.replace(/\s+/g, '-').toLowerCase()}`;
+    setChatRooms(prev => {
+      const existingRoom = prev.find(room => room.id === chatId);
+      if (!existingRoom) {
+        const newRoom = {
+          id: chatId,
+          gameId: null, // This is a direct message, not a game chat
+          gameName: recipientName,
+          participants: [currentUserName, recipientName],
+          createdAt: new Date().toISOString(),
+          lastMessage: messageText,
+          lastMessageTime: new Date().toISOString()
+        };
+        return [...prev, newRoom];
+      } else {
+        // Update existing room with new message info
+        return prev.map(room =>
+          room.id === chatId
+            ? { ...room, lastMessage: messageText, lastMessageTime: new Date().toISOString() }
+            : room
+        );
+      }
+    });
+    
+    return { success: true, message: "Message sent successfully!" };
+  };
+
+  const getMessages = () => {
+    return messages;
+  };
+
+  const getConversation = (recipientName) => {
+    return messages.filter(msg => 
+      (msg.from === currentUserName && msg.to === recipientName) ||
+      (msg.from === recipientName && msg.to === currentUserName)
+    );
+  };
+
   const value = {
     games,
     applications,
     chatRooms,
     matchedPlayers,
+    messages,
     currentUserId,
     currentUserName,
     currentUserSkill,
@@ -261,7 +360,10 @@ export const GameProvider = ({ children }) => {
     hasUserApplied,
     getUserChatRooms,
     getChatRoom,
-    addMatchedPlayer
+    addMatchedPlayer,
+    sendMessage,
+    getMessages,
+    getConversation
   };
 
   return (
