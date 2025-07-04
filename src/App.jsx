@@ -805,7 +805,17 @@ function AppContent() {
           <main className="main-content">
             <Routes>
             <Route path="/" element={<Navigate to="/discover" replace />} />
-            <Route path="/discover" element={<Discover />} />
+            <Route path="/discover" element={
+              <Discover 
+                players={filteredPlayers}
+                currentIndex={currentIndex}
+                connections={connections}
+                onLike={handleConnect}
+                onPass={handlePass}
+                onFilterChange={(newFilter) => { setFilter(newFilter); setCurrentIndex(0); }}
+                currentFilter={filter}
+              />
+            } />
             <Route path="/discover-old" element={
               <div style={{ 
                 minHeight: '100vh',

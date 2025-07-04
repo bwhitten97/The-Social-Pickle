@@ -2,31 +2,37 @@ import { useState } from 'react';
 import DiscoverCard from '../components/DiscoverCard';
 import './Discover.css';
 
-const Discover = () => {
-  const [likeCount, setLikeCount] = useState(0);
-  const [activeFilter, setActiveFilter] = useState('All');
-
-  // Mock profile data matching the design
-  const currentProfile = {
-    id: 1,
-    name: "Alex Johnson",
-    age: 28,
-    image: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=800&q=80",
-    experience: "3 years experience",
-    skillLevel: "Intermediate",
-    availability: "Evenings",
-    distance: "2.1 miles"
-  };
-
+const Discover = ({ 
+  players = [], 
+  currentIndex = 0, 
+  connections = [], 
+  onLike, 
+  onPass, 
+  onFilterChange, 
+  currentFilter = 'All' 
+}) => {
   const filters = ['All', 'Beginner', 'Intermediate', 'Advanced'];
+  
+  // Get current player from the real data
+  const currentProfile = players[currentIndex] ? {
+    id: players[currentIndex].id,
+    name: players[currentIndex].name,
+    age: players[currentIndex].age,
+    image: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=800&q=80",
+    experience: players[currentIndex].experience,
+    skillLevel: players[currentIndex].skill,
+    availability: players[currentIndex].availability,
+    distance: players[currentIndex].location,
+    bio: players[currentIndex].bio,
+    avatar: players[currentIndex].avatar
+  } : null;
 
   const handleLike = () => {
-    setLikeCount(prev => prev + 1);
+    if (onLike) onLike();
   };
 
   const handleDislike = () => {
-    // Handle dislike action
-    console.log('Disliked');
+    if (onPass) onPass();
   };
 
   const handleRefresh = () => {
@@ -34,7 +40,7 @@ const Discover = () => {
   };
 
   const handleFilterChange = (filter) => {
-    setActiveFilter(filter);
+    if (onFilterChange) onFilterChange(filter);
   };
 
   return (
@@ -48,7 +54,7 @@ const Discover = () => {
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="discover-heart-icon">
                 <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
               </svg>
-              <span className="discover-like-count">{likeCount}</span>
+              <span className="discover-like-count">{connections.length}</span>
             </div>
             <button className="discover-refresh-btn" onClick={handleRefresh} aria-label="Refresh">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="discover-refresh-icon">
@@ -64,9 +70,9 @@ const Discover = () => {
           {filters.map((filter) => (
             <button
               key={filter}
-              className={`discover-filter-chip ${activeFilter === filter ? 'discover-filter-active' : ''}`}
+              className={`discover-filter-chip ${currentFilter === filter ? 'discover-filter-active' : ''}`}
               onClick={() => handleFilterChange(filter)}
-              aria-pressed={activeFilter === filter}
+              aria-pressed={currentFilter === filter}
             >
               {filter}
             </button>
@@ -75,11 +81,18 @@ const Discover = () => {
 
         {/* Card */}
         <div className="discover-card-container">
-          <DiscoverCard 
-            profile={currentProfile}
-            onLike={handleLike}
-            onDislike={handleDislike}
-          />
+          {currentProfile ? (
+            <DiscoverCard 
+              profile={currentProfile}
+              onLike={handleLike}
+              onDislike={handleDislike}
+            />
+          ) : (
+            <div className="discover-no-players">
+              <h3>No players found</h3>
+              <p>Try adjusting your filters or check back later!</p>
+            </div>
+          )}
         </div>
       </section>
     </main>
