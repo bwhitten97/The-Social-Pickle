@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Navigation from './components/Navigation';
 import Discover from './screens/Discover';
 import Games from './screens/Games';
+import Matches from './screens/Matches';
 import { GameProvider } from './context/GameContext';
 import './App.css';
 
@@ -189,118 +190,7 @@ function AppContent() {
             />
           } />
           <Route path="/games" element={<Games />} />
-          <Route path="/matches" element={
-            <div style={{ padding: '20px' }}>
-              <header style={{ textAlign: 'center', marginBottom: '30px' }}>
-                <h1>🏓 Find Your Pickleball Match!</h1>
-                <p>Connect with pickleball players in your area</p>
-                <div style={{ marginTop: '10px' }}>
-                  <span style={{ backgroundColor: '#10b981', color: 'white', padding: '5px 15px', borderRadius: '20px', marginRight: '10px' }}>
-                    💚 {connections.length} connections
-                  </span>
-                  <button onClick={resetFeed} style={{ padding: '5px 15px', borderRadius: '20px', border: '1px solid #ccc', backgroundColor: '#f3f4f6' }}>
-                    🔄 Reset Feed
-                  </button>
-                </div>
-              </header>
-              
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '30px' }}>
-                {['All', 'Beginner', 'Intermediate', 'Advanced'].map(level => (
-                  <button 
-                    key={level}
-                    onClick={() => { setFilter(level); setCurrentIndex(0); }}
-                    style={{ 
-                      padding: '10px 20px', 
-                      borderRadius: '20px', 
-                      border: '1px solid #ccc', 
-                      backgroundColor: filter === level ? '#6366f1' : 'white',
-                      color: filter === level ? 'white' : 'black',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {level}
-                  </button>
-                ))}
-              </div>
-
-              {showMessage && (
-                <div style={{ 
-                  textAlign: 'center', 
-                  padding: '15px', 
-                  backgroundColor: '#dcfce7', 
-                  border: '1px solid #16a34a', 
-                  borderRadius: '10px', 
-                  marginBottom: '20px',
-                  maxWidth: '400px',
-                  margin: '0 auto 20px auto'
-                }}>
-                  {showMessage}
-                </div>
-              )}
-
-              <div style={{ maxWidth: '400px', margin: '0 auto', textAlign: 'center' }}>
-                {currentPlayer ? (
-                  <div style={{ 
-                    border: '2px solid #e5e7eb', 
-                    borderRadius: '15px', 
-                    padding: '30px', 
-                    backgroundColor: 'white',
-                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-                  }}>
-                    <div style={{ fontSize: '60px', marginBottom: '15px' }}>
-                      {currentPlayer.avatar}
-                    </div>
-                    <h3>🏓 {currentPlayer.name}, {currentPlayer.age}</h3>
-                    <p><strong>Skill:</strong> {currentPlayer.skill}</p>
-                    <p><strong>Available:</strong> {currentPlayer.availability}</p>
-                    <p><strong>Experience:</strong> {currentPlayer.experience}</p>
-                    <p><strong>Location:</strong> {currentPlayer.location}</p>
-                    <p style={{ fontSize: '14px', color: '#666', fontStyle: 'italic' }}>
-                      "{currentPlayer.bio}"
-                    </p>
-                    
-                    <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '20px' }}>
-                      <button style={{ 
-                        padding: '12px 24px', 
-                        backgroundColor: '#ef4444', 
-                        color: 'white', 
-                        border: 'none', 
-                        borderRadius: '25px',
-                        cursor: 'pointer'
-                      }} onClick={handlePass}>
-                        👎 Pass
-                      </button>
-                      <button style={{ 
-                        padding: '12px 24px', 
-                        backgroundColor: '#10b981', 
-                        color: 'white', 
-                        border: 'none', 
-                        borderRadius: '25px',
-                        cursor: 'pointer'
-                      }} onClick={handleConnect}>
-                        👍 Connect
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ padding: '50px', textAlign: 'center' }}>
-                    <h3>🎉 No more players!</h3>
-                    <p>You've seen everyone in this category.</p>
-                    <button onClick={resetFeed} style={{ 
-                      padding: '15px 30px', 
-                      backgroundColor: '#6366f1', 
-                      color: 'white', 
-                      border: 'none', 
-                      borderRadius: '25px',
-                      cursor: 'pointer'
-                    }}>
-                      🔄 Reset Feed
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          } />
+          <Route path="/matches" element={<Matches />} />
           <Route path="/messages" element={
             <div style={{ padding: '20px', textAlign: 'center' }}>
               <h2>💬 Messages</h2>
