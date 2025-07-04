@@ -18,7 +18,7 @@ const Discover = ({
     id: players[currentIndex].id,
     name: players[currentIndex].name,
     age: players[currentIndex].age,
-    image: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=800&q=80",
+    image: players[currentIndex].image,
     experience: players[currentIndex].experience,
     skillLevel: players[currentIndex].skill,
     availability: players[currentIndex].availability,
