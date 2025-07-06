@@ -121,8 +121,8 @@ function AppContent() {
   const [filter, setFilter] = useState('All');
   const [connections, setConnections] = useState([]);
   const [showMessage, setShowMessage] = useState('');
-  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
-  const [unreadChatCount, setUnreadChatCount] = useState(0);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(3);
+  const [unreadChatCount, setUnreadChatCount] = useState(2);
   const [userProfile, setUserProfile] = useState({
     name: 'John Doe',
     age: 30,
@@ -192,7 +192,14 @@ function AppContent() {
           } />
           <Route path="/games" element={<Games />} />
           <Route path="/matches" element={<Matches />} />
-          <Route path="/messages" element={<Chat />} />
+          <Route path="/messages" element={
+            <Chat 
+              onUnreadCountsChange={(chatCount, notificationCount) => {
+                setUnreadChatCount(chatCount);
+                setUnreadNotificationCount(notificationCount);
+              }}
+            />
+          } />
           <Route path="/profile" element={
             <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
               <div style={{

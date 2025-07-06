@@ -62,9 +62,9 @@ const Navigation = ({ unreadNotificationCount = 0, unreadChatCount = 0 }) => {
             {(unreadChatCount + unreadNotificationCount) > 0 && (
               <span style={{
                 position: 'absolute',
-                top: '-5px',
-                right: '-5px',
-                backgroundColor: '#ef4444',
+                top: '-8px',
+                right: '-6px',
+                backgroundColor: '#F25C5C',
                 color: 'white',
                 borderRadius: '50%',
                 width: '16px',
@@ -73,8 +73,7 @@ const Navigation = ({ unreadNotificationCount = 0, unreadChatCount = 0 }) => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontWeight: 'bold',
-                border: '2px solid white'
+                fontWeight: 'bold'
               }}>
                 {(unreadChatCount + unreadNotificationCount) > 9 ? '9+' : (unreadChatCount + unreadNotificationCount)}
               </span>

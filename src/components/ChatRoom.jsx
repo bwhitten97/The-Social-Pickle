@@ -62,11 +62,21 @@ const ChatRoom = ({ gameId, onClose }) => {
   }, [gameId]);
 
   useEffect(() => {
-    scrollToBottom();
+    // Only scroll to bottom when new messages are added (not on initial load)
+    if (messages.length > 0) {
+      const isInitialLoad = messages.length === 5; // Initial dummy messages count
+      if (!isInitialLoad) {
+        scrollToBottom();
+      }
+    }
   }, [messages]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Scroll within the messages container, not the entire page
+    const messagesContainer = messagesEndRef.current?.parentElement;
+    if (messagesContainer) {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
   };
 
   const handleSendMessage = (e) => {
@@ -115,26 +125,42 @@ const ChatRoom = ({ gameId, onClose }) => {
 
   if (!game) {
     return (
-      <div className="chat-room-error">
-        <h3>Game not found</h3>
-        <button onClick={onClose}>Close</button>
+      <div className="unified-chat">
+        <div className="unified-chat-header">
+          <button className="back-btn" onClick={onClose}>
+            ←
+          </button>
+          <div className="chat-details">
+            <h3>Game not found</h3>
+          </div>
+        </div>
+        <div className="unified-messages">
+          <div className="error-message">
+            <p>This game could not be found.</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="chat-room">
-      <div className="chat-header">
-        <div className="chat-info">
-          <h3>{game.location}</h3>
-          <p>{formatDate(game.date)} at {game.time}</p>
-        </div>
-        <button className="close-btn" onClick={onClose}>
-          ✕
+    <div className="unified-chat">
+      {/* Header */}
+      <div className="unified-chat-header">
+        <button className="back-btn" onClick={onClose}>
+          ←
         </button>
+        <div className="chat-avatar">
+          🏓
+        </div>
+        <div className="chat-details">
+          <h3>{game.location}</h3>
+          <span className="status">{formatDate(game.date)} at {game.time}</span>
+        </div>
       </div>
 
-      <div className="chat-messages">
+      {/* Messages */}
+      <div className="unified-messages">
         {messages.map((msg, index) => {
           const prevMessage = messages[index - 1];
           const showDateSeparator = !prevMessage || 
@@ -148,19 +174,11 @@ const ChatRoom = ({ gameId, onClose }) => {
                 </div>
               )}
               
-              <div className={`message ${msg.isCurrentUser ? 'message-sent' : 'message-received'}`}>
-                {!msg.isCurrentUser && (
-                  <div className="message-avatar">
-                    {msg.userName.split(' ').map(n => n[0]).join('')}
-                  </div>
-                )}
-                
-                <div className="message-content">
-                  {!msg.isCurrentUser && (
-                    <div className="message-sender">{msg.userName}</div>
-                  )}
-                  <div className="message-text">{msg.message}</div>
-                  <div className="message-time">{formatTime(msg.timestamp)}</div>
+              <div className={`unified-message ${msg.isCurrentUser ? 'sent' : 'received'}`}>
+                <div className="message-bubble">
+                  {!msg.isCurrentUser && <span className="sender-name">{msg.userName}</span>}
+                  <p>{msg.message}</p>
+                  <span className="message-timestamp">{formatTime(msg.timestamp)}</span>
                 </div>
               </div>
             </div>
@@ -169,22 +187,25 @@ const ChatRoom = ({ gameId, onClose }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      <form className="chat-input" onSubmit={handleSendMessage}>
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type a message..."
-          className="message-input"
-        />
-        <button 
-          type="submit" 
-          className="send-btn"
-          disabled={!newMessage.trim()}
-        >
-          Send
-        </button>
-      </form>
+      {/* Input */}
+      <div className="unified-input">
+        <form onSubmit={handleSendMessage}>
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Type a message..."
+            className="input-field"
+          />
+          <button 
+            type="submit" 
+            className="send-button"
+            disabled={!newMessage.trim()}
+          >
+            →
+          </button>
+        </form>
+      </div>
     </div>
   );
 };

@@ -70,7 +70,7 @@ const mockApplications = [
     playerSkill: "Intermediate",
     applicationDate: "2025-07-01T14:00:00Z",
     message: "I'm really excited to join! I've been playing for 2 years.",
-    status: "pending"
+    status: "accepted"
   },
   {
     id: 2,
@@ -91,6 +91,16 @@ const mockApplications = [
     applicationDate: "2025-07-01T16:00:00Z",
     message: "Available and ready to play!",
     status: "accepted"
+  },
+  {
+    id: 4,
+    gameId: 3,
+    playerId: "current-user",
+    playerName: "Alex Thompson",
+    playerSkill: "Intermediate",
+    applicationDate: "2025-07-01T17:00:00Z",
+    message: "Looking forward to some competitive play!",
+    status: "accepted"
   }
 ];
 
@@ -98,6 +108,26 @@ export const GameProvider = ({ children }) => {
   const [games, setGames] = useState(mockGames);
   const [applications, setApplications] = useState(mockApplications);
   const [chatRooms, setChatRooms] = useState([
+    // Game chat rooms for accepted applications
+    {
+      id: 'chat-1',
+      gameId: 1,
+      gameName: 'Central Park Courts',
+      participants: ['host-user', 'current-user'],
+      createdAt: new Date().toISOString(),
+      lastMessage: 'Welcome to the game chat! Looking forward to playing.',
+      lastMessageTime: new Date().toISOString()
+    },
+    {
+      id: 'chat-3',
+      gameId: 3,
+      gameName: 'Downtown Sports Complex',
+      participants: ['host-user', 'current-user'],
+      createdAt: new Date().toISOString(),
+      lastMessage: 'Ready for some competitive play!',
+      lastMessageTime: new Date().toISOString()
+    },
+    // Direct message chat rooms
     {
       id: 'chat-jessica-martinez',
       gameId: null,
@@ -342,6 +372,20 @@ export const GameProvider = ({ children }) => {
     );
   };
 
+  const deleteChat = (recipientName) => {
+    // Remove all messages for this conversation
+    setMessages(prev => prev.filter(msg => 
+      !((msg.from === currentUserName && msg.to === recipientName) ||
+        (msg.from === recipientName && msg.to === currentUserName))
+    ));
+    
+    // Remove the chat room
+    const chatId = `chat-${recipientName.replace(/\s+/g, '-').toLowerCase()}`;
+    setChatRooms(prev => prev.filter(room => room.id !== chatId));
+    
+    return { success: true, message: "Chat deleted successfully!" };
+  };
+
   const value = {
     games,
     applications,
@@ -363,7 +407,8 @@ export const GameProvider = ({ children }) => {
     addMatchedPlayer,
     sendMessage,
     getMessages,
-    getConversation
+    getConversation,
+    deleteChat
   };
 
   return (
