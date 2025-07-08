@@ -319,7 +319,7 @@ const Chat = ({ onUnreadCountsChange }) => {
   ]);
   
   const userChatRooms = getUserChatRooms();
-  
+
   // Helper function to format timestamps
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return 'Now';
@@ -529,16 +529,16 @@ const Chat = ({ onUnreadCountsChange }) => {
       );
     } else {
       // Direct message chat - use DirectMessageChat component
-      return (
-        <div className="chat-screen">
+    return (
+      <div className="chat-screen">
           <DirectMessageChat 
             chat={selectedChat} 
             onClose={handleCloseChat}
             onSendMessage={sendMessage}
             onDeleteChat={handleDeleteChat}
           />
-        </div>
-      );
+      </div>
+    );
     }
   }
 
@@ -571,7 +571,7 @@ const Chat = ({ onUnreadCountsChange }) => {
         <button 
           className={`tab-button-modern ${activeTab === 'notifications' ? 'active' : ''}`}
           onClick={() => setActiveTab('notifications')}
-        >
+                  >
           <svg className="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
@@ -586,7 +586,7 @@ const Chat = ({ onUnreadCountsChange }) => {
           {chatsToShow.length === 0 ? (
             <div className="no-chats-message">
               <p>No conversations yet. Start playing games to connect with other players!</p>
-            </div>
+                    </div>
           ) : (
             chatsToShow.map((chat, index) => (
               <SwipeableChatCard
@@ -598,8 +598,8 @@ const Chat = ({ onUnreadCountsChange }) => {
               />
             ))
           )}
-        </div>
-      )}
+                      </div>
+                    )}
 
       {/* Notification Panel */}
       {activeTab === 'notifications' && (
@@ -640,8 +640,8 @@ const Chat = ({ onUnreadCountsChange }) => {
               <p>No notifications yet. We'll let you know when something important happens!</p>
             </div>
           )}
-        </div>
-      )}
+          </div>
+        )}
     </div>
   );
 };

@@ -213,18 +213,18 @@ const Profile = () => {
                 </div>
                 <div className="form-field form-field-full">
                   <label className="field-label">Playing Experience</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      name="playingExperience"
-                      value={profile.playingExperience}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 2 years, 6 months"
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="playingExperience"
+                    value={profile.playingExperience}
+                    onChange={handleInputChange}
+                    placeholder="e.g., 2 years, 6 months"
                       className="field-input"
-                    />
-                  ) : (
+                  />
+                ) : (
                     <div className="field-value">{profile.playingExperience}</div>
-                  )}
+                )}
                 </div>
               </div>
             </div>

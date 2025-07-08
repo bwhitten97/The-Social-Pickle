@@ -66,7 +66,7 @@ const ChatRoom = ({ gameId, onClose }) => {
     if (messages.length > 0) {
       const isInitialLoad = messages.length === 5; // Initial dummy messages count
       if (!isInitialLoad) {
-        scrollToBottom();
+    scrollToBottom();
       }
     }
   }, [messages]);
@@ -131,7 +131,7 @@ const ChatRoom = ({ gameId, onClose }) => {
             ←
           </button>
           <div className="chat-details">
-            <h3>Game not found</h3>
+        <h3>Game not found</h3>
           </div>
         </div>
         <div className="unified-messages">
@@ -190,21 +190,21 @@ const ChatRoom = ({ gameId, onClose }) => {
       {/* Input */}
       <div className="unified-input">
         <form onSubmit={handleSendMessage}>
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type a message..."
+        <input
+          type="text"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          placeholder="Type a message..."
             className="input-field"
-          />
-          <button 
-            type="submit" 
+        />
+        <button 
+          type="submit" 
             className="send-button"
-            disabled={!newMessage.trim()}
-          >
+          disabled={!newMessage.trim()}
+        >
             →
-          </button>
-        </form>
+        </button>
+      </form>
       </div>
     </div>
   );

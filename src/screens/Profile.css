@@ -290,7 +290,7 @@
   .profile-header-modern {
     padding: 1.5rem 1rem 1rem;
   }
-
+  
   .profile-title {
     font-size: 1.5rem;
   }
@@ -298,17 +298,17 @@
   .profile-summary {
     margin-left: 2.25rem;
   }
-
+  
   .profile-content-modern {
     padding: 1.5rem 1rem;
   }
-
+  
   .profile-header-card {
     flex-direction: column;
     text-align: center;
     gap: 1rem;
   }
-
+  
   .profile-avatar-modern {
     width: 3rem;
     height: 3rem;
@@ -322,7 +322,7 @@
   .profile-form-modern {
     padding: 1.5rem;
   }
-
+  
   .form-grid {
     grid-template-columns: 1fr;
   }
@@ -336,7 +336,7 @@
   .profile-title {
     font-size: 1.25rem;
   }
-
+  
   .profile-icon {
     width: 2rem;
     height: 2rem;
