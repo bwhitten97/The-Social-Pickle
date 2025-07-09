@@ -288,35 +288,40 @@ const DirectMessageChat = ({ chat, onClose, onSendMessage, onDeleteChat }) => {
   );
 };
 
-const Chat = ({ onUnreadCountsChange }) => {
+const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead }) => {
   const { getUserChatRooms, getConversation, sendMessage, currentUserName, deleteChat } = useGameContext();
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [selectedChatName, setSelectedChatName] = useState(null);
   const [activeTab, setActiveTab] = useState('chat');
   const [chatUnreadCounts, setChatUnreadCounts] = useState({});
-  const [notifications, setNotifications] = useState([
+  
+  // Combine app notifications with default notifications
+  const defaultNotifications = [
     {
-      id: 1,
+      id: 'default-1',
       message: "Court 3 is available at 5 PM today.",
       timestamp: "10:05 AM",
       isRead: false,
       type: "court_availability"
     },
     {
-      id: 2,
+      id: 'default-2', 
       message: "You have a new friend request.",
       timestamp: "Yesterday",
       isRead: false,
       type: "friend_request"
     },
     {
-      id: 3,
+      id: 'default-3',
       message: "Game reminder: Tomorrow at 2 PM.",
       timestamp: "2 days ago",
       isRead: false,
       type: "game_reminder"
     }
-  ]);
+  ];
+  
+  // Combine appNotifications (from swipes/matches) with default notifications
+  const notifications = [...appNotifications, ...defaultNotifications];
   
   const userChatRooms = getUserChatRooms();
 
@@ -468,17 +473,27 @@ const Chat = ({ onUnreadCountsChange }) => {
     }
   };
 
+  const [readNotifications, setReadNotifications] = useState(new Set());
+
   const handleNotificationClick = (notificationId) => {
-    setNotifications(prev => prev.map(notification => 
-      notification.id === notificationId 
-        ? { ...notification, isRead: true }
-        : notification
-    ));
+    // Mark notification as read locally
+    setReadNotifications(prev => new Set([...prev, notificationId]));
+    
+    // Notify parent component about notification being read (for app notifications only)
+    if (onNotificationsRead && typeof notificationId !== 'string') {
+      onNotificationsRead([notificationId]);
+    }
     
     // Here you could add navigation logic based on notification type
     const notification = notifications.find(n => n.id === notificationId);
     if (notification) {
       switch (notification.type) {
+        case 'match':
+        case 'like':
+        case 'action':
+        case 'system':
+          // These are our new app notifications - just mark as read
+          break;
         case 'court_availability':
           // Navigate to court booking or show details
           alert(`Court availability: ${notification.message}`);
@@ -498,13 +513,21 @@ const Chat = ({ onUnreadCountsChange }) => {
   };
 
   const markAllNotificationsAsRead = () => {
-    setNotifications(prev => prev.map(notification => ({ 
-      ...notification, 
-      isRead: true 
-    })));
+    const unreadNotificationIds = notifications
+      .filter(n => !readNotifications.has(n.id) && !n.isRead)
+      .map(n => n.id);
+    
+    // Mark all notifications as read locally
+    setReadNotifications(prev => new Set([...prev, ...unreadNotificationIds]));
+    
+    // Notify parent component about app notifications being read
+    const appNotificationIds = unreadNotificationIds.filter(id => typeof id !== 'string');
+    if (onNotificationsRead && appNotificationIds.length > 0) {
+      onNotificationsRead(appNotificationIds);
+    }
   };
 
-  const unreadNotificationsCount = notifications.filter(n => !n.isRead).length;
+  const unreadNotificationsCount = notifications.filter(n => !n.isRead && !readNotifications.has(n.id)).length;
   
   // Calculate total unread chat messages
   const totalUnreadChats = chatsToShow.reduce((total, chat) => total + (chat.unread || 0), 0);
@@ -615,10 +638,10 @@ const Chat = ({ onUnreadCountsChange }) => {
             </div>
           )}
           
-          {notifications.map((notification, index) => (
-            <article 
+                    {notifications.map((notification, index) => (
+            <article
               key={notification.id}
-              className={`notification-card-modern fade-in-${(index % 4) + 1} ${!notification.isRead ? 'unread' : ''}`}
+              className={`notification-card-modern fade-in-${(index % 4) + 1} ${!notification.isRead && !readNotifications.has(notification.id) ? 'unread' : ''}`}
               onClick={() => handleNotificationClick(notification.id)}
             >
               <div className="notification-icon-wrapper">
@@ -626,7 +649,7 @@ const Chat = ({ onUnreadCountsChange }) => {
                   <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
                   <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                 </svg>
-                {!notification.isRead && <div className="notification-unread-dot"></div>}
+                {!notification.isRead && !readNotifications.has(notification.id) && <div className="notification-unread-dot"></div>}
               </div>
               <div className="notification-content-modern">
                 {notification.message}

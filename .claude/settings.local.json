@@ -17,7 +17,8 @@
       "Bash(npx vite:*)",
       "Bash(node:*)",
       "Bash(npm --version)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }

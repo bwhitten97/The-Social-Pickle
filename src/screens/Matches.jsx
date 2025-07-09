@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useGameContext } from '../context/GameContext';
+import Notification from '../components/Notification';
 import './Matches.css';
 
 const Matches = () => {
@@ -7,6 +8,7 @@ const Matches = () => {
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
+  const [notification, setNotification] = useState(null);
 
   // Mock data for demonstration when no real matches exist
   const mockMatches = [
@@ -118,10 +120,18 @@ const Matches = () => {
     console.log(`Sending message to ${selectedMatch.name}: ${message}`);
     const result = sendMessageToContext(selectedMatch.name, message);
     if (result.success) {
-      alert(`Message sent to ${selectedMatch.name}!`);
+      setNotification({
+        message: "Message sent to",
+        name: selectedMatch.name,
+        emoji: "💬"
+      });
       closeMessageModal();
     } else {
-      alert('Failed to send message. Please try again.');
+      setNotification({
+        message: "Failed to send message to",
+        name: selectedMatch.name,
+        emoji: "❌"
+      });
     }
   };
 
@@ -362,6 +372,16 @@ const Matches = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Native Notification */}
+      {notification && (
+        <Notification
+          message={notification.message}
+          name={notification.name}
+          emoji={notification.emoji}
+          onClose={() => setNotification(null)}
+        />
       )}
     </div>
   );

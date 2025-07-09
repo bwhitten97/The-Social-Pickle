@@ -16,49 +16,150 @@ const DiscoverCard = ({ profile, onLike, onDislike }) => {
     setTimeout(() => setIsAnimating(false), 350);
   };
 
+  const getSkillColor = (skill) => {
+    switch (skill?.toLowerCase()) {
+      case 'beginner':
+        return '#10b981';
+      case 'intermediate':
+        return '#f59e0b';
+      case 'advanced':
+        return '#ef4444';
+      default:
+        return '#6b7280';
+    }
+  };
+
+  const getPlayStyleIcon = (playStyle) => {
+    return '';
+  };
+
   return (
     <article className="discover-card" aria-label={`Player card: ${profile.name}`}>
-      {/* Avatar Section */}
-      <div className="discover-card-avatar-section">
-        <img 
-          src={profile.image} 
-          alt={`Portrait of ${profile.name}`}
-          className="discover-card-avatar"
-        />
-        <span className="discover-card-distance">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="discover-card-map-icon">
+      {/* Profile Image Section - Made Larger */}
+      <div className="discover-card-image-section">
+        <div className="discover-card-image-container">
+          {profile.image || profile.avatar ? (
+            <img 
+              src={profile.image || profile.avatar} 
+              alt={`Portrait of ${profile.name}`}
+              className="discover-card-image"
+            />
+          ) : (
+            <div className="discover-card-placeholder">
+              <span className="discover-card-initials">
+                {profile.name?.split(' ').map(n => n[0]).join('') || '?'}
+              </span>
+            </div>
+          )}
+        </div>
+        
+        {/* Distance Badge */}
+        <div className="discover-card-distance-badge">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path>
             <circle cx="12" cy="10" r="3"></circle>
           </svg>
-          {profile.distance}
-        </span>
+          {profile.distance || '5 miles away'}
+        </div>
       </div>
 
       {/* Details Section */}
       <div className="discover-card-details">
-        <h2 className="discover-card-name discover-fade-in">
-          {profile.name}, {profile.age}
-        </h2>
-
-        <p className="discover-card-experience discover-fade-in">
-          <span>🏓</span>
-          {profile.experience}
-        </p>
-
-        <div className="discover-card-tags discover-fade-in">
-          <span className="discover-card-tag">{profile.skillLevel}</span>
-          <span className="discover-card-tag">{profile.availability}</span>
+        {/* Name and Age */}
+        <div className="discover-card-header">
+          <h2 className="discover-card-name">
+            {profile.name}, {profile.age}
+          </h2>
+          {profile.gender && (
+            <span className="discover-card-gender">
+              {profile.gender === 'male' ? '♂' : profile.gender === 'female' ? '♀' : '⚧'}
+            </span>
+          )}
         </div>
 
-        {/* Divider */}
-        <div className="discover-card-divider"></div>
+        {/* Gender */}
+        <div className="discover-card-gender-info">
+          <span className="discover-card-gender-label">Gender:</span>
+          <span className="discover-card-gender-value">
+            {profile.gender === 'male' ? 'Male' : 
+             profile.gender === 'female' ? 'Female' : 
+             profile.gender === 'non-binary' ? 'Non-binary' : 
+             'Prefer not to say'}
+          </span>
+        </div>
+
+        {/* Skills and Ratings */}
+        <div className="discover-card-skills">
+          <div className="discover-card-skill-item">
+            <span className="discover-card-skill-label">Skill:</span>
+            <span 
+              className="discover-card-skill-badge"
+              style={{ backgroundColor: getSkillColor(profile.skillLevel) }}
+            >
+              {profile.skillLevel || 'Not specified'}
+            </span>
+          </div>
+          
+          {profile.duprRating && profile.duprRating !== 'unrated' && (
+            <div className="discover-card-skill-item">
+              <span className="discover-card-skill-label">DUPR:</span>
+              <span className="discover-card-dupr-badge">
+                {profile.duprRating}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Play Style and Experience */}
+        <div className="discover-card-info-grid">
+          <div className="discover-card-info-item">
+            <span className="discover-card-info-icon">
+              {getPlayStyleIcon(profile.playStyle)}
+            </span>
+            <span className="discover-card-info-text">
+              {profile.playStyle || 'Casual'}
+            </span>
+          </div>
+          
+          <div className="discover-card-info-item">
+            <span className="discover-card-info-text">
+              {profile.playingExperience || profile.experience || 'New player'}
+            </span>
+          </div>
+        </div>
+
+        {/* Availability */}
+        {profile.availability && profile.availability.length > 0 && (
+          <div className="discover-card-availability">
+            <span className="discover-card-availability-label">Available:</span>
+            <div className="discover-card-availability-tags">
+              {profile.availability.slice(0, 3).map((time, index) => (
+                <span key={index} className="discover-card-availability-tag">
+                  {time}
+                </span>
+              ))}
+              {profile.availability.length > 3 && (
+                <span className="discover-card-availability-tag more">
+                  +{profile.availability.length - 3} more
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Bio Preview */}
+        {profile.bio && (
+          <div className="discover-card-bio">
+            <p>{profile.bio.length > 80 ? `${profile.bio.slice(0, 80)}...` : profile.bio}</p>
+          </div>
+        )}
 
         {/* Action Buttons */}
-        <div className="discover-card-actions discover-fade-in">
+        <div className="discover-card-actions">
           <button 
             className={`discover-card-dislike-btn ${isAnimating ? 'discover-card-btn-animate' : ''}`}
             onClick={handleDislike}
-            aria-label="Dislike"
+            aria-label="Pass"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 6 6 18"></path>

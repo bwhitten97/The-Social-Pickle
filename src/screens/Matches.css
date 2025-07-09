@@ -38,7 +38,7 @@
 }
 
 .matches-title {
-  font-size: 1.875rem;
+  font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: -0.025em;
   line-height: 1.25;
@@ -49,9 +49,10 @@
 }
 
 .matches-title-icon {
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 2.25rem;
+  height: 2.25rem;
   color: #3E5D45;
+  flex-shrink: 0;
 }
 
 .matches-connections-count {
@@ -459,6 +460,12 @@
 }
 
 /* Responsive Design */
+@media (min-width: 640px) {
+  .matches-title {
+    font-size: 1.5rem;
+  }
+}
+
 @media (max-width: 768px) {
   .matches-content {
     padding: 1.5rem 1rem;
@@ -470,8 +477,8 @@
   }
   
   .matches-title-icon {
-    width: 2rem;
-    height: 2rem;
+    width: 36px;
+    height: 36px;
   }
   
   .matches-card {

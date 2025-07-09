@@ -244,6 +244,11 @@ export const GameProvider = ({ children }) => {
     }
   };
 
+  const withdrawApplication = (applicationId) => {
+    setApplications(prev => prev.filter(app => app.id !== applicationId));
+    return { success: true, message: "Application withdrawn successfully!" };
+  };
+
   const createOrUpdateChatRoom = (gameId, newPlayerId) => {
     setChatRooms(prev => {
       const existingRoom = prev.find(room => room.gameId === gameId);
@@ -273,9 +278,6 @@ export const GameProvider = ({ children }) => {
     });
   };
 
-  const withdrawApplication = (applicationId) => {
-    setApplications(prev => prev.filter(app => app.id !== applicationId));
-  };
 
   const getUserApplications = () => {
     return applications.filter(app => app.playerId === currentUserId);

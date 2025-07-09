@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { useGameContext } from '../context/GameContext';
+import DatePicker from '../components/DatePicker';
+import TimePicker from '../components/TimePicker';
+import Notification from '../components/Notification';
 import './Games.css';
 
 const Games = () => {
@@ -9,7 +12,8 @@ const Games = () => {
     currentUserId, 
     currentUserName, 
     addGame, 
-    requestToJoinGame, 
+    requestToJoinGame,
+    withdrawApplication: withdrawApplicationContext,
     getUserApplications,
     getGameApplications,
     hasUserApplied
@@ -17,18 +21,131 @@ const Games = () => {
   
   const [showPostForm, setShowPostForm] = useState(false);
   const [activeTab, setActiveTab] = useState('find'); // 'find', 'mygames', 'requests'
+  const [selectedProfile, setSelectedProfile] = useState(null);
+  const [notification, setNotification] = useState(null);
+  const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
+  const [withdrawData, setWithdrawData] = useState(null);
   const [newGame, setNewGame] = useState({
     location: '',
     date: '',
     time: '',
     skillLevel: 'beginner',
+    duprRating: 'unrated',
+    gameType: 'doubles',
+    courtType: 'outdoor',
     openSpots: 4,
     description: ''
   });
 
+  // Filter state
+  const [filters, setFilters] = useState({
+    distance: 25, // miles
+    date: '',
+    timeSlot: 'all', // all, morning, afternoon, evening
+    skillLevel: 'all', // all, beginner, intermediate, advanced
+    duprRange: { min: 2.0, max: 6.0 },
+    playersNeeded: 'all' // all, 1, 2, 3, 4+
+  });
+
+  const [showFilters, setShowFilters] = useState(false);
+
   const myGames = games.filter(game => game.createdBy === currentUserName);
-  const otherGames = games.filter(game => game.createdBy !== currentUserName);
   const myApplications = getUserApplications();
+
+  // Filter logic
+  const getTimeSlot = (time) => {
+    const hour = parseInt(time.split(':')[0]);
+    if (hour >= 6 && hour < 12) return 'morning';
+    if (hour >= 12 && hour < 17) return 'afternoon';
+    if (hour >= 17 && hour <= 23) return 'evening';
+    return 'other';
+  };
+
+  const skillLevelToDupr = (skillLevel) => {
+    switch(skillLevel.toLowerCase()) {
+      case 'beginner': return { min: 2.0, max: 3.0 };
+      case 'intermediate': return { min: 3.0, max: 4.0 };
+      case 'advanced': return { min: 4.0, max: 6.0 };
+      case 'mixed': return { min: 2.0, max: 6.0 };
+      default: return { min: 2.0, max: 6.0 };
+    }
+  };
+
+  const applyFilters = (games) => {
+    return games.filter(game => {
+      // Date filter
+      if (filters.date && game.date !== filters.date) return false;
+      
+      // Time slot filter
+      if (filters.timeSlot !== 'all' && getTimeSlot(game.time) !== filters.timeSlot) return false;
+      
+      // Skill level and DUPR filter
+      if (filters.skillLevel !== 'all') {
+        const gameDuprRange = skillLevelToDupr(game.skillLevel);
+        const filterDuprRange = filters.duprRange;
+        
+        // Check if there's overlap between game DUPR range and filter DUPR range
+        if (gameDuprRange.max < filterDuprRange.min || gameDuprRange.min > filterDuprRange.max) {
+          return false;
+        }
+      }
+      
+      // Players needed filter
+      if (filters.playersNeeded !== 'all') {
+        const playersNeeded = parseInt(filters.playersNeeded);
+        if (playersNeeded === 4 && game.openSpots < 4) return false;
+        if (playersNeeded < 4 && game.openSpots !== playersNeeded) return false;
+      }
+      
+      return true;
+    });
+  };
+
+  const filteredOtherGames = applyFilters(games.filter(game => 
+    game.createdBy !== currentUserName && !hasUserApplied(game.id)
+  ));
+
+  // Clear filters function
+  const clearFilters = () => {
+    setFilters({
+      distance: 25,
+      date: '',
+      timeSlot: 'all',
+      skillLevel: 'all',
+      duprRange: { min: 2.0, max: 6.0 },
+      playersNeeded: 'all'
+    });
+  };
+
+  // Update DUPR range when skill level changes
+  const handleSkillLevelChange = (skillLevel) => {
+    setFilters(prev => ({
+      ...prev,
+      skillLevel,
+      duprRange: skillLevel === 'all' 
+        ? { min: 2.0, max: 6.0 }
+        : skillLevelToDupr(skillLevel)
+    }));
+  };
+
+  // Update skill level when DUPR range changes
+  const handleDuprRangeChange = (duprRange) => {
+    let inferredSkillLevel = 'all';
+    
+    if (duprRange.min >= 2.0 && duprRange.max <= 3.0) {
+      inferredSkillLevel = 'beginner';
+    } else if (duprRange.min >= 3.0 && duprRange.max <= 4.0) {
+      inferredSkillLevel = 'intermediate';
+    } else if (duprRange.min >= 4.0 && duprRange.max <= 6.0) {
+      inferredSkillLevel = 'advanced';
+    }
+    
+    setFilters(prev => ({
+      ...prev,
+      skillLevel: inferredSkillLevel,
+      duprRange
+    }));
+  };
 
   const getApplicationCount = (gameId) => {
     return applications.filter(app => app.gameId === gameId).length;
@@ -57,6 +174,9 @@ const Games = () => {
       date: '',
       time: '',
       skillLevel: 'beginner',
+      duprRating: 'unrated',
+      gameType: 'doubles',
+      courtType: 'outdoor',
       openSpots: 4,
       description: ''
     });
@@ -66,12 +186,67 @@ const Games = () => {
   };
 
   const handleRequestToJoin = (gameId) => {
+    const game = games.find(g => g.id === gameId);
     const result = requestToJoinGame(gameId, "I'd like to join this game!");
     if (result.success) {
-      alert('Application submitted successfully!');
+      setNotification({
+        message: 'Application submitted successfully!',
+        name: game?.createdBy || 'Game Host',
+        emoji: '✅'
+      });
     } else {
-      alert(result.message);
+      setNotification({
+        message: result.message,
+        name: 'Error',
+        emoji: '❌'
+      });
     }
+  };
+
+  const handleViewProfile = (hostName) => {
+    // Create a mock profile object with the host's information
+    // In a real app, this would fetch the user's profile data
+    const mockProfile = {
+      name: hostName,
+      avatar: getHostAvatar(hostName),
+      age: Math.floor(Math.random() * 30) + 20, // Random age between 20-50
+      skillLevel: 'Intermediate',
+      availability: 'Weekends',
+      distance: `${(Math.random() * 10).toFixed(1)} miles away`,
+      experience: `${Math.floor(Math.random() * 5) + 1} years experience`,
+      bio: `Hi! I'm ${hostName}. Love playing pickleball and meeting new people on the court!`
+    };
+    
+    setSelectedProfile(mockProfile);
+  };
+
+  const closeProfileModal = () => {
+    setSelectedProfile(null);
+  };
+
+  const handleWithdrawClick = (application, game) => {
+    setWithdrawData({ application, game });
+    setShowWithdrawConfirm(true);
+  };
+
+  const confirmWithdraw = () => {
+    if (withdrawData && withdrawData.application) {
+      const result = withdrawApplicationContext(withdrawData.application.id);
+      if (result.success) {
+        setNotification({
+          message: 'Application withdrawn successfully!',
+          name: withdrawData.game?.createdBy || 'Game Host',
+          emoji: '🗑️'
+        });
+      }
+    }
+    setShowWithdrawConfirm(false);
+    setWithdrawData(null);
+  };
+
+  const cancelWithdraw = () => {
+    setShowWithdrawConfirm(false);
+    setWithdrawData(null);
   };
 
   // Helper function to format date
@@ -170,16 +345,172 @@ const Games = () => {
         </div>
           </section>
 
+          {/* Filter Panel - Only show on Find a Game tab */}
+          {activeTab === 'find' && (
+            <section className="games-filter-section">
+              <div className="games-filter-header">
+                <h3 className="games-filter-title">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
+                  </svg>
+                  Filters
+                </h3>
+                <div className="games-filter-actions">
+                  <button 
+                    className="games-filter-clear"
+                    onClick={clearFilters}
+                  >
+                    Clear All
+                  </button>
+                  <button 
+                    className="games-filter-toggle"
+                    onClick={() => setShowFilters(!showFilters)}
+                  >
+                    {showFilters ? 'Hide' : 'Show'} Filters
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      width="16" 
+                      height="16" 
+                      viewBox="0 0 24 24"
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                      style={{ transform: showFilters ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s' }}
+                    >
+                      <path d="m6 9 6 6 6-6"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {showFilters && (
+                <div className="games-filter-panel">
+                  <div className="games-filter-grid">
+                    {/* Date Filter */}
+                    <div className="games-filter-group">
+                      <label className="games-filter-label">Date</label>
+                      <DatePicker
+                        value={filters.date}
+                        onChange={(date) => setFilters(prev => ({ ...prev, date }))}
+                        className="games-filter-select"
+                      />
+                    </div>
+
+                    {/* Time Slot Filter */}
+                    <div className="games-filter-group">
+                      <label className="games-filter-label">Time of Day</label>
+                      <select
+                        value={filters.timeSlot}
+                        onChange={(e) => setFilters(prev => ({ ...prev, timeSlot: e.target.value }))}
+                        className="games-filter-select"
+                      >
+                        <option value="all">All Times</option>
+                        <option value="morning">Morning (6 AM - 12 PM)</option>
+                        <option value="afternoon">Afternoon (12 PM - 5 PM)</option>
+                        <option value="evening">Evening (5 PM - 11 PM)</option>
+                      </select>
+                    </div>
+
+                    {/* Distance Filter */}
+                    <div className="games-filter-group">
+                      <label className="games-filter-label">Distance: {filters.distance} miles</label>
+                      <input
+                        type="range"
+                        min="1"
+                        max="50"
+                        value={filters.distance}
+                        onChange={(e) => setFilters(prev => ({ ...prev, distance: parseInt(e.target.value) }))}
+                        className="games-filter-range"
+                      />
+                    </div>
+
+                    {/* Players Needed Filter */}
+                    <div className="games-filter-group">
+                      <label className="games-filter-label">Players Needed</label>
+                      <select
+                        value={filters.playersNeeded}
+                        onChange={(e) => setFilters(prev => ({ ...prev, playersNeeded: e.target.value }))}
+                        className="games-filter-select"
+                      >
+                        <option value="all">Any Number</option>
+                        <option value="1">1 Player</option>
+                        <option value="2">2 Players</option>
+                        <option value="3">3 Players</option>
+                        <option value="4">4+ Players</option>
+                      </select>
+                    </div>
+
+                    {/* Skill Level Filter */}
+                    <div className="games-filter-group">
+                      <label className="games-filter-label">Skill Level</label>
+                      <select
+                        value={filters.skillLevel}
+                        onChange={(e) => handleSkillLevelChange(e.target.value)}
+                        className="games-filter-select"
+                      >
+                        <option value="all">All Levels</option>
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                      </select>
+                    </div>
+
+                    {/* DUPR Range Filter */}
+                    <div className="games-filter-group games-filter-dupr">
+                      <label className="games-filter-label">
+                        DUPR Range: {filters.duprRange.min} - {filters.duprRange.max}
+                      </label>
+                      <div className="games-filter-dupr-inputs">
+                        <div className="games-filter-dupr-input">
+                          <label>Min</label>
+                          <input
+                            type="number"
+                            min="2.0"
+                            max="6.0"
+                            step="0.1"
+                            value={filters.duprRange.min}
+                            onChange={(e) => handleDuprRangeChange({ 
+                              ...filters.duprRange, 
+                              min: parseFloat(e.target.value) 
+                            })}
+                            className="games-filter-number"
+                          />
+                        </div>
+                        <div className="games-filter-dupr-input">
+                          <label>Max</label>
+                          <input
+                            type="number"
+                            min="2.0"
+                            max="6.0"
+                            step="0.1"
+                            value={filters.duprRange.max}
+                            onChange={(e) => handleDuprRangeChange({ 
+                              ...filters.duprRange, 
+                              max: parseFloat(e.target.value) 
+                            })}
+                            className="games-filter-number"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
           {/* Section Title */}
           <h2 className="games-section-title">
-            {activeTab === 'find' && 'Available Games'}
+            {activeTab === 'find' && `Available Games (${filteredOtherGames.length})`}
             {activeTab === 'mygames' && 'My Games'}
             {activeTab === 'requests' && 'My Requests'}
           </h2>
 
           {/* Game Cards */}
           <section className="games-cards-section">
-            {activeTab === 'find' && otherGames.map((game, index) => {
+            {activeTab === 'find' && filteredOtherGames.map((game, index) => {
               const skillColors = getSkillLevelColor(game.skillLevel);
               const hasApplied = hasUserApplied(game.id);
               const applicationCount = getApplicationCount(game.id);
@@ -192,21 +523,14 @@ const Games = () => {
                   <div className="games-card-content">
                     {/* Host */}
                     <div className="games-host-row">
-                      <span className="games-avatar" aria-hidden="true">{getHostAvatar(game.createdBy)}</span>
                       <span className="games-host-name">{game.createdBy}</span>
-                      <button className="games-profile-btn" onClick={() => alert(`View ${game.createdBy}'s profile`)}>
+                      <button className="games-profile-btn" onClick={() => handleViewProfile(game.createdBy)}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-profile-icon">
                           <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
                           <circle cx="12" cy="7" r="4"></circle>
                         </svg>
                         Profile
                       </button>
-                      <span 
-                        className="games-skill-badge"
-                        style={{ backgroundColor: skillColors.bg, color: skillColors.color }}
-                      >
-                        {game.skillLevel}
-                      </span>
                     </div>
 
                     <div className="games-datetime">
@@ -230,7 +554,12 @@ const Games = () => {
                     </div>
 
                     <div className="games-details-row">
-                      <span className="games-type-badge">Pickleball</span>
+                      <span className="games-type-badge">{game.gameType || 'Doubles'}</span>
+                      <span className="games-type-badge">{game.courtType || 'Outdoor'}</span>
+                      <span className="games-type-badge">{game.skillLevel}</span>
+                      {game.duprRating && game.duprRating !== 'unrated' && (
+                        <span className="games-type-badge">DUPR {game.duprRating}+</span>
+                      )}
                       <div className="games-players">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-players-icon">
                           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
@@ -287,7 +616,6 @@ const Games = () => {
 
                       <div className="games-card-content">
                         <div className="games-host-row">
-                          <span className="games-avatar" aria-hidden="true">{getHostAvatar(game.createdBy)}</span>
                           <span className="games-host-name">{game.createdBy} (You)</span>
                           <span 
                             className="games-skill-badge"
@@ -318,7 +646,11 @@ const Games = () => {
                         </div>
 
                         <div className="games-details-row">
-                          <span className="games-type-badge">Pickleball</span>
+                          <span className="games-type-badge">{game.gameType || 'Doubles'}</span>
+                          <span className="games-type-badge">{game.courtType || 'Outdoor'}</span>
+                          {game.duprRating && game.duprRating !== 'unrated' && (
+                            <span className="games-type-badge">DUPR {game.duprRating}+</span>
+                          )}
                           <div className="games-players">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-players-icon">
                               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
@@ -363,8 +695,8 @@ const Games = () => {
                   if (!game) return null;
                   
                   const skillColors = getSkillLevelColor(game.skillLevel);
-                  const statusColor = application.status === 'accepted' ? '#22c55e' : 
-                                    application.status === 'rejected' ? '#ef4444' : '#f59e0b';
+                  const statusColor = application.status === 'accepted' ? '#3E5D45' : 
+                                    application.status === 'rejected' ? '#F25C5C' : '#F39C12';
                   
                   return (
                     <article key={application.id} className="games-card">
@@ -372,13 +704,12 @@ const Games = () => {
 
                       <div className="games-card-content">
                         <div className="games-host-row">
-                          <span className="games-avatar" aria-hidden="true">{getHostAvatar(game.createdBy)}</span>
                           <span className="games-host-name">{game.createdBy}</span>
                           <span 
                             className="games-skill-badge"
-                            style={{ backgroundColor: skillColors.bg, color: skillColors.color }}
+                            style={{ backgroundColor: statusColor, color: 'white' }}
                           >
-                            {game.skillLevel}
+                            {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
                           </span>
                         </div>
 
@@ -405,10 +736,15 @@ const Games = () => {
                         <div className="games-details-row">
                           <span 
                             className="games-type-badge"
-                            style={{ backgroundColor: statusColor, color: 'white' }}
+                            style={{ backgroundColor: skillColors.bg, color: skillColors.color }}
                           >
-                            {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                            {game.skillLevel}
                           </span>
+                          <span className="games-type-badge">{game.gameType || 'Doubles'}</span>
+                          <span className="games-type-badge">{game.courtType || 'Outdoor'}</span>
+                          {game.duprRating && game.duprRating !== 'unrated' && (
+                            <span className="games-type-badge">DUPR {game.duprRating}+</span>
+                          )}
                           <div className="games-players">
                             <span>Applied: {formatDate(application.applicationDate)}</span>
                           </div>
@@ -424,12 +760,7 @@ const Games = () => {
                       {application.status === 'pending' && (
                         <button 
                           className="games-applied-btn"
-                          onClick={() => {
-                            if (confirm('Are you sure you want to withdraw your application?')) {
-                              // withdrawApplication(application.id); // Uncomment when function is available
-                              alert('Application withdrawn');
-                            }
-                          }}
+                          onClick={() => handleWithdrawClick(application, game)}
                         >
                           Withdraw Application
                         </button>
@@ -465,7 +796,7 @@ const Games = () => {
             
             <form onSubmit={handlePostGame} className="games-form">
               <div className="games-form-group">
-                <label>Location</label>
+                <label>Location *</label>
                 <input
                   type="text"
                   value={newGame.location}
@@ -477,23 +808,50 @@ const Games = () => {
               
               <div className="games-form-row">
                 <div className="games-form-group">
-                  <label>Date</label>
-                  <input
-                    type="date"
+                  <label>Date *</label>
+                  <DatePicker
                     value={newGame.date}
-                    onChange={(e) => setNewGame({...newGame, date: e.target.value})}
-                    required
+                    onChange={(date) => setNewGame({...newGame, date})}
+                    className="games-form-input"
                   />
                 </div>
                 
                 <div className="games-form-group">
-                  <label>Time</label>
-                  <input
-                    type="time"
+                  <label>Time *</label>
+                  <TimePicker
                     value={newGame.time}
-                    onChange={(e) => setNewGame({...newGame, time: e.target.value})}
-                    required
+                    onChange={(time) => setNewGame({...newGame, time})}
+                    className="games-form-input"
                   />
+                </div>
+              </div>
+              
+              <div className="games-form-row">
+                <div className="games-form-group">
+                  <label>Game Type</label>
+                  <select
+                    value={newGame.gameType}
+                    onChange={(e) => setNewGame({...newGame, gameType: e.target.value})}
+                    className="games-form-select"
+                  >
+                    <option value="singles">Singles</option>
+                    <option value="doubles">Doubles</option>
+                    <option value="mixed-doubles">Mixed Doubles</option>
+                    <option value="round-robin">Round Robin</option>
+                  </select>
+                </div>
+                
+                <div className="games-form-group">
+                  <label>Court Type</label>
+                  <select
+                    value={newGame.courtType}
+                    onChange={(e) => setNewGame({...newGame, courtType: e.target.value})}
+                    className="games-form-select"
+                  >
+                    <option value="outdoor">Outdoor</option>
+                    <option value="indoor">Indoor</option>
+                    <option value="either">Either</option>
+                  </select>
                 </div>
               </div>
               
@@ -503,6 +861,7 @@ const Games = () => {
                   <select
                     value={newGame.skillLevel}
                     onChange={(e) => setNewGame({...newGame, skillLevel: e.target.value})}
+                    className="games-form-select"
                   >
                     <option value="beginner">Beginner</option>
                     <option value="intermediate">Intermediate</option>
@@ -512,17 +871,38 @@ const Games = () => {
                 </div>
                 
                 <div className="games-form-group">
-                  <label>Open Spots</label>
+                  <label>DUPR Rating</label>
                   <select
-                    value={newGame.openSpots}
-                    onChange={(e) => setNewGame({...newGame, openSpots: parseInt(e.target.value)})}
+                    value={newGame.duprRating}
+                    onChange={(e) => setNewGame({...newGame, duprRating: e.target.value})}
+                    className="games-form-select"
                   >
-                    <option value={1}>1 Player</option>
-                    <option value={2}>2 Players</option>
-                    <option value={3}>3 Players</option>
-                    <option value={4}>4 Players</option>
+                    <option value="unrated">Unrated</option>
+                    <option value="2.0">2.0+</option>
+                    <option value="2.5">2.5+</option>
+                    <option value="3.0">3.0+</option>
+                    <option value="3.5">3.5+</option>
+                    <option value="4.0">4.0+</option>
+                    <option value="4.5">4.5+</option>
+                    <option value="5.0">5.0+</option>
+                    <option value="5.5">5.5+</option>
+                    <option value="6.0">6.0+</option>
                   </select>
                 </div>
+              </div>
+              
+              <div className="games-form-group">
+                <label>Players Needed</label>
+                <select
+                  value={newGame.openSpots}
+                  onChange={(e) => setNewGame({...newGame, openSpots: parseInt(e.target.value)})}
+                  className="games-form-select"
+                >
+                  <option value={1}>1 Player</option>
+                  <option value={2}>2 Players</option>
+                  <option value={3}>3 Players</option>
+                  <option value={4}>4 Players</option>
+                </select>
               </div>
               
               <div className="games-form-group">
@@ -532,6 +912,7 @@ const Games = () => {
                   onChange={(e) => setNewGame({...newGame, description: e.target.value})}
                   placeholder="Add any additional details about the game..."
                   rows={3}
+                  className="games-form-textarea"
                 />
               </div>
               
@@ -550,6 +931,82 @@ const Games = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Profile Modal */}
+      {selectedProfile && (
+        <div className="games-modal-overlay" onClick={closeProfileModal}>
+          <div className="games-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="games-modal-header">
+              <h2>Player Profile</h2>
+              <button className="games-close-btn" onClick={closeProfileModal}>
+                ✕
+              </button>
+            </div>
+            <div className="games-form">
+              <div className="games-profile-content">
+                <div className="games-profile-avatar">
+                  {selectedProfile.avatar}
+                </div>
+                <h3 className="games-profile-name">{selectedProfile.name}</h3>
+                <div className="games-profile-details">
+                  <p><strong>Age:</strong> {selectedProfile.age}</p>
+                  <p><strong>Skill Level:</strong> {selectedProfile.skillLevel}</p>
+                  <p><strong>Availability:</strong> {selectedProfile.availability}</p>
+                  <p><strong>Distance:</strong> {selectedProfile.distance}</p>
+                  <p><strong>Experience:</strong> {selectedProfile.experience}</p>
+                  {selectedProfile.bio && <p><strong>Bio:</strong> "{selectedProfile.bio}"</p>}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Withdraw Confirmation Modal */}
+      {showWithdrawConfirm && (
+        <div className="games-modal-overlay" onClick={cancelWithdraw}>
+          <div className="games-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="games-modal-header">
+              <h2>Withdraw Application</h2>
+              <button className="games-close-btn" onClick={cancelWithdraw}>
+                ✕
+              </button>
+            </div>
+            <div className="games-form">
+              <p style={{ textAlign: 'center', margin: '1rem 0 2rem 0', color: '#2C3E50' }}>
+                Are you sure you want to withdraw your application for this game?
+              </p>
+              <div className="games-form-actions">
+                <button 
+                  type="button"
+                  className="games-cancel-btn"
+                  onClick={cancelWithdraw}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button"
+                  className="games-submit-btn"
+                  onClick={confirmWithdraw}
+                  style={{ backgroundColor: '#F25C5C' }}
+                >
+                  Withdraw
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Native Notification */}
+      {notification && (
+        <Notification
+          message={notification.message}
+          name={notification.name}
+          emoji={notification.emoji}
+          onClose={() => setNotification(null)}
+        />
       )}
     </div>
   );

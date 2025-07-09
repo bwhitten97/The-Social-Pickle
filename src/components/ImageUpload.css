@@ -1,0 +1,241 @@
+/* Image Upload Component */
+.image-upload {
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+}
+
+.file-input {
+  display: none;
+}
+
+/* Upload Area */
+.image-upload-area {
+  border: 2px dashed rgba(44, 62, 80, 0.2);
+  border-radius: 1rem;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+  position: relative;
+}
+
+.image-upload-area:hover {
+  border-color: #3E5D45;
+  background: rgba(62, 93, 69, 0.02);
+}
+
+.image-upload-area.dragging {
+  border-color: #3E5D45;
+  background: rgba(62, 93, 69, 0.05);
+  transform: scale(1.02);
+}
+
+.upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.upload-icon {
+  color: rgba(44, 62, 80, 0.4);
+  transition: color 0.3s ease;
+}
+
+.image-upload-area:hover .upload-icon {
+  color: #3E5D45;
+}
+
+.upload-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.upload-primary {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #2C3E50;
+  margin: 0;
+}
+
+.upload-secondary {
+  font-size: 0.875rem;
+  color: rgba(44, 62, 80, 0.6);
+  margin: 0;
+}
+
+/* Upload Spinner */
+.upload-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(62, 93, 69, 0.2);
+  border-top: 3px solid #3E5D45;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.upload-spinner p {
+  font-size: 0.875rem;
+  color: rgba(44, 62, 80, 0.7);
+  margin: 0;
+}
+
+/* Preview Container */
+.image-preview-container {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.image-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: #f8f9fa;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.image-preview:hover .image-overlay {
+  opacity: 1;
+}
+
+.image-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.image-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.change-btn {
+  background: rgba(255, 255, 255, 0.9);
+  color: #2C3E50;
+}
+
+.change-btn:hover:not(:disabled) {
+  background: white;
+  transform: translateY(-1px);
+}
+
+.remove-btn {
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+}
+
+.remove-btn:hover:not(:disabled) {
+  background: #ef4444;
+  transform: translateY(-1px);
+}
+
+/* Error Message */
+.upload-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 0.5rem;
+  color: #ef4444;
+  font-size: 0.875rem;
+}
+
+.upload-error svg {
+  flex-shrink: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .image-upload-area {
+    padding: 1.5rem;
+  }
+  
+  .upload-icon svg {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .upload-primary {
+    font-size: 0.875rem;
+  }
+  
+  .upload-secondary {
+    font-size: 0.8125rem;
+  }
+  
+  .image-preview-container {
+    max-width: 250px;
+  }
+  
+  .image-action-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+  
+  .image-overlay {
+    gap: 0.375rem;
+  }
+}
+
+/* Focus styles for accessibility */
+.image-upload-area:focus {
+  outline: 2px solid #3E5D45;
+  outline-offset: 2px;
+}
+
+.image-action-btn:focus {
+  outline: 2px solid #3E5D45;
+  outline-offset: 2px;
+}

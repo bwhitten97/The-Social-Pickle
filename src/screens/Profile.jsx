@@ -1,5 +1,41 @@
 import { useState } from 'react';
+import LocationSelector from '../components/LocationSelector';
+import ImageUpload from '../components/ImageUpload';
 import './Profile.css';
+
+const AvailabilitySelector = ({ selected, onChange }) => {
+  const availabilityOptions = [
+    { value: 'flexible', label: 'Flexible' },
+    { value: 'mornings', label: 'Mornings' },
+    { value: 'afternoons', label: 'Afternoons' },
+    { value: 'weeknights', label: 'Weeknights' },
+    { value: 'weekends', label: 'Weekends' },
+    { value: 'holidays', label: 'Holidays' }
+  ];
+
+  const toggleOption = (value) => {
+    if (selected.includes(value)) {
+      onChange(selected.filter(item => item !== value));
+    } else {
+      onChange([...selected, value]);
+    }
+  };
+
+  return (
+    <div className="availability-selector">
+      {availabilityOptions.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          className={`availability-option ${selected.includes(option.value) ? 'selected' : ''}`}
+          onClick={() => toggleOption(option.value)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+};
 
 const Profile = () => {
   const [profile, setProfile] = useState({
@@ -7,13 +43,19 @@ const Profile = () => {
     email: 'alex.johnson@email.com',
     phone: '+1 (555) 123-4567',
     skillLevel: 'intermediate',
+    duprRating: '3.5',
+    gender: 'prefer-not-to-say',
+    age: '28',
+    playStyle: 'both',
     location: 'San Francisco, CA',
     bio: 'Passionate pickleball player who loves meeting new people and improving my game. Available most weekends!',
-    preferredTime: 'evenings',
+    availability: ['weekends', 'weeknights'],
     playingExperience: '2 years'
   });
 
   const [isEditing, setIsEditing] = useState(false);
+  const [profileImage, setProfileImage] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState(null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -21,6 +63,18 @@ const Profile = () => {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleAvailabilityChange = (availability) => {
+    setProfile(prev => ({
+      ...prev,
+      availability
+    }));
+  };
+
+  const handleImageChange = (file, previewUrl) => {
+    setProfileImage(file);
+    setProfileImagePreview(previewUrl);
   };
 
   const handleSave = () => {
@@ -32,13 +86,13 @@ const Profile = () => {
   const getSkillColor = (skill) => {
     switch (skill) {
       case 'beginner':
-        return '#10b981';
+        return '#3E5D45';
       case 'intermediate':
-        return '#f59e0b';
+        return '#F5EEDC';
       case 'advanced':
-        return '#ef4444';
+        return '#2C3E50';
       default:
-        return '#6b7280';
+        return '#6B7280';
     }
   };
 
@@ -62,13 +116,22 @@ const Profile = () => {
         <div className="profile-card-modern">
           <div className="profile-header-card">
             <div className="profile-avatar-modern">
-              {profile.name.split(' ').map(n => n[0]).join('')}
+              {profileImagePreview ? (
+                <img src={profileImagePreview} alt={profile.name} className="profile-avatar-image" />
+              ) : (
+                <span className="profile-avatar-initials">
+                  {profile.name.split(' ').map(n => n[0]).join('')}
+                </span>
+              )}
             </div>
             <div className="profile-info-modern">
               <h2 className="profile-name">{profile.name}</h2>
               <span 
                 className="skill-badge-modern"
-                style={{ backgroundColor: getSkillColor(profile.skillLevel) }}
+                style={{ 
+                  backgroundColor: getSkillColor(profile.skillLevel),
+                  color: profile.skillLevel === 'intermediate' ? '#3E5D45' : 'white'
+                }}
               >
                 {profile.skillLevel}
               </span>
@@ -98,6 +161,39 @@ const Profile = () => {
           </div>
 
           <div className="profile-form-modern">
+            <div className="form-section-modern">
+              <h3 className="section-title">
+                <svg className="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21,15 16,10 5,21"/>
+                </svg>
+                Profile Picture
+              </h3>
+              {isEditing ? (
+                <ImageUpload
+                  currentImage={profileImagePreview}
+                  onImageChange={handleImageChange}
+                  className="profile-image-upload"
+                />
+              ) : (
+                <div className="profile-image-display">
+                  {profileImagePreview ? (
+                    <img src={profileImagePreview} alt={profile.name} className="profile-image-preview" />
+                  ) : (
+                    <div className="no-image-placeholder">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21,15 16,10 5,21"/>
+                      </svg>
+                      <p>No profile picture uploaded</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="form-section-modern">
               <h3 className="section-title">
                 <svg className="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -152,15 +248,60 @@ const Profile = () => {
                 <div className="form-field">
                   <label className="field-label">Location</label>
                   {isEditing ? (
-                    <input
-                      type="text"
-                      name="location"
+                    <LocationSelector
                       value={profile.location}
-                      onChange={handleInputChange}
+                      onChange={(value) => handleInputChange({ target: { name: 'location', value } })}
                       className="field-input"
+                      placeholder="Enter your location"
                     />
                   ) : (
                     <div className="field-value">{profile.location}</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="form-section-modern">
+              <h3 className="section-title">
+                <svg className="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                Personal Information
+              </h3>
+              <div className="form-grid">
+                <div className="form-field">
+                  <label className="field-label">Age</label>
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      name="age"
+                      value={profile.age}
+                      onChange={handleInputChange}
+                      className="field-input"
+                      min="18"
+                      max="100"
+                    />
+                  ) : (
+                    <div className="field-value">{profile.age}</div>
+                  )}
+                </div>
+                <div className="form-field">
+                  <label className="field-label">Gender</label>
+                  {isEditing ? (
+                    <select
+                      name="gender"
+                      value={profile.gender}
+                      onChange={handleInputChange}
+                      className="field-select"
+                    >
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="non-binary">Non-binary</option>
+                      <option value="prefer-not-to-say">Prefer not to say</option>
+                    </select>
+                  ) : (
+                    <div className="field-value">{profile.gender}</div>
                   )}
                 </div>
               </div>
@@ -194,21 +335,55 @@ const Profile = () => {
                   )}
                 </div>
                 <div className="form-field">
-                  <label className="field-label">Preferred Time</label>
+                  <label className="field-label">DUPR Rating</label>
                   {isEditing ? (
                     <select
-                      name="preferredTime"
-                      value={profile.preferredTime}
+                      name="duprRating"
+                      value={profile.duprRating}
                       onChange={handleInputChange}
                       className="field-select"
                     >
-                      <option value="mornings">Mornings</option>
-                      <option value="afternoons">Afternoons</option>
-                      <option value="evenings">Evenings</option>
-                      <option value="weekends">Weekends</option>
+                      <option value="2.0">2.0</option>
+                      <option value="2.5">2.5</option>
+                      <option value="3.0">3.0</option>
+                      <option value="3.5">3.5</option>
+                      <option value="4.0">4.0</option>
+                      <option value="4.5">4.5</option>
+                      <option value="5.0">5.0</option>
+                      <option value="5.5">5.5</option>
+                      <option value="6.0">6.0</option>
+                      <option value="unrated">Unrated</option>
                     </select>
                   ) : (
-                    <div className="field-value">{profile.preferredTime}</div>
+                    <div className="field-value">{profile.duprRating}</div>
+                  )}
+                </div>
+                <div className="form-field">
+                  <label className="field-label">Play Style</label>
+                  {isEditing ? (
+                    <select
+                      name="playStyle"
+                      value={profile.playStyle}
+                      onChange={handleInputChange}
+                      className="field-select"
+                    >
+                      <option value="competitive">Competitive</option>
+                      <option value="casual">Casual</option>
+                      <option value="both">Both</option>
+                    </select>
+                  ) : (
+                    <div className="field-value">{profile.playStyle}</div>
+                  )}
+                </div>
+                <div className="form-field form-field-full">
+                  <label className="field-label">Availability</label>
+                  {isEditing ? (
+                    <AvailabilitySelector
+                      selected={profile.availability}
+                      onChange={handleAvailabilityChange}
+                    />
+                  ) : (
+                    <div className="field-value">{profile.availability.join(', ')}</div>
                   )}
                 </div>
                 <div className="form-field form-field-full">
