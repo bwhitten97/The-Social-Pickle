@@ -70,11 +70,6 @@ const DiscoverCard = ({ profile, onLike, onDislike }) => {
           <h2 className="discover-card-name">
             {profile.name}, {profile.age}
           </h2>
-          {profile.gender && (
-            <span className="discover-card-gender">
-              {profile.gender === 'male' ? '♂' : profile.gender === 'female' ? '♀' : '⚧'}
-            </span>
-          )}
         </div>
 
         {/* Gender */}
@@ -92,10 +87,7 @@ const DiscoverCard = ({ profile, onLike, onDislike }) => {
         <div className="discover-card-skills">
           <div className="discover-card-skill-item">
             <span className="discover-card-skill-label">Skill:</span>
-            <span 
-              className="discover-card-skill-badge"
-              style={{ backgroundColor: getSkillColor(profile.skillLevel) }}
-            >
+            <span className="discover-card-skill-badge">
               {profile.skillLevel || 'Not specified'}
             </span>
           </div>
@@ -116,15 +108,21 @@ const DiscoverCard = ({ profile, onLike, onDislike }) => {
             <span className="discover-card-info-icon">
               {getPlayStyleIcon(profile.playStyle)}
             </span>
-            <span className="discover-card-info-text">
-              {profile.playStyle || 'Casual'}
-            </span>
+            <div className="discover-card-info-content">
+              <span className="discover-card-info-label">Play Style</span>
+              <span className="discover-card-info-text">
+                {profile.playStyle || 'Casual'}
+              </span>
+            </div>
           </div>
           
           <div className="discover-card-info-item">
-            <span className="discover-card-info-text">
-              {profile.playingExperience || profile.experience || 'New player'}
-            </span>
+            <div className="discover-card-info-content">
+              <span className="discover-card-info-label">Experience</span>
+              <span className="discover-card-info-text">
+                {profile.playingExperience || profile.experience || 'New player'}
+              </span>
+            </div>
           </div>
         </div>
 

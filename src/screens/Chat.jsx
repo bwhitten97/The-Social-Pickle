@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useGameContext } from '../context/GameContext';
 import ChatRoom from '../components/ChatRoom';
+import Notification from '../components/Notification';
 import './Chat.css';
 
 // SwipeableChat component for swipe-to-delete functionality
@@ -69,10 +70,8 @@ const SwipeableChatCard = ({ chat, index, onSelect, onDelete }) => {
 
   const handleDelete = (e) => {
     e.stopPropagation();
-    if (window.confirm(`Delete conversation with ${chat.name}?`)) {
-      onDelete(chat.name);
-      setSwipeX(0); // Reset swipe position
-    }
+    onDelete(chat.name);
+    setSwipeX(0); // Reset swipe position
   };
 
   const handleCardClick = () => {
@@ -143,7 +142,7 @@ const SwipeableChatCard = ({ chat, index, onSelect, onDelete }) => {
   );
 };
 
-const DirectMessageChat = ({ chat, onClose, onSendMessage, onDeleteChat }) => {
+const DirectMessageChat = ({ chat, onClose, onSendMessage, onDeleteChat, onShowNotification }) => {
   const { getConversation, currentUserName, deleteChat } = useGameContext();
   const [newMessage, setNewMessage] = useState('');
   
@@ -220,14 +219,20 @@ const DirectMessageChat = ({ chat, onClose, onSendMessage, onDeleteChat }) => {
   };
 
   const handleDeleteChat = () => {
-    if (window.confirm(`Are you sure you want to delete this conversation with ${chat.name}? This action cannot be undone.`)) {
-      const result = deleteChat(chat.name);
-      if (result.success) {
-        if (onDeleteChat) {
-          onDeleteChat(chat.name);
-        }
-        onClose();
+    const result = deleteChat(chat.name);
+    if (result.success) {
+      // Show success notification
+      if (onShowNotification) {
+        onShowNotification({
+          message: "Conversation deleted with",
+          name: chat.name,
+          emoji: "🗑️"
+        });
       }
+      if (onDeleteChat) {
+        onDeleteChat(chat.name);
+      }
+      onClose();
     }
   };
 
@@ -294,6 +299,7 @@ const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead
   const [selectedChatName, setSelectedChatName] = useState(null);
   const [activeTab, setActiveTab] = useState('chat');
   const [chatUnreadCounts, setChatUnreadCounts] = useState({});
+  const [notification, setNotification] = useState(null);
   
   // Combine app notifications with default notifications
   const defaultNotifications = [
@@ -468,6 +474,12 @@ const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead
     // Call the deleteChat function from GameContext
     const result = deleteChat(chatName);
     if (result.success) {
+      // Show success notification
+      setNotification({
+        message: "Conversation deleted with",
+        name: chatName,
+        emoji: "🗑️"
+      });
       // Update local state
       handleDeleteChat(chatName);
     }
@@ -559,6 +571,7 @@ const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead
             onClose={handleCloseChat}
             onSendMessage={sendMessage}
             onDeleteChat={handleDeleteChat}
+            onShowNotification={setNotification}
           />
       </div>
     );
@@ -665,6 +678,16 @@ const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead
           )}
           </div>
         )}
+
+      {/* Native Notification */}
+      {notification && (
+        <Notification
+          message={notification.message}
+          name={notification.name}
+          emoji={notification.emoji}
+          onClose={() => setNotification(null)}
+        />
+      )}
     </div>
   );
 };

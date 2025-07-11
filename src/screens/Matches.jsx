@@ -21,7 +21,7 @@ const Matches = () => {
       distance: "1.2 miles away",
       experience: "2.5 years experience",
       bio: "Pickleball enthusiast who loves the social aspect of the game. Always down for post-game coffee!",
-      avatar: "🎓",
+      image: "https://images.unsplash.com/photo-1494790108755-2616b612b776?w=800&q=80&fit=crop&crop=face",
       matchedAt: new Date().toISOString()
     },
     {
@@ -33,7 +33,7 @@ const Matches = () => {
       distance: "0.8 miles away",
       experience: "5 years experience",
       bio: "Competitive spirit with a calm mindset—from yoga mat to pickleball court!",
-      avatar: "🧘‍♀️",
+      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=800&q=80&fit=crop&crop=face",
       matchedAt: new Date().toISOString()
     },
     {
@@ -45,7 +45,7 @@ const Matches = () => {
       distance: "2.3 miles away",
       experience: "3 years experience",
       bio: "Love the strategy of pickleball! Always working on my third-shot drop and looking for doubles partners.",
-      avatar: "🧑‍🔬",
+      image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=800&q=80&fit=crop&crop=face",
       matchedAt: new Date().toISOString()
     }
   ];
@@ -167,7 +167,17 @@ const Matches = () => {
                   <div className="matches-card-content">
                     <div className="matches-avatar-container">
                       <div className="matches-avatar">
-                        {match.avatar || match.name.split(' ').map(n => n[0]).join('')}
+                        {match.image ? (
+                          <img 
+                            src={match.image} 
+                            alt={`${match.name} profile`}
+                            className="matches-avatar-image"
+                          />
+                        ) : (
+                          <span className="matches-avatar-initials">
+                            {match.name.split(' ').map(n => n[0]).join('')}
+                          </span>
+                        )}
                       </div>
                     </div>
                     
@@ -314,7 +324,17 @@ const Matches = () => {
             </div>
             <div className="matches-modal-content">
               <div className="matches-modal-avatar">
-                {selectedProfile.avatar || selectedProfile.name.split(' ').map(n => n[0]).join('')}
+                {selectedProfile.image ? (
+                  <img 
+                    src={selectedProfile.image} 
+                    alt={`${selectedProfile.name} profile`}
+                    className="matches-modal-avatar-image"
+                  />
+                ) : (
+                  <span className="matches-modal-avatar-initials">
+                    {selectedProfile.name.split(' ').map(n => n[0]).join('')}
+                  </span>
+                )}
               </div>
               <h3>{selectedProfile.name}</h3>
               <div className="matches-modal-details">

@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import LocationSelector from '../components/LocationSelector';
 import ImageUpload from '../components/ImageUpload';
+import Notification from '../components/Notification';
 import './Profile.css';
 
 const AvailabilitySelector = ({ selected, onChange }) => {
@@ -38,24 +41,28 @@ const AvailabilitySelector = ({ selected, onChange }) => {
 };
 
 const Profile = () => {
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const [notification, setNotification] = useState(null);
+  
   const [profile, setProfile] = useState({
-    name: 'Alex Johnson',
-    email: 'alex.johnson@email.com',
+    name: user?.name || 'Alex Johnson',
+    email: user?.email || 'alex.johnson@email.com',
     phone: '+1 (555) 123-4567',
-    skillLevel: 'intermediate',
-    duprRating: '3.5',
-    gender: 'prefer-not-to-say',
-    age: '28',
-    playStyle: 'both',
-    location: 'San Francisco, CA',
-    bio: 'Passionate pickleball player who loves meeting new people and improving my game. Available most weekends!',
-    availability: ['weekends', 'weeknights'],
-    playingExperience: '2 years'
+    skillLevel: user?.skillLevel || 'intermediate',
+    duprRating: user?.duprRating || '3.5',
+    gender: user?.gender || 'prefer-not-to-say',
+    age: user?.age || '28',
+    playStyle: user?.playStyle || 'both',
+    location: user?.location || 'San Francisco, CA',
+    bio: user?.bio || 'Passionate pickleball player who loves meeting new people and improving my game. Available most weekends!',
+    availability: user?.availability || ['weekends', 'weeknights'],
+    playingExperience: user?.playingExperience || '2 years'
   });
 
   const [isEditing, setIsEditing] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
-  const [profileImagePreview, setProfileImagePreview] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState(user?.profilePicture || null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -80,7 +87,35 @@ const Profile = () => {
   const handleSave = () => {
     setIsEditing(false);
     // In a real app, this would save to a backend
-    alert('Profile updated successfully!');
+    setNotification({
+      message: "Profile updated",
+      name: "successfully",
+      emoji: "✅"
+    });
+  };
+
+  const handleLogout = async () => {
+    try {
+      const result = await signOut();
+      if (result.success) {
+        setNotification({
+          message: "Signed out",
+          name: "successfully",
+          emoji: "👋"
+        });
+        
+        // Navigate to landing page after short delay
+        setTimeout(() => {
+          navigate('/');
+        }, 1500);
+      }
+    } catch (error) {
+      setNotification({
+        message: "Sign out failed",
+        name: "Please try again",
+        emoji: "❌"
+      });
+    }
   };
 
   const getSkillColor = (skill) => {
@@ -110,6 +145,19 @@ const Profile = () => {
           </h1>
           <span className="profile-summary">Manage your pickleball profile and preferences</span>
         </div>
+        
+        <button 
+          className="logout-btn-modern"
+          onClick={handleLogout}
+          title="Sign Out"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16,17 21,12 16,7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Sign Out
+        </button>
       </div>
 
       <div className="profile-content-modern">
@@ -447,6 +495,16 @@ const Profile = () => {
           </div>
         </div>
       </div>
+
+      {/* Native Notification */}
+      {notification && (
+        <Notification
+          message={notification.message}
+          name={notification.name}
+          emoji={notification.emoji}
+          onClose={() => setNotification(null)}
+        />
+      )}
     </div>
   );
 };

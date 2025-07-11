@@ -1,6 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Navigation from './components/Navigation';
+import ProtectedRoute from './components/ProtectedRoute';
+import Landing from './screens/Landing';
+import Onboarding from './screens/Onboarding';
 import Discover from './screens/Discover';
 import Games from './screens/Games';
 import Chat from './screens/Chat';
@@ -8,8 +11,10 @@ import Matches from './screens/Matches';
 import Profile from './screens/Profile';
 import Notification from './components/Notification';
 import { GameProvider, useGameContext } from './context/GameContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import './App.css';
 import './screens/Profile.css';
+import './components/ProtectedRoute.css';
 
 const mockPlayers = [
   { 
@@ -139,11 +144,76 @@ const mockPlayers = [
     avatar: "👩‍🏫",
     playingExperience: "5 years",
     image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=800&q=80&fit=crop&crop=face"
+  },
+  { 
+    id: 9, 
+    name: "Taylor Martinez", 
+    age: 27,
+    skillLevel: "intermediate", 
+    duprRating: "3.3",
+    playStyle: "both",
+    availability: ["mornings", "weekends", "flexible"], 
+    gender: "non-binary",
+    bio: "Pickleball enthusiast and software engineer. Always improving my game!",
+    location: "Mountain View, CA",
+    distance: "1.5 miles away",
+    avatar: "🧑‍💻",
+    playingExperience: "18 months",
+    image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80&fit=crop&crop=face"
+  },
+  { 
+    id: 10, 
+    name: "Robert Chang", 
+    age: 41,
+    skillLevel: "intermediate", 
+    duprRating: "3.6",
+    playStyle: "casual",
+    availability: ["afternoons", "weekends"], 
+    gender: "male",
+    bio: "Weekend warrior, dad of two. Looking for fun matches and good laughs!",
+    location: "Redwood City, CA",
+    distance: "3.5 miles away",
+    avatar: "👨‍👦‍👦",
+    playingExperience: "2.5 years",
+    image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&q=80&fit=crop&crop=face"
+  },
+  { 
+    id: 11, 
+    name: "Ashley Davis", 
+    age: 36,
+    skillLevel: "beginner", 
+    duprRating: "2.8",
+    playStyle: "casual",
+    availability: ["mornings", "flexible"], 
+    gender: "female",
+    bio: "New mom getting back into sports. Patient partners welcome!",
+    location: "San Mateo, CA",
+    distance: "2.2 miles away",
+    avatar: "👩‍🍼",
+    playingExperience: "1 year",
+    image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=800&q=80&fit=crop&crop=face"
+  },
+  { 
+    id: 12, 
+    name: "Marcus Johnson", 
+    age: 24,
+    skillLevel: "advanced", 
+    duprRating: "4.9",
+    playStyle: "competitive",
+    availability: ["weeknights", "mornings", "weekends"], 
+    gender: "male",
+    bio: "Ex-tennis player, now obsessed with pickleball. Tournament ready!",
+    location: "Cupertino, CA",
+    distance: "4.0 miles away",
+    avatar: "🎾",
+    playingExperience: "3 years",
+    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&q=80&fit=crop&crop=face"
   }
 ];
 
 function AppContent() {
   const { addMatchedPlayer } = useGameContext();
+  const { isAuthenticated, user } = useAuth();
   const [players, setPlayers] = useState(mockPlayers);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [filter, setFilter] = useState('All');
@@ -155,15 +225,15 @@ function AppContent() {
   // Track players who have already swiped right on the current user
   const [playersWhoLikedUser, setPlayersWhoLikedUser] = useState([1]); // Alex Johnson (id: 1) has already swiped right
   const [userProfile, setUserProfile] = useState({
-    name: 'John Doe',
-    age: 30,
-    skill: 'Intermediate',
-    experience: '2 years',
-    availability: 'Evenings',
-    gender: 'Male',
-    bio: 'Love playing pickleball and meeting new people!',
-    location: 'San Francisco, CA',
-    avatar: '👤'
+    name: user?.name || 'John Doe',
+    age: user?.age || 30,
+    skill: user?.skillLevel || 'Intermediate',
+    experience: user?.experience || '2 years',
+    availability: user?.availability?.[0] || 'Evenings',
+    gender: user?.gender || 'Male',
+    bio: user?.bio || 'Love playing pickleball and meeting new people!',
+    location: user?.location || 'San Francisco, CA',
+    avatar: user?.avatar || '👤'
   });
 
   const filteredPlayers = players.filter(player => 
@@ -244,51 +314,115 @@ function AppContent() {
 
   return (
     <div className="App">
-      <Navigation 
-        unreadNotificationCount={unreadNotificationCount}
-        unreadChatCount={unreadChatCount}
-      />
-      <main className="main-content">
-        <Routes>
-          <Route path="/" element={<Navigate to="/discover" replace />} />
-          <Route path="/discover" element={
-            <Discover 
-              players={filteredPlayers}
-              currentIndex={currentIndex}
-              connections={connections}
-              onLike={handleConnect}
-              onPass={handlePass}
-              onFilterChange={(newFilter) => {
-                setFilter(newFilter);
-                setCurrentIndex(0);
-              }}
-              currentFilter={filter}
-            />
-          } />
-          <Route path="/games" element={<Games />} />
-          <Route path="/matches" element={<Matches />} />
-          <Route path="/messages" element={
-            <Chat 
-              appNotifications={appNotifications}
-              onUnreadCountsChange={(chatCount, notificationCount) => {
-                setUnreadChatCount(chatCount);
-                setUnreadNotificationCount(notificationCount);
-              }}
-              onNotificationsRead={(readNotifications) => {
-                setAppNotifications(prev => 
-                  prev.map(notif => 
-                    readNotifications.includes(notif.id) 
-                      ? { ...notif, isRead: true }
-                      : notif
-                  )
-                );
-                setUnreadNotificationCount(prev => prev - readNotifications.length);
-              }}
-            />
-          } />
-          <Route path="/profile" element={<Profile />} />
-        </Routes>
-      </main>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={
+          isAuthenticated ? <Navigate to="/discover" replace /> : <Landing />
+        } />
+        <Route path="/onboarding" element={
+          <ProtectedRoute>
+            <Onboarding />
+          </ProtectedRoute>
+        } />
+
+        {/* Protected Routes */}
+        <Route path="/discover" element={
+          <ProtectedRoute>
+            <div className="app-with-nav">
+              <Navigation 
+                unreadNotificationCount={unreadNotificationCount}
+                unreadChatCount={unreadChatCount}
+              />
+              <main className="main-content">
+                <Discover 
+                  players={filteredPlayers}
+                  currentIndex={currentIndex}
+                  connections={connections}
+                  onLike={handleConnect}
+                  onPass={handlePass}
+                  onFilterChange={(newFilter) => {
+                    setFilter(newFilter);
+                    setCurrentIndex(0);
+                  }}
+                  currentFilter={filter}
+                />
+              </main>
+            </div>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/games" element={
+          <ProtectedRoute>
+            <div className="app-with-nav">
+              <Navigation 
+                unreadNotificationCount={unreadNotificationCount}
+                unreadChatCount={unreadChatCount}
+              />
+              <main className="main-content">
+                <Games />
+              </main>
+            </div>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/matches" element={
+          <ProtectedRoute>
+            <div className="app-with-nav">
+              <Navigation 
+                unreadNotificationCount={unreadNotificationCount}
+                unreadChatCount={unreadChatCount}
+              />
+              <main className="main-content">
+                <Matches />
+              </main>
+            </div>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/messages" element={
+          <ProtectedRoute>
+            <div className="app-with-nav">
+              <Navigation 
+                unreadNotificationCount={unreadNotificationCount}
+                unreadChatCount={unreadChatCount}
+              />
+              <main className="main-content">
+                <Chat 
+                  appNotifications={appNotifications}
+                  onUnreadCountsChange={(chatCount, notificationCount) => {
+                    setUnreadChatCount(chatCount);
+                    setUnreadNotificationCount(notificationCount);
+                  }}
+                  onNotificationsRead={(readNotifications) => {
+                    setAppNotifications(prev => 
+                      prev.map(notif => 
+                        readNotifications.includes(notif.id) 
+                          ? { ...notif, isRead: true }
+                          : notif
+                      )
+                    );
+                    setUnreadNotificationCount(prev => prev - readNotifications.length);
+                  }}
+                />
+              </main>
+            </div>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <div className="app-with-nav">
+              <Navigation 
+                unreadNotificationCount={unreadNotificationCount}
+                unreadChatCount={unreadChatCount}
+              />
+              <main className="main-content">
+                <Profile />
+              </main>
+            </div>
+          </ProtectedRoute>
+        } />
+      </Routes>
 
       {/* Standalone Popup Notification */}
       {notification && (
@@ -305,11 +439,13 @@ function AppContent() {
 
 function App() {
   return (
-    <GameProvider>
-      <Router>
-        <AppContent />
-      </Router>
-    </GameProvider>
+    <AuthProvider>
+      <GameProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </GameProvider>
+    </AuthProvider>
   );
 }
 

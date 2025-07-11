@@ -18,7 +18,8 @@
       "Bash(node:*)",
       "Bash(npm --version)",
       "Bash(python3:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(rg:*)"
     ],
     "deny": []
   }
