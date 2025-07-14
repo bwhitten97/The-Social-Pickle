@@ -1,22 +1,30 @@
-/* Landing Page Styles */
+/* Landing Page Styles - Vintage Aesthetic */
+
+@import url('https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@400;500;600;700&display=swap');
 
 .landing-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #F1F2F4 0%, #E8E9EB 100%);
+  background: #F5F0E8;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem 1rem;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Poppins', sans-serif;
+  position: relative;
+  overflow: hidden;
 }
+
+/* Removed texture overlay for cleaner look */
 
 .landing-content {
   max-width: 1200px;
   width: 100%;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.2fr 1fr;
   gap: 4rem;
   align-items: center;
+  position: relative;
+  z-index: 1;
 }
 
 @media (max-width: 968px) {
@@ -31,13 +39,12 @@
 .landing-hero {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 2.5rem;
 }
 
 .landing-logo {
   display: flex;
   align-items: center;
-  gap: 1rem;
   margin-bottom: 1rem;
 }
 
@@ -47,115 +54,152 @@
   }
 }
 
-.logo-icon {
-  font-size: 3rem;
-  background: linear-gradient(135deg, #3E5D45, #2C4A33);
-  border-radius: 1rem;
-  padding: 1rem;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+.logo-image {
+  width: 280px;
+  height: auto;
+  animation: float 6s ease-in-out infinite;
 }
 
-.logo-text {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #2C3E50;
-  margin: 0;
-  letter-spacing: -0.025em;
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
 }
 
 .landing-tagline h2 {
-  font-size: 3rem;
-  font-weight: 600;
-  color: #2C3E50;
-  margin: 0 0 1rem 0;
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: #2E5640;
+  margin: 0 0 0.5rem 0;
   line-height: 1.1;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
+  font-family: 'Poppins', sans-serif;
+}
+
+.landing-tagline .tagline-subtitle {
+  font-size: 1.75rem;
+  color: #2E5640;
+  margin: 0 0 1.5rem 0;
+  line-height: 1.3;
+  font-weight: 400;
 }
 
 .landing-tagline p {
   font-size: 1.25rem;
-  color: rgba(44, 62, 80, 0.7);
+  color: #5A7A65;
   margin: 0;
-  line-height: 1.6;
+  line-height: 1.7;
   font-weight: 400;
 }
 
 @media (max-width: 768px) {
   .landing-tagline h2 {
-    font-size: 2.25rem;
+    font-size: 2.5rem;
+  }
+  
+  .landing-tagline .tagline-subtitle {
+    font-size: 1.5rem;
   }
   
   .landing-tagline p {
     font-size: 1.125rem;
   }
   
-  .logo-text {
-    font-size: 2rem;
+  .logo-image {
+    width: 220px;
   }
 }
 
 .landing-features {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: 1.25rem;
+  margin-top: 0.5rem;
 }
 
 .feature-item {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem;
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  border: 2px solid rgba(46, 86, 64, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.feature-item:hover {
+  transform: translateX(10px);
   background: rgba(255, 255, 255, 0.7);
-  border-radius: 1rem;
-  border: 1px solid rgba(62, 93, 69, 0.1);
+  border-color: rgba(46, 86, 64, 0.2);
+  box-shadow: 0 5px 15px rgba(46, 86, 64, 0.1);
 }
 
 @media (max-width: 968px) {
   .feature-item {
     justify-content: center;
   }
+  
+  .feature-item:hover {
+    transform: translateX(0) translateY(-5px);
+  }
 }
 
 .feature-icon {
-  font-size: 1.5rem;
-  background: rgba(62, 93, 69, 0.1);
-  padding: 0.75rem;
-  border-radius: 50%;
+  font-size: 1.75rem;
+  background: #2E5640;
+  color: #F5E6D3;
+  padding: 0.875rem;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 3rem;
-  min-height: 3rem;
+  min-width: 3.5rem;
+  min-height: 3.5rem;
+  box-shadow: 0 4px 6px rgba(46, 86, 64, 0.2);
 }
 
 .feature-text {
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: 500;
-  color: #2C3E50;
+  color: #2E5640;
 }
 
 /* Auth Section */
 .landing-auth {
-  background: white;
-  border-radius: 1.5rem;
-  padding: 2.5rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(44, 62, 80, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 30px;
+  padding: 3rem 2.5rem;
+  box-shadow: 
+    0 20px 40px rgba(46, 86, 64, 0.15),
+    0 0 0 2px rgba(46, 86, 64, 0.1);
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Decorative corner accent */
+.landing-auth::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 100px;
+  height: 100px;
+  background: #2E5640;
+  border-radius: 50%;
+  opacity: 0.1;
 }
 
 .auth-signup h3,
 .auth-login h3 {
-  font-size: 1.75rem;
+  font-size: 2rem;
   font-weight: 600;
-  color: #2C3E50;
+  color: #2E5640;
   margin: 0 0 2rem 0;
   text-align: center;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
+  position: relative;
 }
 
 /* Social Auth Buttons */
@@ -176,20 +220,41 @@
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-radius: 0.75rem;
+  padding: 1.125rem 1.5rem;
+  border-radius: 16px;
   font-size: 1rem;
   font-weight: 500;
-  border: none;
+  border: 2px solid transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   text-decoration: none;
   min-height: 3.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(46, 86, 64, 0.1);
+  transition: width 0.6s, height 0.6s, top 0.6s, left 0.6s;
+}
+
+.auth-btn:hover::before {
+  width: 300px;
+  height: 300px;
+  top: -150px;
+  left: -150px;
 }
 
 .auth-btn.compact {
   flex: 1;
-  padding: 0.875rem 1rem;
+  padding: 1rem;
   min-height: 3rem;
 }
 
@@ -199,21 +264,23 @@
 }
 
 .auth-btn:focus {
-  outline: 2px solid #3E5D45;
+  outline: 3px solid rgba(46, 86, 64, 0.3);
   outline-offset: 2px;
 }
 
 .social-btn {
   background: white;
-  color: #2C3E50;
-  border: 1px solid rgba(44, 62, 80, 0.2);
+  color: #2E5640;
+  border: 2px solid rgba(46, 86, 64, 0.2);
+  position: relative;
+  z-index: 1;
 }
 
 .social-btn:hover:not(:disabled) {
-  background: #F8F9FA;
-  border-color: rgba(44, 62, 80, 0.3);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  background: white;
+  border-color: #2E5640;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(46, 86, 64, 0.2);
 }
 
 .google-btn:hover:not(:disabled) {
@@ -226,34 +293,41 @@
 
 .email-btn,
 .primary-btn {
-  background: #3E5D45;
-  color: #F5EEDC;
+  background: #2E5640;
+  color: #F5E6D3;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 6px rgba(46, 86, 64, 0.2);
 }
 
 .email-btn:hover:not(:disabled),
 .primary-btn:hover:not(:disabled) {
-  background: #2C4A33;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  background: #1F3B2B;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(46, 86, 64, 0.3);
 }
 
 .social-icon {
   width: 1.25rem;
   height: 1.25rem;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .auth-icon {
   width: 1.125rem;
   height: 1.125rem;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 /* Login Form */
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
   margin-bottom: 1.5rem;
 }
 
@@ -263,26 +337,27 @@
 }
 
 .auth-input {
-  padding: 1rem;
-  border: 1px solid rgba(44, 62, 80, 0.2);
-  border-radius: 0.75rem;
+  padding: 1.125rem 1.25rem;
+  border: 2px solid rgba(46, 86, 64, 0.2);
+  border-radius: 14px;
   font-size: 1rem;
-  font-family: 'Inter', sans-serif;
-  background: white;
-  color: #2C3E50;
-  transition: all 0.2s ease;
+  font-family: 'Poppins', sans-serif;
+  background: rgba(245, 230, 211, 0.3);
+  color: #2E5640;
+  transition: all 0.3s ease;
   min-height: 3.5rem;
   box-sizing: border-box;
 }
 
 .auth-input:focus {
   outline: none;
-  border-color: #3E5D45;
-  box-shadow: 0 0 0 3px rgba(62, 93, 69, 0.1);
+  border-color: #2E5640;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(46, 86, 64, 0.1);
 }
 
 .auth-input::placeholder {
-  color: rgba(44, 62, 80, 0.5);
+  color: rgba(46, 86, 64, 0.5);
 }
 
 /* Auth Divider */
@@ -290,34 +365,61 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  color: rgba(44, 62, 80, 0.6);
+  gap: 1rem;
+  color: rgba(46, 86, 64, 0.6);
   font-size: 0.875rem;
   margin: 1.5rem 0;
+  position: relative;
 }
 
-.auth-divider::before,
-.auth-divider::after {
+.auth-divider span {
+  background: #F5F0E8;
+  padding: 0 1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.auth-divider::before {
   content: '';
-  flex: 1;
-  height: 1px;
-  background: rgba(44, 62, 80, 0.2);
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(46, 86, 64, 0.2) 20%, 
+    rgba(46, 86, 64, 0.2) 80%, 
+    transparent
+  );
 }
 
 .link-btn {
   background: none;
   border: none;
-  color: #3E5D45;
-  font-weight: 500;
+  color: #2E5640;
+  font-weight: 600;
   cursor: pointer;
-  text-decoration: underline;
+  text-decoration: none;
   font-size: inherit;
   font-family: inherit;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
-.link-btn:hover {
-  color: #2C4A33;
+.link-btn::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: #2E5640;
+  transition: width 0.3s ease;
+}
+
+.link-btn:hover::after {
+  width: 100%;
 }
 
 /* Responsive adjustments */
@@ -327,7 +429,7 @@
   }
   
   .landing-auth {
-    padding: 2rem;
+    padding: 2.5rem 2rem;
   }
   
   .social-auth-buttons.compact {
@@ -341,15 +443,19 @@
 
 @media (max-width: 480px) {
   .landing-auth {
-    padding: 1.5rem;
+    padding: 2rem 1.5rem;
   }
   
   .auth-btn {
-    padding: 0.875rem 1rem;
+    padding: 1rem;
     min-height: 3rem;
   }
   
   .auth-input {
     min-height: 3rem;
+  }
+  
+  .landing-tagline h2 {
+    font-size: 2rem;
   }
 }

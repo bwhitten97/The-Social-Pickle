@@ -91,27 +91,26 @@ const Landing = () => {
         {/* Hero Section */}
         <div className="landing-hero">
           <div className="landing-logo">
-            <div className="logo-icon">🥒</div>
-            <h1 className="logo-text">The Social Pickle</h1>
+            <img src="/logo.png" alt="The Social Pickle" className="logo-image" />
           </div>
           
           <div className="landing-tagline">
-            <h2>Find Your Perfect Pickleball Partner</h2>
-            <p>Connect with players in your area, discover games, and build your pickleball community</p>
+            <h2>Pickleball your way.</h2>
+            <p className="tagline-subtitle">Find a partner or find a game and join The Social Pickle community</p>
           </div>
 
           <div className="landing-features">
             <div className="feature-item">
-              <span className="feature-icon">🎾</span>
+              <span className="feature-icon">⚡</span>
               <span className="feature-text">Match with players at your skill level</span>
             </div>
             <div className="feature-item">
-              <span className="feature-icon">📍</span>
+              <span className="feature-icon">🎯</span>
               <span className="feature-text">Find games and courts nearby</span>
             </div>
             <div className="feature-item">
               <span className="feature-icon">💬</span>
-              <span className="feature-text">Chat and coordinate with your matches</span>
+              <span className="feature-text">Chat & coordinate with your matches</span>
             </div>
           </div>
         </div>
