@@ -6,9 +6,10 @@
   min-height: 100vh;
   background: #F5F0E8;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 2rem 1rem;
+  justify-content: flex-start;
+  padding: 1rem;
   font-family: 'Poppins', sans-serif;
   position: relative;
   overflow: hidden;
@@ -25,13 +26,19 @@
   align-items: center;
   position: relative;
   z-index: 1;
+  margin-top: -3rem;
 }
 
 @media (max-width: 968px) {
   .landing-content {
     grid-template-columns: 1fr;
-    gap: 3rem;
+    gap: 2rem;
     text-align: center;
+    margin-top: 1.5rem;
+  }
+  
+  .landing-logo {
+    margin-bottom: 0.5rem;
   }
 }
 
@@ -40,24 +47,20 @@
   display: flex;
   flex-direction: column;
   gap: 2.5rem;
+  padding-top: 0;
 }
 
 .landing-logo {
   display: flex;
   align-items: center;
-  margin-bottom: 1rem;
-}
-
-@media (max-width: 968px) {
-  .landing-logo {
-    justify-content: center;
-  }
+  justify-content: center;
+  margin-bottom: 0;
+  margin-top: -2.5rem;
 }
 
 .logo-image {
-  width: 280px;
+  width: 500px;
   height: auto;
-  animation: float 6s ease-in-out infinite;
 }
 
 @keyframes float {
@@ -66,9 +69,9 @@
 }
 
 .landing-tagline h2 {
-  font-size: 3.5rem;
+  font-size: 2.8rem;
   font-weight: 700;
-  color: #2E5640;
+  color: #EAB308;
   margin: 0 0 0.5rem 0;
   line-height: 1.1;
   letter-spacing: -0.02em;
@@ -113,7 +116,8 @@
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  margin-top: 0.5rem;
+  margin-top: 0;
+  max-width: 90%;
 }
 
 .feature-item {
@@ -169,27 +173,17 @@
 .landing-auth {
   background: rgba(255, 255, 255, 0.9);
   border-radius: 30px;
-  padding: 3rem 2.5rem;
+  padding: 2.5rem 2.5rem 3rem;
   box-shadow: 
     0 20px 40px rgba(46, 86, 64, 0.15),
     0 0 0 2px rgba(46, 86, 64, 0.1);
   backdrop-filter: blur(10px);
   position: relative;
   overflow: hidden;
+  margin-top: 1.5rem;
 }
 
-/* Decorative corner accent */
-.landing-auth::before {
-  content: '';
-  position: absolute;
-  top: -50px;
-  right: -50px;
-  width: 100px;
-  height: 100px;
-  background: #2E5640;
-  border-radius: 50%;
-  opacity: 0.1;
-}
+/* Decorative corner accent - removed */
 
 .auth-signup h3,
 .auth-login h3 {
@@ -200,6 +194,7 @@
   text-align: center;
   letter-spacing: -0.02em;
   position: relative;
+  padding-top: 0.5rem;
 }
 
 /* Social Auth Buttons */

@@ -87,16 +87,17 @@ const Landing = () => {
 
   return (
     <div className="landing-container">
+      {/* Logo Section */}
+      <div className="landing-logo">
+        <img src="/logo.png" alt="The Social Pickle" className="logo-image" />
+      </div>
+
       <div className="landing-content">
         {/* Hero Section */}
         <div className="landing-hero">
-          <div className="landing-logo">
-            <img src="/logo.png" alt="The Social Pickle" className="logo-image" />
-          </div>
-          
           <div className="landing-tagline">
             <h2>Pickleball your way.</h2>
-            <p className="tagline-subtitle">Find a partner or find a game and join The Social Pickle community</p>
+            <p className="tagline-subtitle">Find a partner, host or join a game - and become part of The Social Pickle community.</p>
           </div>
 
           <div className="landing-features">
@@ -105,8 +106,8 @@ const Landing = () => {
               <span className="feature-text">Match with players at your skill level</span>
             </div>
             <div className="feature-item">
-              <span className="feature-icon">🎯</span>
-              <span className="feature-text">Find games and courts nearby</span>
+              <span className="feature-icon">📅</span>
+              <span className="feature-text">Host or find games nearby</span>
             </div>
             <div className="feature-item">
               <span className="feature-icon">💬</span>

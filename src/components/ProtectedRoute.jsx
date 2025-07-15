@@ -23,7 +23,14 @@ const ProtectedRoute = ({ children }) => {
   }
 
   // Authenticated but profile incomplete - redirect to onboarding
-  if (user && !user.profileComplete && location.pathname !== '/onboarding') {
+  // Unless they just completed onboarding (indicated by navigation state)
+  if (user && !user.profileComplete && location.pathname !== '/onboarding' && !location.state?.profileJustCompleted) {
+    console.log('ProtectedRoute: Redirecting to onboarding', { 
+      user: user, 
+      profileComplete: user.profileComplete, 
+      pathname: location.pathname,
+      navigationState: location.state
+    });
     return <Navigate to="/onboarding" replace />;
   }
 

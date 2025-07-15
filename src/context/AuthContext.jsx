@@ -289,6 +289,17 @@ export const AuthProvider = ({ children }) => {
       
       await updateDoc(userDocRef, updateData);
       
+      // Immediately update local user state to prevent navigation timing issues
+      setUser(prevUser => {
+        const updatedUser = {
+          ...prevUser,
+          ...updateData,
+          profileComplete: true
+        };
+        console.log('AuthContext: Updated user state', updatedUser);
+        return updatedUser;
+      });
+      
       return { success: true };
     } catch (error) {
       console.error('Profile update error:', error);

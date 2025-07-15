@@ -218,9 +218,13 @@ const Onboarding = () => {
           emoji: "🎉"
         });
         
-        // Navigate to main app after short delay
+        // Force navigation with state that indicates profile is complete
         setTimeout(() => {
-          navigate('/discover');
+          console.log('Onboarding: About to navigate, user state:', user);
+          navigate('/discover', { 
+            replace: true,
+            state: { profileJustCompleted: true }
+          });
         }, 2000);
       } else {
         setNotification({
