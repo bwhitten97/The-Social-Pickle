@@ -25,6 +25,12 @@ const Games = () => {
   const [notification, setNotification] = useState(null);
   const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
   const [withdrawData, setWithdrawData] = useState(null);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [selectedGame, setSelectedGame] = useState(null);
+  const [requestData, setRequestData] = useState({
+    playerCount: 1,
+    message: ''
+  });
   const [newGame, setNewGame] = useState({
     location: '',
     date: '',
@@ -187,13 +193,25 @@ const Games = () => {
 
   const handleRequestToJoin = (gameId) => {
     const game = games.find(g => g.id === gameId);
-    const result = requestToJoinGame(gameId, "I'd like to join this game!");
+    setSelectedGame(game);
+    setShowRequestModal(true);
+  };
+
+  const submitJoinRequest = () => {
+    if (!selectedGame) return;
+    
+    const message = requestData.message || `I'd like to join this game with ${requestData.playerCount} player${requestData.playerCount > 1 ? 's' : ''}!`;
+    const result = requestToJoinGame(selectedGame.id, message);
+    
     if (result.success) {
       setNotification({
         message: 'Application submitted successfully!',
-        name: game?.createdBy || 'Game Host',
+        name: selectedGame.createdBy || 'Game Host',
         emoji: '✅'
       });
+      setShowRequestModal(false);
+      setRequestData({ playerCount: 1, message: '' });
+      setSelectedGame(null);
     } else {
       setNotification({
         message: result.message,
@@ -201,6 +219,12 @@ const Games = () => {
         emoji: '❌'
       });
     }
+  };
+
+  const cancelJoinRequest = () => {
+    setShowRequestModal(false);
+    setRequestData({ playerCount: 1, message: '' });
+    setSelectedGame(null);
   };
 
   const handleViewProfile = (hostName) => {
@@ -518,21 +542,16 @@ const Games = () => {
               
               return (
                 <article key={game.id} className="games-card">
-                  <h3 className="games-card-title">{game.location}</h3>
+                  <h3 className="games-card-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-card-location-icon">
+                      <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path>
+                      <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    {game.location}
+                  </h3>
 
                   <div className="games-card-content">
-                    {/* Host */}
-                    <div className="games-host-row">
-                      <span className="games-host-name">{game.createdBy}</span>
-                      <button className="games-profile-btn" onClick={() => handleViewProfile(game.createdBy)}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-profile-icon">
-                          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                          <circle cx="12" cy="7" r="4"></circle>
-                        </svg>
-                        Profile
-                      </button>
-                    </div>
-
+                    {/* Date/Time - moved to line 2 */}
                     <div className="games-datetime">
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-datetime-icon">
                         <path d="M16 14v2.2l1.6 1"></path>
@@ -543,14 +562,6 @@ const Games = () => {
                         <circle cx="16" cy="16" r="6"></circle>
                       </svg>
                       {formatDate(game.date)} • {formatTime(game.time)}
-                    </div>
-
-                    <div className="games-location">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-location-icon">
-                        <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path>
-                        <circle cx="12" cy="10" r="3"></circle>
-                      </svg>
-                      {game.location}
                     </div>
 
                     <div className="games-details-row">
@@ -570,6 +581,7 @@ const Games = () => {
                         {occupiedSpots} / 4 players • {game.openSpots} spots left
                       </div>
                     </div>
+
 
                     {game.description && (
                       <div className="games-description">
@@ -598,6 +610,15 @@ const Games = () => {
                       Game Full
                     </button>
                   )}
+
+                  {/* Host Profile Button - moved to bottom right */}
+                  <button className="games-profile-btn-bottom" onClick={() => handleViewProfile(game.createdBy)}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-profile-icon">
+                      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    {game.createdBy}
+                  </button>
                 </article>
               );
             })}
@@ -617,12 +638,6 @@ const Games = () => {
                       <div className="games-card-content">
                         <div className="games-host-row">
                           <span className="games-host-name">{game.createdBy} (You)</span>
-                          <span 
-                            className="games-skill-badge"
-                            style={{ backgroundColor: skillColors.bg, color: skillColors.color }}
-                          >
-                            {game.skillLevel}
-                          </span>
                         </div>
 
                         <div className="games-datetime">
@@ -680,7 +695,6 @@ const Games = () => {
                 })
               ) : (
                 <div className="games-empty-state">
-                  <div style={{ fontSize: '4rem', marginBottom: '16px' }}>🏓</div>
                   <h3 style={{ color: '#1f2937', marginBottom: '8px' }}>No games posted yet</h3>
                   <p style={{ color: '#6b7280', margin: 0 }}>Click "Post a Game" to create your first game!</p>
                 </div>
@@ -700,19 +714,16 @@ const Games = () => {
                   
                   return (
                     <article key={application.id} className="games-card">
-                      <h3 className="games-card-title">{game.location}</h3>
+                      <h3 className="games-card-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-card-location-icon">
+                          <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path>
+                          <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        {game.location}
+                      </h3>
 
                       <div className="games-card-content">
-                        <div className="games-host-row">
-                          <span className="games-host-name">{game.createdBy}</span>
-                          <span 
-                            className="games-skill-badge"
-                            style={{ backgroundColor: statusColor, color: 'white' }}
-                          >
-                            {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                          </span>
-                        </div>
-
+                        {/* Date/Time - moved to line 2 */}
                         <div className="games-datetime">
                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-datetime-icon">
                             <path d="M16 14v2.2l1.6 1"></path>
@@ -725,29 +736,17 @@ const Games = () => {
                           {formatDate(game.date)} • {formatTime(game.time)}
                         </div>
 
-                        <div className="games-location">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-location-icon">
-                            <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path>
-                            <circle cx="12" cy="10" r="3"></circle>
-                          </svg>
-                          {game.location}
-                        </div>
-
                         <div className="games-details-row">
-                          <span 
-                            className="games-type-badge"
-                            style={{ backgroundColor: skillColors.bg, color: skillColors.color }}
-                          >
-                            {game.skillLevel}
-                          </span>
                           <span className="games-type-badge">{game.gameType || 'Doubles'}</span>
                           <span className="games-type-badge">{game.courtType || 'Outdoor'}</span>
+                          <span className="games-type-badge">{game.skillLevel}</span>
                           {game.duprRating && game.duprRating !== 'unrated' && (
                             <span className="games-type-badge">DUPR {game.duprRating}+</span>
                           )}
-                          <div className="games-players">
-                            <span>Applied: {formatDate(application.applicationDate)}</span>
-                          </div>
+                        </div>
+
+                        <div className="games-players">
+                          <span>Applied: {formatDate(application.applicationDate)}</span>
                         </div>
 
                         {application.message && (
@@ -755,16 +754,33 @@ const Games = () => {
                             <p><strong>Your message:</strong> {application.message}</p>
                           </div>
                         )}
-      </div>
+                      </div>
+
+                      {/* Status Badge - moved to top right */}
+                      <span 
+                        className="games-applied-btn"
+                        style={{ backgroundColor: statusColor, color: 'white' }}
+                      >
+                        {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                      </span>
 
                       {application.status === 'pending' && (
                         <button 
-                          className="games-applied-btn"
+                          className="games-join-btn"
                           onClick={() => handleWithdrawClick(application, game)}
                         >
                           Withdraw Application
                         </button>
                       )}
+
+                      {/* Host Profile Button - moved to bottom right */}
+                      <button className="games-profile-btn-bottom" onClick={() => handleViewProfile(game.createdBy)}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-profile-icon">
+                          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        {game.createdBy}
+                      </button>
                     </article>
                   );
                 })
@@ -992,6 +1008,107 @@ const Games = () => {
                   style={{ backgroundColor: '#F25C5C' }}
                 >
                   Withdraw
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Request to Join Modal */}
+      {showRequestModal && selectedGame && (
+        <div className="games-modal-overlay" onClick={cancelJoinRequest}>
+          <div className="games-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="games-modal-header">
+              <h2>Request to Join Game</h2>
+              <button className="games-close-btn" onClick={cancelJoinRequest}>
+                ✕
+              </button>
+            </div>
+            
+            <div className="games-form">
+              {/* Game Info Display */}
+              <div className="games-request-game-info">
+                <h3 className="games-request-game-title">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-card-location-icon">
+                    <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                  </svg>
+                  {selectedGame.location}
+                </h3>
+                
+                <div className="games-request-game-details">
+                  <div className="games-datetime">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-datetime-icon">
+                      <path d="M16 14v2.2l1.6 1"></path>
+                      <path d="M16 2v4"></path>
+                      <path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"></path>
+                      <path d="M3 10h5"></path>
+                      <path d="M8 2v4"></path>
+                      <circle cx="16" cy="16" r="6"></circle>
+                    </svg>
+                    {formatDate(selectedGame.date)} • {formatTime(selectedGame.time)}
+                  </div>
+                  
+                  <div className="games-request-badges">
+                    <span className="games-type-badge">{selectedGame.gameType || 'Doubles'}</span>
+                    <span className="games-type-badge">{selectedGame.courtType || 'Outdoor'}</span>
+                    <span className="games-type-badge">{selectedGame.skillLevel}</span>
+                    {selectedGame.duprRating && selectedGame.duprRating !== 'unrated' && (
+                      <span className="games-type-badge">DUPR {selectedGame.duprRating}+</span>
+                    )}
+                  </div>
+                  
+                  <div className="games-request-host">
+                    Hosted by {selectedGame.createdBy}
+                  </div>
+                </div>
+              </div>
+
+              {/* Request Form */}
+              <div className="games-form-group">
+                <label>How many players?</label>
+                <select
+                  value={requestData.playerCount}
+                  onChange={(e) => setRequestData(prev => ({ ...prev, playerCount: parseInt(e.target.value) }))}
+                  className="games-form-select"
+                >
+                  <option value={1}>1 Player (Just me)</option>
+                  <option value={2}>2 Players</option>
+                  <option value={3}>3 Players</option>
+                  <option value={4}>4 Players</option>
+                </select>
+              </div>
+              
+              <div className="games-form-group">
+                <label>Message (Optional)</label>
+                <textarea
+                  value={requestData.message}
+                  onChange={(e) => setRequestData(prev => ({ ...prev, message: e.target.value }))}
+                  placeholder="Add a message for the game host..."
+                  rows={3}
+                  className="games-form-textarea"
+                  maxLength={200}
+                />
+                <div style={{ fontSize: '0.875rem', color: '#6b7280', textAlign: 'right', marginTop: '0.5rem' }}>
+                  {requestData.message.length}/200 characters
+                </div>
+              </div>
+              
+              <div className="games-form-actions">
+                <button 
+                  type="button" 
+                  className="games-cancel-btn"
+                  onClick={cancelJoinRequest}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="games-submit-btn"
+                  onClick={submitJoinRequest}
+                >
+                  Send Request
                 </button>
               </div>
             </div>

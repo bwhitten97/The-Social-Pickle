@@ -19,7 +19,8 @@
       "Bash(npm --version)",
       "Bash(python3:*)",
       "Bash(grep:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(firebase deploy:*)"
     ],
     "deny": []
   }

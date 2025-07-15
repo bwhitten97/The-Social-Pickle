@@ -4,6 +4,7 @@ import Navigation from './components/Navigation';
 import ProtectedRoute from './components/ProtectedRoute';
 import Landing from './screens/Landing';
 import Onboarding from './screens/Onboarding';
+import Welcome from './screens/Welcome';
 import Discover from './screens/Discover';
 import Games from './screens/Games';
 import Chat from './screens/Chat';
@@ -319,9 +320,10 @@ function AppContent() {
         <Route path="/" element={
           isAuthenticated ? <Navigate to="/discover" replace /> : <Landing />
         } />
-        <Route path="/onboarding" element={
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/welcome" element={
           <ProtectedRoute>
-            <Onboarding />
+            <Welcome />
           </ProtectedRoute>
         } />
 

@@ -23,20 +23,38 @@ const ProtectedRoute = ({ children }) => {
   }
 
   // Authenticated but profile incomplete - redirect to onboarding
-  // Unless they just completed onboarding (indicated by navigation state)
-  if (user && !user.profileComplete && location.pathname !== '/onboarding' && !location.state?.profileJustCompleted) {
+  // Unless they just completed onboarding (indicated by navigation state or sessionStorage)
+  const justCompletedProfile = location.state?.profileJustCompleted || sessionStorage.getItem('profileJustCompleted') === 'true';
+  
+  if (user && !user.profileComplete && location.pathname !== '/onboarding' && !justCompletedProfile) {
     console.log('ProtectedRoute: Redirecting to onboarding', { 
       user: user, 
       profileComplete: user.profileComplete, 
       pathname: location.pathname,
-      navigationState: location.state
+      navigationState: location.state,
+      justCompletedProfile: justCompletedProfile
     });
     return <Navigate to="/onboarding" replace />;
   }
+  
+  // If user profile is complete, clear the temporary flag
+  if (user && user.profileComplete) {
+    sessionStorage.removeItem('profileJustCompleted');
+  }
 
-  // Profile complete but trying to access onboarding - redirect to discover
+  // Profile complete but trying to access onboarding - redirect appropriately
   if (user && user.profileComplete && location.pathname === '/onboarding') {
-    return <Navigate to="/discover" replace />;
+    // If user hasn't seen welcome page, show it; otherwise go to discover
+    if (!user.hasSeenWelcome) {
+      return <Navigate to="/welcome" replace />;
+    } else {
+      return <Navigate to="/discover" replace />;
+    }
+  }
+
+  // If user has completed profile but hasn't seen welcome, redirect to welcome
+  if (user && user.profileComplete && !user.hasSeenWelcome && location.pathname !== '/welcome') {
+    return <Navigate to="/welcome" replace />;
   }
 
   // All good, render the protected content

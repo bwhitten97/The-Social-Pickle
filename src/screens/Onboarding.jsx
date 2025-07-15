@@ -6,7 +6,7 @@ import './Onboarding.css';
 
 const Onboarding = () => {
   const navigate = useNavigate();
-  const { user, signUp, updateUserProfile } = useAuth();
+  const { user, signUp, updateUserProfile, isAuthenticated } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState(null);
@@ -21,6 +21,7 @@ const Onboarding = () => {
     availability: [],
     profilePicture: null,
     profilePictureUrl: '',
+    bio: '',
     email: '', // For email signups
     password: '' // For email signups
   });
@@ -87,10 +88,10 @@ const Onboarding = () => {
     },
     {
       id: 'photo',
-      title: "Add a profile photo",
-      subtitle: "A great photo helps others connect with you",
+      title: "Complete your profile",
+      subtitle: "Add a photo and tell others about yourself",
       field: 'profilePicture',
-      type: 'photo'
+      type: 'photo-and-bio'
     }
   ];
 
@@ -99,6 +100,12 @@ const Onboarding = () => {
   const activeSteps = isEmailSignup ? steps : steps.slice(1);
 
   const currentStepData = activeSteps[currentStep];
+
+  // If user is authenticated and has completed profile, redirect to discover
+  if (isAuthenticated && user?.profileComplete) {
+    navigate('/discover');
+    return null;
+  }
 
   const updateUserData = (field, value) => {
     setUserData(prev => ({
@@ -196,7 +203,8 @@ const Onboarding = () => {
           skillLevel: userData.skillLevel,
           duprRating: userData.duprRating,
           availability: userData.availability,
-          profilePictureUrl: userData.profilePictureUrl
+          profilePictureUrl: userData.profilePictureUrl,
+          bio: userData.bio
         });
       } else {
         // Update existing social auth user with profile data
@@ -207,7 +215,8 @@ const Onboarding = () => {
           skillLevel: userData.skillLevel,
           duprRating: userData.duprRating,
           availability: userData.availability,
-          profilePictureUrl: userData.profilePictureUrl
+          profilePictureUrl: userData.profilePictureUrl,
+          bio: userData.bio
         });
       }
       
@@ -221,7 +230,9 @@ const Onboarding = () => {
         // Force navigation with state that indicates profile is complete
         setTimeout(() => {
           console.log('Onboarding: About to navigate, user state:', user);
-          navigate('/discover', { 
+          // Set a temporary flag to bypass ProtectedRoute checks
+          sessionStorage.setItem('profileJustCompleted', 'true');
+          navigate('/welcome', { 
             replace: true,
             state: { profileJustCompleted: true }
           });
@@ -380,6 +391,37 @@ const Onboarding = () => {
 
         return (
           <div className="step-content">
+            {/* DUPR Rating Input */}
+            <div className="dupr-input-section">
+              <label className="dupr-label">DUPR Rating (Optional)</label>
+              <input
+                type="number"
+                placeholder="Enter your DUPR rating (e.g., 3.5)"
+                value={userData.duprRating}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  updateUserData('duprRating', value);
+                  
+                  // Auto-select skill level based on DUPR
+                  if (value) {
+                    const rating = parseFloat(value);
+                    if (rating >= 1.0 && rating < 2.5) {
+                      updateUserData('skillLevel', 'beginner');
+                    } else if (rating >= 2.5 && rating < 4.0) {
+                      updateUserData('skillLevel', 'intermediate');
+                    } else if (rating >= 4.0) {
+                      updateUserData('skillLevel', 'advanced');
+                    }
+                  }
+                }}
+                className="onboarding-input dupr-input"
+                min="1.0"
+                max="7.0"
+                step="0.1"
+              />
+              <p className="dupr-helper">If you don't have a DUPR rating, select your skill level below:</p>
+            </div>
+
             <div className="skill-options">
               {skillOptions.map((option) => (
                 <button
@@ -387,13 +429,7 @@ const Onboarding = () => {
                   className={`skill-option ${userData.skillLevel === option.value ? 'selected' : ''}`}
                   onClick={() => {
                     updateUserData('skillLevel', option.value);
-                    // Auto-select DUPR range based on skill level
-                    const duprRanges = {
-                      beginner: '2.0',
-                      intermediate: '3.0',
-                      advanced: '4.5'
-                    };
-                    updateUserData('duprRating', duprRanges[option.value]);
+                    // Don't auto-populate DUPR rating - let user enter it manually if they have one
                   }}
                 >
                   <div className="skill-header">
@@ -432,6 +468,7 @@ const Onboarding = () => {
         );
 
       case 'photo':
+      case 'photo-and-bio':
         return (
           <div className="step-content photo-step">
             <div className="photo-upload-area">
@@ -474,6 +511,24 @@ const Onboarding = () => {
             <div className="photo-skip-note">
               You can always add a photo later in your profile
             </div>
+
+            {/* Bio input field */}
+            {step.type === 'photo-and-bio' && (
+              <div className="bio-input-section">
+                <label className="bio-label">Tell others about yourself (Optional)</label>
+                <textarea
+                  placeholder="Feel free to share more detail about who you are as a player, where you like to play, or what you are trying to accomplish on The Social Pickle..."
+                  value={userData.bio}
+                  onChange={(e) => updateUserData('bio', e.target.value)}
+                  className="bio-textarea"
+                  rows="4"
+                  maxLength="200"
+                />
+                <div className="bio-counter">
+                  {userData.bio.length}/200 characters
+                </div>
+              </div>
+            )}
           </div>
         );
 

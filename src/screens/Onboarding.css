@@ -241,6 +241,85 @@
   line-height: 1.4;
 }
 
+/* DUPR Input Section */
+.dupr-input-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(62, 93, 69, 0.05);
+  border-radius: 16px;
+  border: 2px solid rgba(62, 93, 69, 0.1);
+}
+
+.dupr-label {
+  display: block;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #2C3E50;
+  margin-bottom: 0.75rem;
+}
+
+.dupr-input {
+  width: 100%;
+  max-width: 300px;
+  margin-bottom: 0.75rem;
+}
+
+.dupr-helper {
+  font-size: 0.875rem;
+  color: #6B7280;
+  margin: 0;
+  font-style: italic;
+}
+
+/* Bio Input Section */
+.bio-input-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: rgba(62, 93, 69, 0.05);
+  border-radius: 16px;
+  border: 2px solid rgba(62, 93, 69, 0.1);
+}
+
+.bio-label {
+  display: block;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #2C3E50;
+  margin-bottom: 0.75rem;
+}
+
+.bio-textarea {
+  width: 100%;
+  max-width: 1000px;
+  padding: 1rem;
+  border: 2px solid rgba(62, 93, 69, 0.2);
+  border-radius: 12px;
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+  background: white;
+  color: #2C3E50;
+  resize: vertical;
+  min-height: 100px;
+  transition: all 0.3s ease;
+}
+
+.bio-textarea:focus {
+  outline: none;
+  border-color: #3E5D45;
+  box-shadow: 0 0 0 4px rgba(62, 93, 69, 0.1);
+}
+
+.bio-textarea::placeholder {
+  color: rgba(44, 62, 80, 0.5);
+}
+
+.bio-counter {
+  font-size: 0.875rem;
+  color: #6B7280;
+  text-align: right;
+  margin-top: 0.5rem;
+}
+
 /* Photo Upload */
 .photo-step {
   align-items: center;

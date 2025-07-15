@@ -39,10 +39,24 @@ export const AuthProvider = ({ children }) => {
           
           if (userDocSnap.exists()) {
             const userData = userDocSnap.data();
+            // If user has basic profile data, assume profile is complete
+            const hasBasicProfile = userData.name && userData.age && userData.skillLevel;
+            
+            // One-time migration: Update profileComplete field for existing users
+            if (userData.profileComplete === undefined && hasBasicProfile) {
+              try {
+                await updateDoc(userDocRef, { profileComplete: true });
+              } catch (error) {
+                console.error('Error updating profileComplete:', error);
+              }
+            }
+            
             setUser({
               id: firebaseUser.uid,
               email: firebaseUser.email,
-              ...userData
+              ...userData,
+              // Set profileComplete to true if they have basic profile data
+              profileComplete: userData.profileComplete !== undefined ? userData.profileComplete : hasBasicProfile
             });
           } else {
             // User exists in Auth but not in Firestore (social login first time)

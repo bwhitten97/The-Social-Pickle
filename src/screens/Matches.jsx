@@ -18,8 +18,6 @@ const Matches = () => {
       age: 29,
       skillLevel: "Intermediate",
       availability: "Evenings",
-      distance: "1.2 miles away",
-      experience: "2.5 years experience",
       bio: "Pickleball enthusiast who loves the social aspect of the game. Always down for post-game coffee!",
       image: "https://images.unsplash.com/photo-1494790108755-2616b612b776?w=800&q=80&fit=crop&crop=face",
       matchedAt: new Date().toISOString()
@@ -29,9 +27,8 @@ const Matches = () => {
       name: "Priya Patel",
       age: 32,
       skillLevel: "Advanced",
+      duprRating: "4.2",
       availability: "Weekends",
-      distance: "0.8 miles away",
-      experience: "5 years experience",
       bio: "Competitive spirit with a calm mindset—from yoga mat to pickleball court!",
       image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=800&q=80&fit=crop&crop=face",
       matchedAt: new Date().toISOString()
@@ -42,8 +39,6 @@ const Matches = () => {
       age: 36,
       skillLevel: "Intermediate",
       availability: "Afternoons",
-      distance: "2.3 miles away",
-      experience: "3 years experience",
       bio: "Love the strategy of pickleball! Always working on my third-shot drop and looking for doubles partners.",
       image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=800&q=80&fit=crop&crop=face",
       matchedAt: new Date().toISOString()
@@ -54,16 +49,8 @@ const Matches = () => {
   const matches = matchedPlayers.length > 0 ? matchedPlayers : mockMatches;
 
   const getSkillLevelColor = (skill) => {
-    switch (skill?.toLowerCase()) {
-      case 'beginner':
-        return { backgroundColor: 'rgba(16,185,129,0.1)', color: '#10b981' };
-      case 'intermediate':
-        return { backgroundColor: 'rgba(245,158,11,0.1)', color: '#f59e0b' };
-      case 'advanced':
-        return { backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444' };
-      default:
-        return { backgroundColor: 'rgba(62,93,69,0.1)', color: '#3E5D45' };
-    }
+    // All skill levels now use the same green color scheme
+    return { backgroundColor: 'rgba(62,93,69,0.1)', color: '#3E5D45' };
   };
 
   const getAvailabilityColor = (availability) => {
@@ -229,6 +216,19 @@ const Matches = () => {
                         >
                           {match.skillLevel || 'Intermediate'}
                         </span>
+                        {match.duprRating && 
+                         match.duprRating !== 'unrated' && 
+                         match.duprRating !== '' && 
+                         match.duprRating !== '2.0' && 
+                         match.duprRating !== '3.0' && 
+                         match.duprRating !== '4.5' && (
+                          <span 
+                            className="matches-badge"
+                            style={getSkillLevelColor(match.skillLevel)}
+                          >
+                            DUPR {match.duprRating}
+                          </span>
+                        )}
                         <span 
                           className="matches-badge"
                           style={getAvailabilityColor(match.availability)}
@@ -238,7 +238,7 @@ const Matches = () => {
                       </div>
 
                       <div className="matches-details">
-                        {match.distance && (
+                        {match.matchedAt && (
                           <div className="matches-detail">
                             <svg 
                               xmlns="http://www.w3.org/2000/svg" 
@@ -248,47 +248,10 @@ const Matches = () => {
                               stroke="currentColor" 
                               strokeWidth="2"
                             >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                             </svg>
-                            {match.distance}
+                            {formatMatchDate(match.matchedAt)}
                           </div>
-                        )}
-                        {match.experience && (
-                          <>
-                            <span className="matches-detail-separator">•</span>
-                            <div className="matches-detail">
-                              <svg 
-                                xmlns="http://www.w3.org/2000/svg" 
-                                className="matches-detail-icon" 
-                                fill="none" 
-                                viewBox="0 0 24 24" 
-                                stroke="currentColor" 
-                                strokeWidth="2"
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              {match.experience}
-                            </div>
-                          </>
-                        )}
-                        {match.matchedAt && (
-                          <>
-                            <span className="matches-detail-separator">•</span>
-                            <div className="matches-detail">
-                              <svg 
-                                xmlns="http://www.w3.org/2000/svg" 
-                                className="matches-detail-icon" 
-                                fill="none" 
-                                viewBox="0 0 24 24" 
-                                stroke="currentColor" 
-                                strokeWidth="2"
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                              </svg>
-                              {formatMatchDate(match.matchedAt)}
-                            </div>
-                          </>
                         )}
                       </div>
 
@@ -340,9 +303,15 @@ const Matches = () => {
               <div className="matches-modal-details">
                 <p><strong>Age:</strong> {selectedProfile.age || 'Not specified'}</p>
                 <p><strong>Skill Level:</strong> {selectedProfile.skillLevel || 'Intermediate'}</p>
+                {selectedProfile.duprRating && 
+                 selectedProfile.duprRating !== 'unrated' && 
+                 selectedProfile.duprRating !== '' && 
+                 selectedProfile.duprRating !== '2.0' && 
+                 selectedProfile.duprRating !== '3.0' && 
+                 selectedProfile.duprRating !== '4.5' && (
+                  <p><strong>DUPR Rating:</strong> {selectedProfile.duprRating}</p>
+                )}
                 <p><strong>Availability:</strong> {selectedProfile.availability || 'Evenings'}</p>
-                <p><strong>Distance:</strong> {selectedProfile.distance || 'Location not specified'}</p>
-                <p><strong>Experience:</strong> {selectedProfile.experience || 'Not specified'}</p>
                 {selectedProfile.bio && <p><strong>Bio:</strong> "{selectedProfile.bio}"</p>}
               </div>
             </div>

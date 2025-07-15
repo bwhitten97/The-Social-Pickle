@@ -195,20 +195,6 @@ const Discover = ({
                 </select>
               </div>
 
-              {/* Play Style */}
-              <div className="filter-group">
-                <label className="filter-label">Play Style</label>
-                <select
-                  value={advancedFilters.playStyle}
-                  onChange={(e) => handleAdvancedFilterChange('playStyle', e.target.value)}
-                  className="filter-select"
-                >
-                  <option value="any">Any</option>
-                  <option value="competitive">Competitive</option>
-                  <option value="casual">Casual</option>
-                  <option value="both">Both</option>
-                </select>
-              </div>
 
               {/* Age Range */}
               <div className="filter-group">

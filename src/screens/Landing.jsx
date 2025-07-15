@@ -30,7 +30,7 @@ const Landing = () => {
       if (result.success) {
         // Navigation is handled by ProtectedRoute based on profile completion
         if (result.isNewUser) {
-          navigate('/onboarding');
+          navigate('/onboarding?social=true');
         } else {
           navigate('/discover');
         }
@@ -60,7 +60,7 @@ const Landing = () => {
       const result = await signIn(loginData.email, loginData.password);
       
       if (result.success) {
-        // Navigation handled by ProtectedRoute
+        // Navigate to discover - ProtectedRoute will handle redirection if needed
         navigate('/discover');
       } else {
         setNotification({
@@ -81,8 +81,14 @@ const Landing = () => {
   };
 
   const handleEmailSignup = async () => {
-    // For email signup, go to onboarding flow
-    navigate('/onboarding');
+    console.log('handleEmailSignup called');
+    try {
+      // For email signup, go to onboarding flow (no URL params = email signup)
+      navigate('/onboarding');
+      console.log('Navigation to /onboarding initiated');
+    } catch (error) {
+      console.error('Error in handleEmailSignup:', error);
+    }
   };
 
   return (

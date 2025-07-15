@@ -9,7 +9,7 @@
 
 .messages-header {
   background-color: white;
-  padding: 20px;
+  padding: 10px 20px;
   text-align: center;
   border-bottom: 1px solid #E5E7EB;
 }
@@ -558,11 +558,11 @@
 .messages-page {
   background-color: #F1F2F4;
   min-height: 100vh;
-  padding: 1rem;
+  padding: 0.5rem;
 }
 
 .messages-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .messages-header h1 {

@@ -18,7 +18,7 @@
 .matches-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2.5rem 1rem;
+  padding: 0.5rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 3rem;
@@ -493,7 +493,7 @@
 
 @media (max-width: 768px) {
   .matches-content {
-    padding: 1.5rem 1rem;
+    padding: 0.5rem 1rem;
     gap: 2rem;
   }
   

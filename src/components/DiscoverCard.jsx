@@ -29,9 +29,6 @@ const DiscoverCard = ({ profile, onLike, onDislike }) => {
     }
   };
 
-  const getPlayStyleIcon = (playStyle) => {
-    return '';
-  };
 
   return (
     <article className="discover-card" aria-label={`Player card: ${profile.name}`}>
@@ -53,14 +50,6 @@ const DiscoverCard = ({ profile, onLike, onDislike }) => {
           )}
         </div>
         
-        {/* Distance Badge */}
-        <div className="discover-card-distance-badge">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path>
-            <circle cx="12" cy="10" r="3"></circle>
-          </svg>
-          {profile.distance || '5 miles away'}
-        </div>
       </div>
 
       {/* Details Section */}
@@ -92,7 +81,12 @@ const DiscoverCard = ({ profile, onLike, onDislike }) => {
             </span>
           </div>
           
-          {profile.duprRating && profile.duprRating !== 'unrated' && (
+          {profile.duprRating && 
+           profile.duprRating !== 'unrated' && 
+           profile.duprRating !== '' && 
+           profile.duprRating !== '2.0' && 
+           profile.duprRating !== '3.0' && 
+           profile.duprRating !== '4.5' && (
             <div className="discover-card-skill-item">
               <span className="discover-card-skill-label">DUPR:</span>
               <span className="discover-card-dupr-badge">
@@ -102,29 +96,7 @@ const DiscoverCard = ({ profile, onLike, onDislike }) => {
           )}
         </div>
 
-        {/* Play Style and Experience */}
-        <div className="discover-card-info-grid">
-          <div className="discover-card-info-item">
-            <span className="discover-card-info-icon">
-              {getPlayStyleIcon(profile.playStyle)}
-            </span>
-            <div className="discover-card-info-content">
-              <span className="discover-card-info-label">Play Style</span>
-              <span className="discover-card-info-text">
-                {profile.playStyle || 'Casual'}
-              </span>
-            </div>
-          </div>
-          
-          <div className="discover-card-info-item">
-            <div className="discover-card-info-content">
-              <span className="discover-card-info-label">Experience</span>
-              <span className="discover-card-info-text">
-                {profile.playingExperience || profile.experience || 'New player'}
-              </span>
-            </div>
-          </div>
-        </div>
+        {/* Info Grid - Removed Play Style and Experience */}
 
         {/* Availability */}
         {profile.availability && profile.availability.length > 0 && (
@@ -171,7 +143,7 @@ const DiscoverCard = ({ profile, onLike, onDislike }) => {
             aria-label="Like"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+              <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
             </svg>
           </button>
         </div>

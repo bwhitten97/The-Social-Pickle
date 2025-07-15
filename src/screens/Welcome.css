@@ -1,0 +1,160 @@
+/* Welcome Page Styles */
+
+.welcome-container {
+  min-height: 100vh;
+  background: #F5F0E8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.welcome-content {
+  max-width: 800px;
+  width: 100%;
+  text-align: center;
+}
+
+.welcome-header {
+  margin-bottom: 3rem;
+}
+
+.welcome-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2E5640;
+  margin: 0 0 1rem 0;
+  line-height: 1.2;
+}
+
+.welcome-subtitle {
+  font-size: 1.25rem;
+  color: #5A7A65;
+  margin: 0;
+  font-weight: 400;
+}
+
+.welcome-options {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.welcome-option {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  background: white;
+  border: 2px solid rgba(46, 86, 64, 0.1);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  width: 100%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.welcome-option:hover:not(:disabled) {
+  border-color: #2E5640;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(46, 86, 64, 0.15);
+}
+
+.welcome-option:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.option-icon {
+  width: 60px;
+  height: 60px;
+  background: #2E5640;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.option-icon svg {
+  width: 32px;
+  height: 32px;
+  color: #F5E6D3;
+}
+
+.option-content {
+  flex: 1;
+}
+
+.option-content h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2E5640;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.3;
+}
+
+.option-content p {
+  font-size: 0.875rem;
+  color: #6B7280;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .welcome-container {
+    padding: 1.5rem 1rem;
+  }
+  
+  .welcome-header h1 {
+    font-size: 2rem;
+  }
+  
+  .welcome-subtitle {
+    font-size: 1.125rem;
+  }
+  
+  .welcome-option {
+    padding: 1.5rem;
+    gap: 1rem;
+  }
+  
+  .option-icon {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .option-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .option-content h3 {
+    font-size: 1.125rem;
+  }
+  
+  .option-content p {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .welcome-header h1 {
+    font-size: 1.75rem;
+  }
+  
+  .welcome-option {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .option-content {
+    text-align: center;
+  }
+}
