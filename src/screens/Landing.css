@@ -30,15 +30,23 @@
 }
 
 @media (max-width: 968px) {
+  .landing-container {
+    gap: 0; /* Remove any gap between logo and content */
+  }
+  
   .landing-content {
     grid-template-columns: 1fr;
-    gap: 2rem;
+    gap: 1rem;
     text-align: center;
-    margin-top: 1.5rem;
+    margin-top: -2rem; /* Pull content section up closer to logo */
   }
   
   .landing-logo {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0;
+    display: flex;
+    justify-content: center; /* Ensure perfect centering */
+    align-items: center;
+    margin-left: 1rem; /* Shift logo a hair more to the right */
   }
 }
 
@@ -95,12 +103,24 @@
 }
 
 @media (max-width: 768px) {
+  .landing-hero {
+    gap: 0.5rem; /* Minimal gap between sections */
+    padding-top: 0; /* Remove any top padding */
+  }
+  
+  .landing-tagline {
+    margin: 0; /* Remove all margins */
+    padding-top: 0; /* Remove any top padding */
+  }
+  
   .landing-tagline h2 {
-    font-size: 2.5rem;
+    font-size: 2rem;
+    margin: 0; /* Remove all margins */
+    padding: 0; /* Remove all padding */
   }
   
   .landing-tagline .tagline-subtitle {
-    font-size: 1.5rem;
+    font-size: 1.1rem;
   }
   
   .landing-tagline p {
@@ -108,7 +128,7 @@
   }
   
   .logo-image {
-    width: 220px;
+    width: 320px;
   }
 }
 
@@ -130,6 +150,7 @@
   border: 2px solid rgba(46, 86, 64, 0.1);
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
+  min-height: 5.5rem;
 }
 
 .feature-item:hover {
@@ -140,8 +161,25 @@
 }
 
 @media (max-width: 968px) {
-  .feature-item {
-    justify-content: center;
+  .landing-features {
+    align-items: center; /* Center the entire features container */
+    max-width: 100%; /* Allow full width on mobile */
+  }
+  
+  .landing-features .feature-item {
+    justify-content: flex-start;
+    text-align: left; /* Left align text within each feature */
+    max-width: 500px; /* Even wider to fit longer text on one line */
+    width: 100%;
+    padding: 0.75rem 1rem !important; /* Force smaller padding with !important */
+    min-height: 4rem; /* Consistent height for mobile */
+    align-items: center; /* Ensure vertical alignment */
+    margin-left: -0.25rem; /* Fine-tuned shift for equal spacing */
+  }
+  
+  .feature-item .feature-text {
+    font-size: 0.875rem !important; /* Much smaller for mobile with higher specificity */
+    white-space: nowrap; /* Prevent text wrapping */
   }
   
   .feature-item:hover {
@@ -160,12 +198,29 @@
   justify-content: center;
   min-width: 3.5rem;
   min-height: 3.5rem;
+  max-width: 3.5rem;
+  max-height: 3.5rem;
   box-shadow: 0 4px 6px rgba(46, 86, 64, 0.2);
+  flex-shrink: 0;
+}
+
+/* Force calendar icon alignment */
+.feature-item {
+  position: relative;
+}
+
+.feature-item:nth-child(2) .feature-icon {
+  position: absolute;
+  left: 1rem;
+}
+
+.feature-item:nth-child(2) .feature-text {
+  margin-left: 4.25rem; /* Fine-tuned alignment with other modules */
 }
 
 .feature-text {
   font-size: 1.125rem;
-  font-weight: 500;
+  font-weight: 400;
   color: #2E5640;
 }
 
@@ -451,6 +506,14 @@
   }
   
   .landing-tagline h2 {
-    font-size: 2rem;
+    font-size: 1.9rem; /* Smaller for very small screens */
+  }
+  
+  .landing-tagline .tagline-subtitle {
+    font-size: 1.2rem; /* Smaller subtitle for very small screens */
+  }
+  
+  .logo-image {
+    width: 300px; /* Still prominent but fits smaller screens */
   }
 }

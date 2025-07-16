@@ -243,7 +243,7 @@ function AppContent() {
 
   const currentPlayer = filteredPlayers[currentIndex];
 
-  const addAppNotification = (message, type = "match") => {
+  const addAppNotification = (message, type = "match", targetUser = null) => {
     const newNotification = {
       id: Date.now(),
       message,
@@ -253,7 +253,8 @@ function AppContent() {
         hour12: true 
       }),
       isRead: false,
-      type
+      type,
+      targetUser // Add target user to determine who should see this notification
     };
     setAppNotifications(prev => [newNotification, ...prev]);
     setUnreadNotificationCount(prev => prev + 1);
@@ -361,7 +362,7 @@ function AppContent() {
                 unreadChatCount={unreadChatCount}
               />
               <main className="main-content">
-                <Games />
+                <Games addAppNotification={addAppNotification} />
               </main>
             </div>
           </ProtectedRoute>

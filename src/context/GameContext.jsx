@@ -58,6 +58,38 @@ const mockGames = [
     createdAt: "2025-07-01T13:00:00Z",
     description: "All skill levels welcome! Fun and casual.",
     applicants: []
+  },
+  {
+    id: 5,
+    location: "Golden Gate Park Courts",
+    date: "2025-07-09",
+    time: "16:00",
+    skillLevel: "intermediate",
+    openSpots: 3,
+    totalSpots: 6,
+    createdBy: "Alex Thompson",
+    createdAt: "2025-07-02T10:00:00Z",
+    description: "Competitive doubles play. Looking for solid intermediate players.",
+    gameType: "doubles",
+    courtType: "outdoor",
+    duprRating: "3.5",
+    applicants: []
+  },
+  {
+    id: 6,
+    location: "Mission Bay Courts",
+    date: "2025-07-10",
+    time: "10:30",
+    skillLevel: "beginner",
+    openSpots: 2,
+    totalSpots: 4,
+    createdBy: "Alex Thompson",
+    createdAt: "2025-07-02T11:00:00Z",
+    description: "Beginner-friendly game. Perfect for learning the basics!",
+    gameType: "doubles",
+    courtType: "outdoor",
+    duprRating: "unrated",
+    applicants: []
   }
 ];
 
@@ -101,6 +133,61 @@ const mockApplications = [
     applicationDate: "2025-07-01T17:00:00Z",
     message: "Looking forward to some competitive play!",
     status: "accepted"
+  },
+  {
+    id: 5,
+    gameId: 5,
+    playerId: "user-5",
+    playerName: "Sarah Martinez",
+    playerSkill: "Intermediate",
+    applicationDate: "2025-07-02T12:00:00Z",
+    message: "I'm available for the doubles game! I've been playing for 3 years and love competitive play.",
+    status: "pending",
+    playerCount: 1
+  },
+  {
+    id: 6,
+    gameId: 5,
+    playerId: "user-6",
+    playerName: "Michael Johnson",
+    playerSkill: "Intermediate",
+    applicationDate: "2025-07-02T13:30:00Z",
+    message: "My partner and I would love to join! We're both intermediate level players.",
+    status: "pending",
+    playerCount: 2
+  },
+  {
+    id: 7,
+    gameId: 5,
+    playerId: "user-7",
+    playerName: "Jennifer Lee",
+    playerSkill: "Advanced",
+    applicationDate: "2025-07-02T14:15:00Z",
+    message: "I know you're looking for intermediate players, but I promise to go easy! 😊",
+    status: "pending",
+    playerCount: 1
+  },
+  {
+    id: 8,
+    gameId: 6,
+    playerId: "user-8",
+    playerName: "David Wilson",
+    playerSkill: "Beginner",
+    applicationDate: "2025-07-02T15:00:00Z",
+    message: "Just started playing last month. Would love to join a beginner game!",
+    status: "pending",
+    playerCount: 1
+  },
+  {
+    id: 9,
+    gameId: 6,
+    playerId: "user-9",
+    playerName: "Lisa Chen",
+    playerSkill: "Beginner",
+    applicationDate: "2025-07-02T16:45:00Z",
+    message: "New to pickleball but very excited to learn and play!",
+    status: "pending",
+    playerCount: 1
   }
 ];
 
@@ -134,7 +221,7 @@ export const GameProvider = ({ children }) => {
       gameName: 'Jessica Martinez',
       participants: ['Alex Thompson', 'Jessica Martinez'],
       createdAt: new Date().toISOString(),
-      lastMessage: 'Looking forward to our game tomorrow! 🏓',
+      lastMessage: 'Looking forward to our game tomorrow!',
       lastMessageTime: new Date().toISOString()
     },
     {
@@ -162,7 +249,7 @@ export const GameProvider = ({ children }) => {
       id: 1,
       from: 'Jessica Martinez',
       to: 'Alex Thompson',
-      message: 'Looking forward to our game tomorrow! 🏓',
+      message: 'Looking forward to our game tomorrow!',
       timestamp: new Date().toISOString(),
       read: false
     }
@@ -233,7 +320,7 @@ export const GameProvider = ({ children }) => {
         setGames(prev =>
           prev.map(game =>
             game.id === application.gameId
-              ? { ...game, openSpots: Math.max(0, game.openSpots - 1) }
+              ? { ...game, openSpots: Math.max(0, game.openSpots - (application.playerCount || 1)) }
               : game
           )
         );

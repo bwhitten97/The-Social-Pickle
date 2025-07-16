@@ -294,7 +294,7 @@ const DirectMessageChat = ({ chat, onClose, onSendMessage, onDeleteChat, onShowN
 };
 
 const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead }) => {
-  const { getUserChatRooms, getConversation, sendMessage, currentUserName, deleteChat } = useGameContext();
+  const { getUserChatRooms, getConversation, sendMessage, currentUserName, deleteChat, getMessages } = useGameContext();
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [selectedChatName, setSelectedChatName] = useState(null);
   const [activeTab, setActiveTab] = useState('chat');
@@ -326,8 +326,13 @@ const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead
     }
   ];
   
-  // Combine appNotifications (from swipes/matches) with default notifications
-  const notifications = [...appNotifications, ...defaultNotifications];
+  // Filter appNotifications to only show ones for current user or general notifications
+  const userNotifications = appNotifications.filter(notification => 
+    !notification.targetUser || notification.targetUser === currentUserName
+  );
+  
+  // Combine filtered appNotifications with default notifications
+  const notifications = [...userNotifications, ...defaultNotifications];
   
   const userChatRooms = getUserChatRooms();
 
@@ -398,7 +403,9 @@ const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead
       userChatRooms.forEach(room => {
         const chatId = room.gameId || room.id;
         if (chatUnreadCounts[chatId] === undefined) {
-          newUnreadCounts[chatId] = 1; // Default to 1 unread for new chats
+          // For new chat rooms, don't automatically set unread count
+          // Let the user interaction determine if there are unread messages
+          newUnreadCounts[chatId] = 0;
         }
       });
       

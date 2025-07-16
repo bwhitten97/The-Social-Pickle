@@ -487,16 +487,18 @@ const Onboarding = () => {
                   </button>
                 </div>
               ) : (
-                <div 
-                  className="photo-upload-placeholder"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <div className="upload-icon">📷</div>
-                  <div className="upload-text">
-                    <div>Add a photo</div>
-                    <div className="upload-subtext">Tap to select from your device</div>
+                <>
+                  <div 
+                    className="photo-upload-placeholder"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <div className="upload-icon">📷</div>
+                    <div className="upload-text">
+                      <div>Add a photo</div>
+                    </div>
                   </div>
-                </div>
+                  <div className="upload-subtext-below">Tap to select from your device</div>
+                </>
               )}
               
               <input

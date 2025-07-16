@@ -113,9 +113,13 @@ export const AuthProvider = ({ children }) => {
 
   const signUp = async (email, password, additionalData = {}) => {
     try {
+      console.log('SignUp: Starting account creation for:', email);
+      console.log('SignUp: Additional data:', additionalData);
+      
       // Create user account
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
+      console.log('SignUp: Firebase user created successfully:', firebaseUser.uid);
       
       // Skip profile picture upload for now (requires Blaze plan)
       let profilePictureUrl = additionalData.profilePictureUrl || '';
@@ -132,6 +136,7 @@ export const AuthProvider = ({ children }) => {
       // }
       
       // Update Firebase Auth profile
+      console.log('SignUp: Updating Firebase Auth profile...');
       await updateProfile(firebaseUser, {
         displayName: additionalData.name || '',
         photoURL: profilePictureUrl || additionalData.profilePictureUrl || ''
@@ -146,16 +151,21 @@ export const AuthProvider = ({ children }) => {
         duprRating: additionalData.duprRating || '',
         availability: additionalData.availability || [],
         profilePicture: profilePictureUrl || additionalData.profilePictureUrl || '',
+        bio: additionalData.bio || '',
         profileComplete: true,
         createdAt: new Date(),
         updatedAt: new Date()
       };
       
+      console.log('SignUp: Saving user data to Firestore:', userData);
       await setDoc(doc(db, 'users', firebaseUser.uid), userData);
+      console.log('SignUp: User data saved successfully');
       
       return { success: true, user: firebaseUser };
     } catch (error) {
       console.error('Sign up error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
       
       // Provide user-friendly error messages
       let errorMessage = 'Account creation failed';
@@ -165,6 +175,8 @@ export const AuthProvider = ({ children }) => {
         errorMessage = 'Password is too weak';
       } else if (error.code === 'auth/invalid-email') {
         errorMessage = 'Invalid email address';
+      } else if (error.code === 'permission-denied') {
+        errorMessage = 'Database access denied. Please check Firebase rules.';
       }
       
       return { success: false, error: errorMessage };

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import LocationSelector from '../components/LocationSelector';
 import ImageUpload from '../components/ImageUpload';
 import Notification from '../components/Notification';
 import './Profile.css';
@@ -53,11 +52,8 @@ const Profile = () => {
     duprRating: user?.duprRating || '3.5',
     gender: user?.gender || 'prefer-not-to-say',
     age: user?.age || '28',
-    playStyle: user?.playStyle || 'both',
-    location: user?.location || 'San Francisco, CA',
     bio: user?.bio || 'Passionate pickleball player who loves meeting new people and improving my game. Available most weekends!',
     availability: user?.availability || ['weekends', 'weeknights'],
-    playingExperience: user?.playingExperience || '2 years'
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -293,19 +289,6 @@ const Profile = () => {
                     <div className="field-value">{profile.phone}</div>
                   )}
                 </div>
-                <div className="form-field">
-                  <label className="field-label">Location</label>
-                  {isEditing ? (
-                    <LocationSelector
-                      value={profile.location}
-                      onChange={(value) => handleInputChange({ target: { name: 'location', value } })}
-                      className="field-input"
-                      placeholder="Enter your location"
-                    />
-                  ) : (
-                    <div className="field-value">{profile.location}</div>
-                  )}
-                </div>
               </div>
             </div>
 
@@ -406,23 +389,6 @@ const Profile = () => {
                     <div className="field-value">{profile.duprRating}</div>
                   )}
                 </div>
-                <div className="form-field">
-                  <label className="field-label">Play Style</label>
-                  {isEditing ? (
-                    <select
-                      name="playStyle"
-                      value={profile.playStyle}
-                      onChange={handleInputChange}
-                      className="field-select"
-                    >
-                      <option value="competitive">Competitive</option>
-                      <option value="casual">Casual</option>
-                      <option value="both">Both</option>
-                    </select>
-                  ) : (
-                    <div className="field-value">{profile.playStyle}</div>
-                  )}
-                </div>
                 <div className="form-field form-field-full">
                   <label className="field-label">Availability</label>
                   {isEditing ? (
@@ -433,21 +399,6 @@ const Profile = () => {
                   ) : (
                     <div className="field-value">{profile.availability.join(', ')}</div>
                   )}
-                </div>
-                <div className="form-field form-field-full">
-                  <label className="field-label">Playing Experience</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="playingExperience"
-                    value={profile.playingExperience}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 2 years, 6 months"
-                      className="field-input"
-                  />
-                ) : (
-                    <div className="field-value">{profile.playingExperience}</div>
-                )}
                 </div>
               </div>
             </div>

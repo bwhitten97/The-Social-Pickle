@@ -17,8 +17,7 @@ const Discover = ({
     gender: 'any',
     playStyle: 'any',
     ageRange: { min: 18, max: 100 },
-    availability: [],
-    distance: 50
+    availability: []
   });
   
   const filters = ['All', 'Quick Match'];
@@ -75,8 +74,7 @@ const Discover = ({
       gender: 'any',
       playStyle: 'any',
       ageRange: { min: 18, max: 100 },
-      availability: [],
-      distance: 50
+      availability: []
     });
   };
 
@@ -226,23 +224,15 @@ const Discover = ({
                 </div>
               </div>
 
-              {/* Distance */}
-              <div className="filter-group">
-                <label className="filter-label">Distance</label>
-                <div className="distance-slider-container">
-                  <input
-                    type="range"
-                    min="1"
-                    max="100"
-                    value={advancedFilters.distance}
-                    onChange={(e) => handleAdvancedFilterChange('distance', parseInt(e.target.value))}
-                    className="distance-slider"
-                  />
-                  <div className="distance-value">
-                    {advancedFilters.distance} {advancedFilters.distance === 1 ? 'mile' : 'miles'}
-                  </div>
-                </div>
-              </div>
+            </div>
+            
+            <div className="discover-filter-apply">
+              <button 
+                className="discover-apply-btn"
+                onClick={() => setShowAdvancedFilters(false)}
+              >
+                Apply Filters
+              </button>
             </div>
           </div>
         )}

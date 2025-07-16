@@ -5,7 +5,7 @@ import TimePicker from '../components/TimePicker';
 import Notification from '../components/Notification';
 import './Games.css';
 
-const Games = () => {
+const Games = ({ addAppNotification }) => {
   const { 
     games, 
     applications, 
@@ -16,7 +16,9 @@ const Games = () => {
     withdrawApplication: withdrawApplicationContext,
     getUserApplications,
     getGameApplications,
-    hasUserApplied
+    hasUserApplied,
+    updateApplicationStatus,
+    sendMessage
   } = useGameContext();
   
   const [showPostForm, setShowPostForm] = useState(false);
@@ -26,7 +28,10 @@ const Games = () => {
   const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
   const [withdrawData, setWithdrawData] = useState(null);
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [showManageModal, setShowManageModal] = useState(false);
   const [selectedGame, setSelectedGame] = useState(null);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageData, setMessageData] = useState({ recipientName: '', message: '' });
   const [requestData, setRequestData] = useState({
     playerCount: 1,
     message: ''
@@ -38,14 +43,12 @@ const Games = () => {
     skillLevel: 'beginner',
     duprRating: 'unrated',
     gameType: 'doubles',
-    courtType: 'outdoor',
     openSpots: 4,
     description: ''
   });
 
   // Filter state
   const [filters, setFilters] = useState({
-    distance: 25, // miles
     date: '',
     timeSlot: 'all', // all, morning, afternoon, evening
     skillLevel: 'all', // all, beginner, intermediate, advanced
@@ -114,7 +117,6 @@ const Games = () => {
   // Clear filters function
   const clearFilters = () => {
     setFilters({
-      distance: 25,
       date: '',
       timeSlot: 'all',
       skillLevel: 'all',
@@ -154,7 +156,7 @@ const Games = () => {
   };
 
   const getApplicationCount = (gameId) => {
-    return applications.filter(app => app.gameId === gameId).length;
+    return applications.filter(app => app.gameId === gameId && app.status === 'pending').length;
   };
 
   const hasApplied = (gameId) => {
@@ -171,7 +173,10 @@ const Games = () => {
     }
     
     // Add the game using context
-    addGame(newGame);
+    addGame({
+      ...newGame,
+      totalSpots: newGame.openSpots
+    });
     
     // Reset form and close modal
     setShowPostForm(false);
@@ -182,7 +187,6 @@ const Games = () => {
       skillLevel: 'beginner',
       duprRating: 'unrated',
       gameType: 'doubles',
-      courtType: 'outdoor',
       openSpots: 4,
       description: ''
     });
@@ -204,6 +208,15 @@ const Games = () => {
     const result = requestToJoinGame(selectedGame.id, message);
     
     if (result.success) {
+      // Send notification to the game host
+      if (addAppNotification && selectedGame) {
+        addAppNotification(
+          `${currentUserName} has applied to join your game "${selectedGame.location}" on ${formatDate(selectedGame.date)}.`,
+          "application",
+          selectedGame.createdBy
+        );
+      }
+      
       setNotification({
         message: 'Application submitted successfully!',
         name: selectedGame.createdBy || 'Game Host',
@@ -242,6 +255,98 @@ const Games = () => {
     };
     
     setSelectedProfile(mockProfile);
+  };
+
+  const handleViewApplicantProfile = (application) => {
+    // Create a profile object with the applicant's information
+    const applicantProfile = {
+      name: application.playerName,
+      avatar: getHostAvatar(application.playerName),
+      age: Math.floor(Math.random() * 30) + 20, // Random age between 20-50
+      skillLevel: application.playerSkill,
+      availability: 'Flexible',
+      distance: `${(Math.random() * 15).toFixed(1)} miles away`,
+      experience: `${Math.floor(Math.random() * 5) + 1} years experience`,
+      bio: application.message || `Hi! I'm ${application.playerName}. Looking forward to playing pickleball with you!`
+    };
+    
+    // Show the profile modal on top of the manage applications modal
+    setSelectedProfile(applicantProfile);
+  };
+
+  const handleManageApplications = (game) => {
+    setSelectedGame(game);
+    setShowManageModal(true);
+  };
+
+  const handleAcceptApplication = (applicationId) => {
+    const application = applications.find(app => app.id === applicationId);
+    const game = games.find(g => g.id === application.gameId);
+    
+    updateApplicationStatus(applicationId, 'accepted');
+    
+    // Send notification to the applicant
+    if (addAppNotification && application && game) {
+      addAppNotification(
+        `Your application to join "${game.location}" on ${formatDate(game.date)} has been accepted!`,
+        "application",
+        application.playerName
+      );
+    }
+    
+    setNotification({
+      message: "Application accepted successfully!",
+      name: "Application Accepted",
+      emoji: "✅"
+    });
+  };
+
+  const handleRejectApplication = (applicationId) => {
+    const application = applications.find(app => app.id === applicationId);
+    const game = games.find(g => g.id === application.gameId);
+    
+    updateApplicationStatus(applicationId, 'rejected');
+    
+    // Send notification to the applicant
+    if (addAppNotification && application && game) {
+      addAppNotification(
+        `Your application to join "${game.location}" on ${formatDate(game.date)} has been declined.`,
+        "application",
+        application.playerName
+      );
+    }
+    
+    setNotification({
+      message: "Application rejected.",
+      name: "Application Rejected", 
+      emoji: "❌"
+    });
+  };
+
+  const handleMessageApplicant = (applicantName) => {
+    setMessageData({ recipientName: applicantName, message: '' });
+    setShowMessageModal(true);
+  };
+
+  const handleSendMessage = () => {
+    const messageText = messageData.message.trim();
+    if (!messageText) return;
+
+    const result = sendMessage(messageData.recipientName, messageText);
+    if (result.success) {
+      setNotification({
+        message: `Message sent to ${messageData.recipientName}!`,
+        name: "Message Sent",
+        emoji: "💬"
+      });
+      setShowMessageModal(false);
+      setMessageData({ recipientName: '', message: '' });
+    }
+  };
+
+  const closeMessageModal = () => {
+    setShowMessageModal(false);
+    setMessageData({ recipientName: '', message: '' });
   };
 
   const closeProfileModal = () => {
@@ -311,6 +416,10 @@ const Games = () => {
     }
   };
 
+  const capitalizeSkillLevel = (level) => {
+    return level.charAt(0).toUpperCase() + level.slice(1).toLowerCase();
+  };
+
   return (
     <div className="games-container">
       <main className="games-main">
@@ -334,7 +443,7 @@ const Games = () => {
                   className={`games-nav-btn ${activeTab === 'find' ? 'active' : ''}`}
                   onClick={() => setActiveTab('find')}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="10" cy="10" r="7"></circle>
                     <path d="m21 21-4.35-4.35"></path>
                   </svg>
@@ -345,27 +454,29 @@ const Games = () => {
                   className={`games-nav-btn ${activeTab === 'mygames' ? 'active' : ''}`}
                   onClick={() => setActiveTab('mygames')}
                 >
-                  Games ({myGames.length})
+                  My Games ({myGames.length})
                 </button>
                 
                 <button 
                   className={`games-nav-btn ${activeTab === 'requests' ? 'active' : ''}`}
                   onClick={() => setActiveTab('requests')}
                 >
-                  Requests ({myApplications.length})
+                  My Requests ({myApplications.length})
                 </button>
               </div>
 
-              <button 
-                className="games-post-btn"
-                onClick={() => setShowPostForm(true)}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                Post a Game
-              </button>
+              {activeTab === 'find' && (
+                <button 
+                  className="games-post-btn"
+                  onClick={() => setShowPostForm(true)}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  Post a Game
+                </button>
+              )}
             </div>
           </section>
 
@@ -394,6 +505,14 @@ const Games = () => {
 
               {showFilters && (
                 <div className="games-filter-panel">
+                  {/* Filter Header */}
+                  <div className="games-filter-panel-header">
+                    <h3 className="games-filter-panel-title">Filters</h3>
+                    <button className="games-clear-filters-btn" onClick={clearFilters}>
+                      Clear All
+                    </button>
+                  </div>
+                  
                   <div className="games-filter-grid">
                     {/* Date Filter */}
                     <div className="games-filter-group">
@@ -418,19 +537,6 @@ const Games = () => {
                         <option value="afternoon">Afternoon (12 PM - 5 PM)</option>
                         <option value="evening">Evening (5 PM - 11 PM)</option>
                       </select>
-                    </div>
-
-                    {/* Distance Filter */}
-                    <div className="games-filter-group">
-                      <label className="games-filter-label">Distance: {filters.distance} miles</label>
-                      <input
-                        type="range"
-                        min="1"
-                        max="50"
-                        value={filters.distance}
-                        onChange={(e) => setFilters(prev => ({ ...prev, distance: parseInt(e.target.value) }))}
-                        className="games-filter-range"
-                      />
                     </div>
 
                     {/* Players Needed Filter */}
@@ -503,6 +609,13 @@ const Games = () => {
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Apply Filters Button */}
+                  <div className="games-filter-actions-bottom">
+                    <button className="games-apply-filters-btn" onClick={() => setShowFilters(false)}>
+                      Apply Filters
+                    </button>
+                  </div>
                 </div>
               )}
             </section>
@@ -521,7 +634,7 @@ const Games = () => {
               const skillColors = getSkillLevelColor(game.skillLevel);
               const hasApplied = hasUserApplied(game.id);
               const applicationCount = getApplicationCount(game.id);
-              const occupiedSpots = 4 - game.openSpots; // Assuming max 4 players
+              const occupiedSpots = (game.totalSpots || 4) - game.openSpots;
               
               return (
                 <article key={game.id} className="games-card">
@@ -555,14 +668,13 @@ const Games = () => {
                         <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
                         <circle cx="9" cy="7" r="4"></circle>
                       </svg>
-                      {occupiedSpots} / 4 players • {game.openSpots} spots left
+                      {occupiedSpots} / {game.totalSpots || 4} players • {game.openSpots} spots left
                     </div>
 
                     {/* Tags */}
                     <div className="games-details-row">
                       <span className="games-type-badge">{game.gameType || 'Doubles'}</span>
-                      <span className="games-type-badge">{game.courtType || 'Outdoor'}</span>
-                      <span className="games-type-badge">{game.skillLevel}</span>
+                      <span className="games-type-badge">{capitalizeSkillLevel(game.skillLevel)}</span>
                       {game.duprRating && game.duprRating !== 'unrated' && (
                         <span className="games-type-badge">DUPR {game.duprRating}+</span>
                       )}
@@ -615,17 +727,20 @@ const Games = () => {
                 myGames.map((game) => {
                   const skillColors = getSkillLevelColor(game.skillLevel);
                   const applicationCount = getApplicationCount(game.id);
-                  const occupiedSpots = 4 - game.openSpots;
+                  const occupiedSpots = (game.totalSpots || 4) - game.openSpots;
                   
                   return (
                     <article key={game.id} className="games-card">
-                      <h3 className="games-card-title">{game.location}</h3>
+                      <h3 className="games-card-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-card-location-icon">
+                          <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path>
+                          <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        {game.location}
+                      </h3>
 
                       <div className="games-card-content">
-                        <div className="games-host-row">
-                          <span className="games-host-name">{game.createdBy} (You)</span>
-                        </div>
-
+                        {/* Time */}
                         <div className="games-datetime">
                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-datetime-icon">
                             <path d="M16 14v2.2l1.6 1"></path>
@@ -638,29 +753,24 @@ const Games = () => {
                           {formatDate(game.date)} • {formatTime(game.time)}
                         </div>
 
-                        <div className="games-location">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-location-icon">
-                            <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path>
-                            <circle cx="12" cy="10" r="3"></circle>
+                        {/* Players */}
+                        <div className="games-players">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-players-icon">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                            <path d="M16 3.128a4 4 0 0 1 0 7.744"></path>
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
                           </svg>
-                          {game.location}
+                          {occupiedSpots} / 4 players • {applicationCount} applications
                         </div>
 
+                        {/* Tags */}
                         <div className="games-details-row">
                           <span className="games-type-badge">{game.gameType || 'Doubles'}</span>
-                          <span className="games-type-badge">{game.courtType || 'Outdoor'}</span>
+                          <span className="games-type-badge">{capitalizeSkillLevel(game.skillLevel)}</span>
                           {game.duprRating && game.duprRating !== 'unrated' && (
                             <span className="games-type-badge">DUPR {game.duprRating}+</span>
                           )}
-                          <div className="games-players">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-players-icon">
-                              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                              <path d="M16 3.128a4 4 0 0 1 0 7.744"></path>
-                              <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                              <circle cx="9" cy="7" r="4"></circle>
-                            </svg>
-                            {occupiedSpots} / 4 players • {applicationCount} applications
-                          </div>
                         </div>
 
                         {game.description && (
@@ -672,7 +782,7 @@ const Games = () => {
 
                       <button 
                         className="games-join-btn"
-                        onClick={() => alert('Manage game applications (feature coming soon)')}
+                        onClick={() => handleManageApplications(game)}
                       >
                         Manage Applications ({applicationCount})
                       </button>
@@ -697,6 +807,7 @@ const Games = () => {
                   const skillColors = getSkillLevelColor(game.skillLevel);
                   const statusColor = application.status === 'accepted' ? '#3E5D45' : 
                                     application.status === 'rejected' ? '#F25C5C' : '#F39C12';
+                  const occupiedSpots = (game.totalSpots || 4) - game.openSpots;
                   
                   return (
                     <article key={application.id} className="games-card">
@@ -722,10 +833,21 @@ const Games = () => {
                           {formatDate(game.date)} • {formatTime(game.time)}
                         </div>
 
+                        {/* Players */}
+                        <div className="games-players">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-players-icon">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                            <path d="M16 3.128a4 4 0 0 1 0 7.744"></path>
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                          </svg>
+                          {occupiedSpots} / {game.totalSpots || 4} players • {game.openSpots} spots left
+                        </div>
+
+                        {/* Tags */}
                         <div className="games-details-row">
                           <span className="games-type-badge">{game.gameType || 'Doubles'}</span>
-                          <span className="games-type-badge">{game.courtType || 'Outdoor'}</span>
-                          <span className="games-type-badge">{game.skillLevel}</span>
+                          <span className="games-type-badge">{capitalizeSkillLevel(game.skillLevel)}</span>
                           {game.duprRating && game.duprRating !== 'unrated' && (
                             <span className="games-type-badge">DUPR {game.duprRating}+</span>
                           )}
@@ -756,6 +878,15 @@ const Games = () => {
                           onClick={() => handleWithdrawClick(application, game)}
                         >
                           Withdraw Application
+                        </button>
+                      )}
+
+                      {application.status === 'accepted' && (
+                        <button 
+                          className="games-message-btn"
+                          onClick={() => handleMessageApplicant(game.createdBy)}
+                        >
+                          Message Host
                         </button>
                       )}
 
@@ -843,18 +974,6 @@ const Games = () => {
                   </select>
                 </div>
                 
-                <div className="games-form-group">
-                  <label>Court Type</label>
-                  <select
-                    value={newGame.courtType}
-                    onChange={(e) => setNewGame({...newGame, courtType: e.target.value})}
-                    className="games-form-select"
-                  >
-                    <option value="outdoor">Outdoor</option>
-                    <option value="indoor">Indoor</option>
-                    <option value="either">Either</option>
-                  </select>
-                </div>
               </div>
               
               <div className="games-form-row">
@@ -904,6 +1023,14 @@ const Games = () => {
                   <option value={2}>2 Players</option>
                   <option value={3}>3 Players</option>
                   <option value={4}>4 Players</option>
+                  <option value={5}>5 Players</option>
+                  <option value={6}>6 Players</option>
+                  <option value={7}>7 Players</option>
+                  <option value={8}>8 Players</option>
+                  <option value={9}>9 Players</option>
+                  <option value={10}>10 Players</option>
+                  <option value={11}>11 Players</option>
+                  <option value={12}>12 Players</option>
                 </select>
               </div>
               
@@ -937,7 +1064,7 @@ const Games = () => {
 
       {/* Profile Modal */}
       {selectedProfile && (
-        <div className="games-modal-overlay" onClick={closeProfileModal}>
+        <div className="games-modal-overlay games-profile-modal-overlay" onClick={closeProfileModal}>
           <div className="games-modal" onClick={(e) => e.stopPropagation()}>
             <div className="games-modal-header">
               <h2>Player Profile</h2>
@@ -1038,7 +1165,6 @@ const Games = () => {
                   
                   <div className="games-request-badges">
                     <span className="games-type-badge">{selectedGame.gameType || 'Doubles'}</span>
-                    <span className="games-type-badge">{selectedGame.courtType || 'Outdoor'}</span>
                     <span className="games-type-badge">{selectedGame.skillLevel}</span>
                     {selectedGame.duprRating && selectedGame.duprRating !== 'unrated' && (
                       <span className="games-type-badge">DUPR {selectedGame.duprRating}+</span>
@@ -1063,6 +1189,14 @@ const Games = () => {
                   <option value={2}>2 Players</option>
                   <option value={3}>3 Players</option>
                   <option value={4}>4 Players</option>
+                  <option value={5}>5 Players</option>
+                  <option value={6}>6 Players</option>
+                  <option value={7}>7 Players</option>
+                  <option value={8}>8 Players</option>
+                  <option value={9}>9 Players</option>
+                  <option value={10}>10 Players</option>
+                  <option value={11}>11 Players</option>
+                  <option value={12}>12 Players</option>
                 </select>
               </div>
               
@@ -1096,6 +1230,158 @@ const Games = () => {
                 >
                   Send Request
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manage Applications Modal */}
+      {showManageModal && selectedGame && (
+        <div className="games-modal-overlay" onClick={() => setShowManageModal(false)}>
+          <div className="games-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="games-modal-header">
+              <h2>Manage Applications</h2>
+              <button className="games-close-btn" onClick={() => setShowManageModal(false)}>
+                ×
+              </button>
+            </div>
+            <div className="games-form">
+              <div className="games-request-game-info">
+                <h3 className="games-request-game-title">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                  </svg>
+                  {selectedGame.location}
+                </h3>
+                <div className="games-request-game-details">
+                  <div className="games-request-badges">
+                    <span className="games-type-badge">{selectedGame.gameType || 'Doubles'}</span>
+                    <span className="games-type-badge">{capitalizeSkillLevel(selectedGame.skillLevel)}</span>
+                  </div>
+                  <p className="games-request-host">
+                    <strong>Date:</strong> {formatDate(selectedGame.date)} at {formatTime(selectedGame.time)}
+                  </p>
+                  <p className="games-request-host">
+                    <strong>Open Spots:</strong> {selectedGame.openSpots} / {selectedGame.totalSpots || 4}
+                  </p>
+                </div>
+              </div>
+
+              <div className="games-applications-list">
+                {getGameApplications(selectedGame.id).length > 0 ? (
+                  getGameApplications(selectedGame.id).map((application) => (
+                    <div key={application.id} className="games-application-item">
+                      <div className="games-application-info">
+                        <div className="games-application-header">
+                          <span className="games-application-player">{application.playerName}</span>
+                          <span className="games-application-date">
+                            Applied {formatDate(application.applicationDate)}
+                          </span>
+                        </div>
+                        {application.message && (
+                          <p className="games-application-message">"{application.message}"</p>
+                        )}
+                        <div className="games-application-details">
+                          <span>Players: {application.playerCount}</span>
+                        </div>
+                      </div>
+                      <div className="games-application-actions">
+                        <button 
+                          className="games-view-profile-btn"
+                          onClick={() => handleViewApplicantProfile(application)}
+                        >
+                          View Profile
+                        </button>
+                        {application.status === 'pending' && (
+                          <>
+                            <button 
+                              className="games-accept-btn"
+                              onClick={() => handleAcceptApplication(application.id)}
+                            >
+                              Accept
+                            </button>
+                            <button 
+                              className="games-reject-btn"
+                              onClick={() => handleRejectApplication(application.id)}
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                        {application.status === 'accepted' && (
+                          <>
+                            <button 
+                              className="games-accept-btn"
+                              disabled
+                            >
+                              Accepted
+                            </button>
+                            <button 
+                              className="games-message-btn"
+                              onClick={() => handleMessageApplicant(application.playerName)}
+                            >
+                              Message
+                            </button>
+                          </>
+                        )}
+                        {application.status === 'rejected' && (
+                          <button 
+                            className="games-reject-btn"
+                            disabled
+                          >
+                            Rejected
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="games-no-applications">
+                    <p>No applications for this game.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Message Modal */}
+      {showMessageModal && (
+        <div className="games-modal-overlay" onClick={closeMessageModal}>
+          <div className="games-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="games-modal-header">
+              <h2>Send Message to {messageData.recipientName}</h2>
+              <button className="games-close-btn" onClick={closeMessageModal}>
+                ✕
+              </button>
+            </div>
+            <div className="games-form">
+              <div className="games-message-form">
+                <textarea
+                  value={messageData.message}
+                  onChange={(e) => setMessageData({ ...messageData, message: e.target.value })}
+                  placeholder="Type your message here..."
+                  className="games-message-input"
+                  rows="4"
+                />
+                <div className="games-message-actions">
+                  <button 
+                    className="games-btn games-btn-secondary"
+                    onClick={closeMessageModal}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    className="games-btn games-btn-primary"
+                    onClick={handleSendMessage}
+                    disabled={!messageData.message.trim()}
+                  >
+                    Send Message
+                  </button>
+                </div>
               </div>
             </div>
           </div>

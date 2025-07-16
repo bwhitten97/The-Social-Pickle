@@ -151,7 +151,7 @@ const ChatRoom = ({ gameId, onClose }) => {
           ←
         </button>
         <div className="chat-avatar">
-          🏓
+          🏟️
         </div>
         <div className="chat-details">
           <h3>{game.location}</h3>

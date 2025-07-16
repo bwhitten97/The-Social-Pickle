@@ -364,12 +364,13 @@
 .upload-text > div:first-child {
   font-size: 1.125rem;
   font-weight: 500;
-  margin-bottom: 0.25rem;
 }
 
-.upload-subtext {
+.upload-subtext-below {
   font-size: 0.875rem;
   color: rgba(44, 62, 80, 0.6);
+  text-align: center;
+  margin-top: 0.5rem;
 }
 
 .photo-preview {

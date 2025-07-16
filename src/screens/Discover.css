@@ -364,6 +364,32 @@
   border-radius: 0.25rem;
 }
 
+/* Apply Filters Button */
+.discover-filter-apply {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.discover-apply-btn {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  background: #3E5D45;
+  color: #F5EEDC;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.discover-apply-btn:hover {
+  background: #2C4A33;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(62, 93, 69, 0.3);
+}
+
 @media (max-width: 768px) {
   .advanced-filter-grid {
     grid-template-columns: 1fr;
@@ -371,5 +397,15 @@
   
   .discover-advanced-filters {
     padding: 1rem;
+  }
+  
+  .discover-filter-apply {
+    margin-top: 1rem;
+    padding-top: 1rem;
+  }
+  
+  .discover-apply-btn {
+    padding: 0.8rem 1rem;
+    font-size: 0.85rem;
   }
 }

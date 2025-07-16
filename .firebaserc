@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "the-social-pickle-6be90"
-  }
+  },
+  "targets": {
+    "the-social-pickle-6be90": {
+      "hosting": {
+        "production": [
+          "thesocialpickle"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
