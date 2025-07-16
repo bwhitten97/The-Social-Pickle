@@ -338,75 +338,58 @@ const Games = () => {
                     <circle cx="10" cy="10" r="7"></circle>
                     <path d="m21 21-4.35-4.35"></path>
                   </svg>
-                  Find a Game
+                  Find
                 </button>
                 
                 <button 
                   className={`games-nav-btn ${activeTab === 'mygames' ? 'active' : ''}`}
                   onClick={() => setActiveTab('mygames')}
                 >
-                  My Games ({myGames.length})
+                  Games ({myGames.length})
                 </button>
                 
                 <button 
                   className={`games-nav-btn ${activeTab === 'requests' ? 'active' : ''}`}
                   onClick={() => setActiveTab('requests')}
                 >
-                  My Requests ({myApplications.length})
+                  Requests ({myApplications.length})
                 </button>
               </div>
 
-          <button 
+              <button 
                 className="games-post-btn"
-            onClick={() => setShowPostForm(true)}
-          >
+                onClick={() => setShowPostForm(true)}
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
                 Post a Game
-          </button>
-        </div>
+              </button>
+            </div>
           </section>
 
           {/* Filter Panel - Only show on Find a Game tab */}
           {activeTab === 'find' && (
             <section className="games-filter-section">
               <div className="games-filter-header">
-                <h3 className="games-filter-title">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
+                <button 
+                  className="games-filter-toggle"
+                  onClick={() => setShowFilters(!showFilters)}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="4" y1="21" x2="4" y2="14"></line>
+                    <line x1="4" y1="10" x2="4" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12" y2="3"></line>
+                    <line x1="20" y1="21" x2="20" y2="16"></line>
+                    <line x1="20" y1="12" x2="20" y2="3"></line>
+                    <line x1="1" y1="14" x2="7" y2="14"></line>
+                    <line x1="9" y1="8" x2="15" y2="8"></line>
+                    <line x1="17" y1="16" x2="23" y2="16"></line>
                   </svg>
-                  Filters
-                </h3>
-                <div className="games-filter-actions">
-                  <button 
-                    className="games-filter-clear"
-                    onClick={clearFilters}
-                  >
-                    Clear All
-                  </button>
-                  <button 
-                    className="games-filter-toggle"
-                    onClick={() => setShowFilters(!showFilters)}
-                  >
-                    {showFilters ? 'Hide' : 'Show'} Filters
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      width="16" 
-                      height="16" 
-                      viewBox="0 0 24 24"
-                      fill="none" 
-                      stroke="currentColor" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round"
-                      style={{ transform: showFilters ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s' }}
-                    >
-                      <path d="m6 9 6 6 6-6"></path>
-                    </svg>
-                  </button>
-                </div>
+                  {showFilters ? 'Hide' : 'Show'} Filters
+                </button>
               </div>
 
               {showFilters && (
@@ -551,7 +534,7 @@ const Games = () => {
                   </h3>
 
                   <div className="games-card-content">
-                    {/* Date/Time - moved to line 2 */}
+                    {/* Time */}
                     <div className="games-datetime">
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-datetime-icon">
                         <path d="M16 14v2.2l1.6 1"></path>
@@ -564,6 +547,18 @@ const Games = () => {
                       {formatDate(game.date)} • {formatTime(game.time)}
                     </div>
 
+                    {/* Players */}
+                    <div className="games-players">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-players-icon">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                        <path d="M16 3.128a4 4 0 0 1 0 7.744"></path>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                      </svg>
+                      {occupiedSpots} / 4 players • {game.openSpots} spots left
+                    </div>
+
+                    {/* Tags */}
                     <div className="games-details-row">
                       <span className="games-type-badge">{game.gameType || 'Doubles'}</span>
                       <span className="games-type-badge">{game.courtType || 'Outdoor'}</span>
@@ -571,15 +566,6 @@ const Games = () => {
                       {game.duprRating && game.duprRating !== 'unrated' && (
                         <span className="games-type-badge">DUPR {game.duprRating}+</span>
                       )}
-                      <div className="games-players">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-players-icon">
-                          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                          <path d="M16 3.128a4 4 0 0 1 0 7.744"></path>
-                          <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                          <circle cx="9" cy="7" r="4"></circle>
-                        </svg>
-                        {occupiedSpots} / 4 players • {game.openSpots} spots left
-                      </div>
                     </div>
 
 
