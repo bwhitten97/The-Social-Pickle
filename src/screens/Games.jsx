@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGameContext } from '../context/GameContext';
 import DatePicker from '../components/DatePicker';
 import TimePicker from '../components/TimePicker';
@@ -12,13 +12,16 @@ const Games = ({ addAppNotification }) => {
     currentUserId, 
     currentUserName, 
     addGame, 
+    updateGame,
+    removeGame,
     requestToJoinGame,
     withdrawApplication: withdrawApplicationContext,
     getUserApplications,
     getGameApplications,
     hasUserApplied,
     updateApplicationStatus,
-    sendMessage
+    sendMessage,
+    cleanupExpiredGames
   } = useGameContext();
   
   const [showPostForm, setShowPostForm] = useState(false);
@@ -32,6 +35,10 @@ const Games = ({ addAppNotification }) => {
   const [selectedGame, setSelectedGame] = useState(null);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageData, setMessageData] = useState({ recipientName: '', message: '' });
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editGameData, setEditGameData] = useState(null);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [gameToRemove, setGameToRemove] = useState(null);
   const [requestData, setRequestData] = useState({
     playerCount: 1,
     message: ''
@@ -60,6 +67,21 @@ const Games = ({ addAppNotification }) => {
 
   const myGames = games.filter(game => game.createdBy === currentUserName);
   const myApplications = getUserApplications();
+
+  // Clean up expired games when component mounts
+  useEffect(() => {
+    cleanupExpiredGames();
+  }, [cleanupExpiredGames]);
+
+  // Helper function to check if game is happening soon
+  const isGameSoon = (game) => {
+    const now = new Date();
+    const gameDateTime = new Date(`${game.date}T${game.time}`);
+    const timeDiff = gameDateTime.getTime() - now.getTime();
+    const hoursUntilGame = timeDiff / (1000 * 60 * 60);
+    
+    return hoursUntilGame <= 2 && hoursUntilGame > -1; // Within 2 hours of start, but not expired
+  };
 
   // Filter logic
   const getTimeSlot = (time) => {
@@ -277,6 +299,69 @@ const Games = ({ addAppNotification }) => {
   const handleManageApplications = (game) => {
     setSelectedGame(game);
     setShowManageModal(true);
+  };
+
+  const handleEditGame = (game) => {
+    setEditGameData({
+      id: game.id,
+      location: game.location,
+      date: game.date,
+      time: game.time,
+      skillLevel: game.skillLevel,
+      duprRating: game.duprRating || 'unrated',
+      gameType: game.gameType || 'doubles',
+      openSpots: game.openSpots,
+      description: game.description
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateGame = (e) => {
+    e.preventDefault();
+    
+    // Validate form
+    if (!editGameData.location || !editGameData.date || !editGameData.time) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
+    // Update the game using context
+    updateGame(editGameData.id, editGameData);
+    
+    setShowEditModal(false);
+    setEditGameData(null);
+    setShowManageModal(false);
+    setNotification({
+      message: 'Game updated successfully!',
+      name: 'Game Updated',
+      emoji: '✅'
+    });
+  };
+
+  const handleRemoveGame = (gameId) => {
+    const game = games.find(g => g.id === gameId);
+    setGameToRemove(game);
+    setShowRemoveConfirm(true);
+  };
+
+  const confirmRemoveGame = () => {
+    if (gameToRemove) {
+      // Remove the game using context
+      removeGame(gameToRemove.id);
+      setShowManageModal(false);
+      setShowRemoveConfirm(false);
+      setGameToRemove(null);
+      setNotification({
+        message: 'Game removed successfully!',
+        name: 'Game Removed',
+        emoji: '🗑️'
+      });
+    }
+  };
+
+  const cancelRemoveGame = () => {
+    setShowRemoveConfirm(false);
+    setGameToRemove(null);
   };
 
   const handleAcceptApplication = (applicationId) => {
@@ -784,7 +869,7 @@ const Games = ({ addAppNotification }) => {
                         className="games-join-btn"
                         onClick={() => handleManageApplications(game)}
                       >
-                        Manage Applications ({applicationCount})
+                        Manage Game and Applicants ({applicationCount})
                       </button>
                     </article>
                   );
@@ -1142,13 +1227,18 @@ const Games = ({ addAppNotification }) => {
             <div className="games-form">
               {/* Game Info Display */}
               <div className="games-request-game-info">
-                <h3 className="games-request-game-title">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-card-location-icon">
-                    <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path>
-                    <circle cx="12" cy="10" r="3"></circle>
-                  </svg>
-                  {selectedGame.location}
-                </h3>
+                <div className="games-request-game-header">
+                  <h3 className="games-request-game-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="games-card-location-icon">
+                      <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path>
+                      <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    {selectedGame.location}
+                  </h3>
+                  <button className="games-edit-btn" onClick={() => handleEditGame(selectedGame)}>
+                    Edit
+                  </button>
+                </div>
                 
                 <div className="games-request-game-details">
                   <div className="games-datetime">
@@ -1248,13 +1338,30 @@ const Games = ({ addAppNotification }) => {
             </div>
             <div className="games-form">
               <div className="games-request-game-info">
-                <h3 className="games-request-game-title">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path>
-                    <circle cx="12" cy="10" r="3"></circle>
-                  </svg>
-                  {selectedGame.location}
-                </h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <h3 className="games-request-game-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path>
+                      <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    {selectedGame.location}
+                  </h3>
+                  <button 
+                    className="games-edit-btn"
+                    onClick={() => handleEditGame(selectedGame)}
+                    style={{ 
+                      padding: '4px 8px', 
+                      fontSize: '12px', 
+                      backgroundColor: '#3E5D45', 
+                      color: 'white', 
+                      border: 'none', 
+                      borderRadius: '4px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Edit
+                  </button>
+                </div>
                 <div className="games-request-game-details">
                   <div className="games-request-badges">
                     <span className="games-type-badge">{selectedGame.gameType || 'Doubles'}</span>
@@ -1266,6 +1373,23 @@ const Games = ({ addAppNotification }) => {
                   <p className="games-request-host">
                     <strong>Open Spots:</strong> {selectedGame.openSpots} / {selectedGame.totalSpots || 4}
                   </p>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+                  <button 
+                    className="games-remove-btn"
+                    onClick={() => handleRemoveGame(selectedGame.id)}
+                    style={{ 
+                      padding: '4px 8px', 
+                      fontSize: '12px', 
+                      backgroundColor: '#F25C5C', 
+                      color: 'white', 
+                      border: 'none', 
+                      borderRadius: '4px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Remove Listing
+                  </button>
                 </div>
               </div>
 
@@ -1382,6 +1506,197 @@ const Games = ({ addAppNotification }) => {
                     Send Message
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Game Modal */}
+      {showEditModal && editGameData && (
+        <div className="games-modal-overlay">
+          <div className="games-modal">
+            <div className="games-modal-header">
+              <h2>Edit Game</h2>
+              <button 
+                className="games-close-btn"
+                onClick={() => setShowEditModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateGame} className="games-form">
+              <div className="games-form-group">
+                <label>Location *</label>
+                <input
+                  type="text"
+                  value={editGameData.location}
+                  onChange={(e) => setEditGameData({...editGameData, location: e.target.value})}
+                  placeholder="e.g., Central Park Courts"
+                  required
+                />
+              </div>
+              
+              <div className="games-form-row">
+                <div className="games-form-group">
+                  <label>Date *</label>
+                  <DatePicker
+                    value={editGameData.date}
+                    onChange={(date) => setEditGameData({...editGameData, date})}
+                    className="games-form-input"
+                  />
+                </div>
+                
+                <div className="games-form-group">
+                  <label>Time *</label>
+                  <TimePicker
+                    value={editGameData.time}
+                    onChange={(time) => setEditGameData({...editGameData, time})}
+                    className="games-form-input"
+                  />
+                </div>
+              </div>
+              
+              <div className="games-form-row">
+                <div className="games-form-group">
+                  <label>Skill Level</label>
+                  <select
+                    value={editGameData.skillLevel}
+                    onChange={(e) => setEditGameData({...editGameData, skillLevel: e.target.value})}
+                    className="games-form-select"
+                  >
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                    <option value="mixed">Mixed</option>
+                  </select>
+                </div>
+                
+                <div className="games-form-group">
+                  <label>DUPR Rating</label>
+                  <select
+                    value={editGameData.duprRating}
+                    onChange={(e) => setEditGameData({...editGameData, duprRating: e.target.value})}
+                    className="games-form-select"
+                  >
+                    <option value="unrated">Unrated</option>
+                    <option value="2.0">2.0+</option>
+                    <option value="2.5">2.5+</option>
+                    <option value="3.0">3.0+</option>
+                    <option value="3.5">3.5+</option>
+                    <option value="4.0">4.0+</option>
+                    <option value="4.5">4.5+</option>
+                    <option value="5.0">5.0+</option>
+                    <option value="5.5">5.5+</option>
+                    <option value="6.0">6.0+</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="games-form-row">
+                <div className="games-form-group">
+                  <label>Game Type</label>
+                  <select
+                    value={editGameData.gameType}
+                    onChange={(e) => setEditGameData({...editGameData, gameType: e.target.value})}
+                    className="games-form-select"
+                  >
+                    <option value="doubles">Doubles</option>
+                    <option value="singles">Singles</option>
+                    <option value="mixed">Mixed</option>
+                  </select>
+                </div>
+                
+                <div className="games-form-group">
+                  <label>Open Spots</label>
+                  <select
+                    value={editGameData.openSpots}
+                    onChange={(e) => setEditGameData({...editGameData, openSpots: parseInt(e.target.value)})}
+                    className="games-form-select"
+                  >
+                    <option value={1}>1 Player</option>
+                    <option value={2}>2 Players</option>
+                    <option value={3}>3 Players</option>
+                    <option value={4}>4 Players</option>
+                    <option value={5}>5 Players</option>
+                    <option value={6}>6 Players</option>
+                    <option value={7}>7 Players</option>
+                    <option value={8}>8 Players</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="games-form-group">
+                <label>Description</label>
+                <textarea
+                  value={editGameData.description}
+                  onChange={(e) => setEditGameData({...editGameData, description: e.target.value})}
+                  placeholder="Additional details about the game..."
+                  rows={3}
+                  className="games-form-textarea"
+                />
+              </div>
+              
+              <div className="games-form-actions">
+                <button 
+                  type="button" 
+                  className="games-cancel-btn"
+                  onClick={() => setShowEditModal(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="games-submit-btn"
+                >
+                  Update Game
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Game Confirmation Modal */}
+      {showRemoveConfirm && gameToRemove && (
+        <div className="games-modal-overlay">
+          <div className="games-modal" style={{ maxWidth: '400px' }}>
+            <div className="games-modal-header">
+              <h2>Remove Game Listing</h2>
+            </div>
+            <div className="games-form">
+              <div style={{ marginBottom: '20px' }}>
+                <p>Are you sure you want to remove this game listing?</p>
+                <div style={{ 
+                  backgroundColor: '#f3f4f6', 
+                  padding: '12px', 
+                  borderRadius: '8px',
+                  margin: '16px 0'
+                }}>
+                  <strong>{gameToRemove.location}</strong><br />
+                  {formatDate(gameToRemove.date)} at {formatTime(gameToRemove.time)}
+                </div>
+                <p style={{ color: '#F25C5C', fontSize: '14px' }}>
+                  This action cannot be undone.
+                </p>
+              </div>
+              <div className="games-form-actions">
+                <button 
+                  type="button" 
+                  className="games-cancel-btn"
+                  onClick={cancelRemoveGame}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="games-submit-btn"
+                  onClick={confirmRemoveGame}
+                  style={{ backgroundColor: '#F25C5C' }}
+                >
+                  Remove Game
+                </button>
               </div>
             </div>
           </div>

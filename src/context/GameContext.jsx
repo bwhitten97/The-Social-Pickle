@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 
 const GameContext = createContext();
 
@@ -14,80 +14,150 @@ const mockGames = [
   {
     id: 1,
     location: "Central Park Courts",
-    date: "2025-07-05",
+    date: "2025-01-20",
     time: "10:00",
     skillLevel: "intermediate",
     openSpots: 2,
+    totalSpots: 4,
     createdBy: "Sarah Johnson",
-    createdAt: "2025-07-01T10:00:00Z",
+    createdAt: "2025-01-17T10:00:00Z",
     description: "Friendly doubles game, bring your own paddle!",
+    gameType: "doubles",
+    duprRating: "3.0",
     applicants: []
   },
   {
     id: 2,
     location: "Riverside Recreation Center",
-    date: "2025-07-06",
+    date: "2025-01-21",
     time: "14:30",
     skillLevel: "beginner",
     openSpots: 3,
+    totalSpots: 4,
     createdBy: "Mike Chen",
-    createdAt: "2025-07-01T11:00:00Z",
+    createdAt: "2025-01-17T11:00:00Z",
     description: "Great for beginners, we'll help you learn!",
+    gameType: "doubles",
+    duprRating: "unrated",
     applicants: []
   },
   {
     id: 3,
     location: "Downtown Sports Complex",
-    date: "2025-07-07",
+    date: "2025-01-22",
     time: "18:00",
     skillLevel: "advanced",
     openSpots: 1,
+    totalSpots: 4,
     createdBy: "Emily Rodriguez",
-    createdAt: "2025-07-01T12:00:00Z",
+    createdAt: "2025-01-17T12:00:00Z",
     description: "Competitive play, advanced players only.",
+    gameType: "doubles",
+    duprRating: "4.5",
     applicants: []
   },
   {
     id: 4,
     location: "Sunset Park Courts",
-    date: "2025-07-08",
+    date: "2025-01-23",
     time: "16:00",
     skillLevel: "mixed",
     openSpots: 4,
+    totalSpots: 6,
     createdBy: "David Kim",
-    createdAt: "2025-07-01T13:00:00Z",
+    createdAt: "2025-01-17T13:00:00Z",
     description: "All skill levels welcome! Fun and casual.",
+    gameType: "mixed",
+    duprRating: "unrated",
     applicants: []
   },
   {
     id: 5,
     location: "Golden Gate Park Courts",
-    date: "2025-07-09",
+    date: "2025-01-24",
     time: "16:00",
     skillLevel: "intermediate",
     openSpots: 3,
     totalSpots: 6,
     createdBy: "Alex Thompson",
-    createdAt: "2025-07-02T10:00:00Z",
+    createdAt: "2025-01-17T10:00:00Z",
     description: "Competitive doubles play. Looking for solid intermediate players.",
     gameType: "doubles",
-    courtType: "outdoor",
     duprRating: "3.5",
     applicants: []
   },
   {
     id: 6,
     location: "Mission Bay Courts",
-    date: "2025-07-10",
+    date: "2025-01-25",
     time: "10:30",
     skillLevel: "beginner",
     openSpots: 2,
     totalSpots: 4,
     createdBy: "Alex Thompson",
-    createdAt: "2025-07-02T11:00:00Z",
+    createdAt: "2025-01-17T11:00:00Z",
     description: "Beginner-friendly game. Perfect for learning the basics!",
     gameType: "doubles",
-    courtType: "outdoor",
+    duprRating: "unrated",
+    applicants: []
+  },
+  {
+    id: 7,
+    location: "Marina District Courts",
+    date: "2025-01-26",
+    time: "09:00",
+    skillLevel: "intermediate",
+    openSpots: 4,
+    totalSpots: 4,
+    createdBy: "Jessica Martinez",
+    createdAt: "2025-01-17T14:00:00Z",
+    description: "Morning doubles match. Coffee after the game!",
+    gameType: "doubles",
+    duprRating: "3.0",
+    applicants: []
+  },
+  {
+    id: 8,
+    location: "Bay Area Pickleball Club",
+    date: "2025-01-27",
+    time: "19:00",
+    skillLevel: "advanced",
+    openSpots: 2,
+    totalSpots: 4,
+    createdBy: "Alex Thompson",
+    createdAt: "2025-01-17T15:00:00Z",
+    description: "Evening competitive play. Indoor courts available.",
+    gameType: "doubles",
+    duprRating: "4.0",
+    applicants: []
+  },
+  {
+    id: 9,
+    location: "Community Center Courts",
+    date: "2025-01-28",
+    time: "15:00",
+    skillLevel: "beginner",
+    openSpots: 6,
+    totalSpots: 8,
+    createdBy: "Robert Chen",
+    createdAt: "2025-01-17T16:00:00Z",
+    description: "Large group game for beginners. All equipment provided!",
+    gameType: "mixed",
+    duprRating: "unrated",
+    applicants: []
+  },
+  {
+    id: 10,
+    location: "Presidio Sports Complex",
+    date: "2025-01-29",
+    time: "11:00",
+    skillLevel: "mixed",
+    openSpots: 3,
+    totalSpots: 6,
+    createdBy: "Alex Thompson",
+    createdAt: "2025-01-17T17:00:00Z",
+    description: "Weekend fun for all skill levels. Great courts with city views!",
+    gameType: "mixed",
     duprRating: "unrated",
     applicants: []
   }
@@ -100,9 +170,10 @@ const mockApplications = [
     playerId: "current-user",
     playerName: "Alex Thompson",
     playerSkill: "Intermediate",
-    applicationDate: "2025-07-01T14:00:00Z",
+    applicationDate: "2025-01-17T14:00:00Z",
     message: "I'm really excited to join! I've been playing for 2 years.",
-    status: "accepted"
+    status: "accepted",
+    playerCount: 1
   },
   {
     id: 2,
@@ -110,9 +181,10 @@ const mockApplications = [
     playerId: "user-2",
     playerName: "Jessica Miller",
     playerSkill: "Beginner",
-    applicationDate: "2025-07-01T15:30:00Z",
+    applicationDate: "2025-01-17T15:30:00Z",
     message: "New to pickleball but eager to learn!",
-    status: "pending"
+    status: "pending",
+    playerCount: 1
   },
   {
     id: 3,
@@ -120,9 +192,10 @@ const mockApplications = [
     playerId: "user-3",
     playerName: "Robert Chen",
     playerSkill: "Intermediate",
-    applicationDate: "2025-07-01T16:00:00Z",
+    applicationDate: "2025-01-17T16:00:00Z",
     message: "Available and ready to play!",
-    status: "accepted"
+    status: "accepted",
+    playerCount: 1
   },
   {
     id: 4,
@@ -130,9 +203,10 @@ const mockApplications = [
     playerId: "current-user",
     playerName: "Alex Thompson",
     playerSkill: "Intermediate",
-    applicationDate: "2025-07-01T17:00:00Z",
+    applicationDate: "2025-01-17T17:00:00Z",
     message: "Looking forward to some competitive play!",
-    status: "accepted"
+    status: "accepted",
+    playerCount: 1
   },
   {
     id: 5,
@@ -140,7 +214,7 @@ const mockApplications = [
     playerId: "user-5",
     playerName: "Sarah Martinez",
     playerSkill: "Intermediate",
-    applicationDate: "2025-07-02T12:00:00Z",
+    applicationDate: "2025-01-17T12:00:00Z",
     message: "I'm available for the doubles game! I've been playing for 3 years and love competitive play.",
     status: "pending",
     playerCount: 1
@@ -151,19 +225,19 @@ const mockApplications = [
     playerId: "user-6",
     playerName: "Michael Johnson",
     playerSkill: "Intermediate",
-    applicationDate: "2025-07-02T13:30:00Z",
+    applicationDate: "2025-01-17T13:30:00Z",
     message: "My partner and I would love to join! We're both intermediate level players.",
     status: "pending",
     playerCount: 2
   },
   {
     id: 7,
-    gameId: 5,
+    gameId: 8,
     playerId: "user-7",
     playerName: "Jennifer Lee",
     playerSkill: "Advanced",
-    applicationDate: "2025-07-02T14:15:00Z",
-    message: "I know you're looking for intermediate players, but I promise to go easy! 😊",
+    applicationDate: "2025-01-17T14:15:00Z",
+    message: "Perfect timing for an evening game! Count me in.",
     status: "pending",
     playerCount: 1
   },
@@ -173,21 +247,32 @@ const mockApplications = [
     playerId: "user-8",
     playerName: "David Wilson",
     playerSkill: "Beginner",
-    applicationDate: "2025-07-02T15:00:00Z",
+    applicationDate: "2025-01-17T15:00:00Z",
     message: "Just started playing last month. Would love to join a beginner game!",
     status: "pending",
     playerCount: 1
   },
   {
     id: 9,
-    gameId: 6,
+    gameId: 10,
     playerId: "user-9",
     playerName: "Lisa Chen",
     playerSkill: "Beginner",
-    applicationDate: "2025-07-02T16:45:00Z",
-    message: "New to pickleball but very excited to learn and play!",
+    applicationDate: "2025-01-17T16:45:00Z",
+    message: "Weekend game sounds perfect! I'm relatively new but excited to play.",
     status: "pending",
     playerCount: 1
+  },
+  {
+    id: 10,
+    gameId: 9,
+    playerId: "user-10",
+    playerName: "Mark Thompson",
+    playerSkill: "Beginner",
+    applicationDate: "2025-01-17T18:00:00Z",
+    message: "Large group game sounds fun! Perfect for beginners like me.",
+    status: "accepted",
+    playerCount: 2
   }
 ];
 
@@ -258,6 +343,52 @@ export const GameProvider = ({ children }) => {
   const currentUserName = "Alex Thompson";
   const currentUserSkill = "Intermediate";
 
+  // Function to clean up expired games (games that are more than 1 hour past their start time)
+  const cleanupExpiredGames = () => {
+    const now = new Date();
+    
+    setGames(prevGames => {
+      const expiredGameIds = [];
+      
+      const activeGames = prevGames.filter(game => {
+        // Parse the game date and time
+        const gameDateTime = new Date(`${game.date}T${game.time}`);
+        
+        // Add 1 hour to the game start time
+        const gameEndTime = new Date(gameDateTime.getTime() + 60 * 60 * 1000);
+        
+        // Check if current time is past the game end time (1 hour after start)
+        if (now > gameEndTime) {
+          expiredGameIds.push(game.id);
+          return false; // Remove this game
+        }
+        return true; // Keep this game
+      });
+      
+      // If we removed any games, also clean up their applications and chat rooms
+      if (expiredGameIds.length > 0) {
+        setApplications(prevApps => prevApps.filter(app => !expiredGameIds.includes(app.gameId)));
+        setChatRooms(prevRooms => prevRooms.filter(room => !expiredGameIds.includes(room.gameId)));
+        
+        console.log(`Cleaned up ${expiredGameIds.length} expired games`);
+      }
+      
+      return activeGames;
+    });
+  };
+
+  // Set up periodic cleanup - run every 5 minutes
+  useEffect(() => {
+    // Run cleanup immediately when component mounts
+    cleanupExpiredGames();
+    
+    // Set up interval to run cleanup every 5 minutes
+    const cleanupInterval = setInterval(cleanupExpiredGames, 5 * 60 * 1000);
+    
+    // Cleanup interval on unmount
+    return () => clearInterval(cleanupInterval);
+  }, []);
+
   const addGame = (gameData) => {
     const newGame = {
       ...gameData,
@@ -268,6 +399,20 @@ export const GameProvider = ({ children }) => {
     };
     setGames(prev => [newGame, ...prev]);
     return newGame;
+  };
+
+  const updateGame = (gameId, updateData) => {
+    setGames(prev => prev.map(game => 
+      game.id === gameId 
+        ? { ...game, ...updateData, totalSpots: updateData.openSpots }
+        : game
+    ));
+  };
+
+  const removeGame = (gameId) => {
+    setGames(prev => prev.filter(game => game.id !== gameId));
+    // Also remove related applications
+    setApplications(prev => prev.filter(app => app.gameId !== gameId));
   };
 
   const requestToJoinGame = (gameId, message = "") => {
@@ -485,6 +630,8 @@ export const GameProvider = ({ children }) => {
     currentUserName,
     currentUserSkill,
     addGame,
+    updateGame,
+    removeGame,
     requestToJoinGame,
     updateApplicationStatus,
     withdrawApplication,
@@ -497,7 +644,8 @@ export const GameProvider = ({ children }) => {
     sendMessage,
     getMessages,
     getConversation,
-    deleteChat
+    deleteChat,
+    cleanupExpiredGames
   };
 
   return (

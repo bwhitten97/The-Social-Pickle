@@ -3,8 +3,8 @@ import './TimePicker.css';
 
 const TimePicker = ({ value, onChange, className = '' }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedHour, setSelectedHour] = useState(12);
-  const [selectedMinute, setSelectedMinute] = useState(0);
+  const [selectedHour, setSelectedHour] = useState(null);
+  const [selectedMinute, setSelectedMinute] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('PM');
   const timePickerRef = useRef(null);
 
@@ -34,7 +34,7 @@ const TimePicker = ({ value, onChange, className = '' }) => {
   }, []);
 
   const formatTime = (hour, minute, period) => {
-    if (!hour || minute === undefined) return 'Select time';
+    if (hour === null || minute === null) return 'Select time';
     
     const displayHour = hour.toString().padStart(2, '0');
     const displayMinute = minute.toString().padStart(2, '0');
@@ -46,16 +46,19 @@ const TimePicker = ({ value, onChange, className = '' }) => {
     setSelectedMinute(minute);
     setSelectedPeriod(period);
     
-    // Convert to 24-hour format for form submission
-    let militaryHour = hour;
-    if (period === 'AM' && hour === 12) {
-      militaryHour = 0;
-    } else if (period === 'PM' && hour !== 12) {
-      militaryHour = hour + 12;
+    // Only call onChange if both hour and minute are valid
+    if (hour !== null && minute !== null) {
+      // Convert to 24-hour format for form submission
+      let militaryHour = hour;
+      if (period === 'AM' && hour === 12) {
+        militaryHour = 0;
+      } else if (period === 'PM' && hour !== 12) {
+        militaryHour = hour + 12;
+      }
+      
+      const timeString = `${militaryHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      onChange(timeString);
     }
-    
-    const timeString = `${militaryHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-    onChange(timeString);
   };
 
   const hours = Array.from({ length: 12 }, (_, i) => i + 1);

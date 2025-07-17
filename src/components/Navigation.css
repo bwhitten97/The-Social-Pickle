@@ -20,7 +20,7 @@
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding: 8px 0;
+  padding: 0;
   margin: 0;
   gap: 0;
   overflow: visible;
@@ -95,6 +95,13 @@
   }
   
   .navigation {
-    padding: env(safe-area-inset-bottom) 0 0 0;
+    /* Use stable positioning to prevent expansion during scroll */
+    padding: 8px 0;
+    /* Use padding-bottom to fill the safe area and extend to screen bottom */
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    /* Ensure the navigation stays at the bottom regardless of viewport changes */
+    bottom: 0;
+    transform: translateY(0);
+    -webkit-transform: translateY(0);
   }
 }
