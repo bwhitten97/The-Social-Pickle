@@ -39,24 +39,46 @@ export const AuthProvider = ({ children }) => {
           
           if (userDocSnap.exists()) {
             const userData = userDocSnap.data();
+            console.log('Auth: User data from Firestore:', userData);
+            
             // If user has basic profile data, assume profile is complete
             const hasBasicProfile = userData.name && userData.age && userData.skillLevel;
+            console.log('Auth: Has basic profile?', hasBasicProfile, { name: userData.name, age: userData.age, skillLevel: userData.skillLevel });
+            
+            // For returning users: if they have ANY previous profile data, skip onboarding
+            const isReturningUser = userData.createdAt && (userData.name || userData.age || userData.skillLevel || userData.profileComplete);
+            console.log('Auth: Is returning user?', isReturningUser);
             
             // One-time migration: Update profileComplete field for existing users
-            if (userData.profileComplete === undefined && hasBasicProfile) {
+            if ((userData.profileComplete === undefined && hasBasicProfile) || isReturningUser) {
               try {
-                await updateDoc(userDocRef, { profileComplete: true });
+                await updateDoc(userDocRef, { 
+                  profileComplete: true, 
+                  hasSeenWelcome: true 
+                });
+                console.log('Auth: Updated Firestore for returning user');
               } catch (error) {
                 console.error('Error updating profileComplete:', error);
               }
             }
             
+            // For existing users with complete profiles, automatically set hasSeenWelcome
+            const shouldHaveSeenWelcome = userData.profileComplete || hasBasicProfile || isReturningUser;
+            const finalProfileComplete = userData.profileComplete !== undefined ? userData.profileComplete : (hasBasicProfile || isReturningUser);
+            
+            console.log('Auth: Final user state:', {
+              profileComplete: finalProfileComplete,
+              hasSeenWelcome: shouldHaveSeenWelcome
+            });
+            
             setUser({
               id: firebaseUser.uid,
               email: firebaseUser.email,
               ...userData,
-              // Set profileComplete to true if they have basic profile data
-              profileComplete: userData.profileComplete !== undefined ? userData.profileComplete : hasBasicProfile
+              // Set profileComplete to true if they have basic profile data or are returning user
+              profileComplete: finalProfileComplete,
+              // For returning users with complete profiles, skip welcome screen
+              hasSeenWelcome: userData.hasSeenWelcome !== undefined ? userData.hasSeenWelcome : shouldHaveSeenWelcome
             });
           } else {
             // User exists in Auth but not in Firestore (social login first time)
@@ -121,19 +143,21 @@ export const AuthProvider = ({ children }) => {
       const firebaseUser = userCredential.user;
       console.log('SignUp: Firebase user created successfully:', firebaseUser.uid);
       
-      // Skip profile picture upload for now (requires Blaze plan)
+      // Handle profile picture upload
       let profilePictureUrl = additionalData.profilePictureUrl || '';
       
-      // TODO: Enable when Firebase Storage is available
-      // if (additionalData.profilePicture) {
-      //   try {
-      //     const imageRef = ref(storage, `profile-pictures/${firebaseUser.uid}`);
-      //     await uploadBytes(imageRef, additionalData.profilePicture);
-      //     profilePictureUrl = await getDownloadURL(imageRef);
-      //   } catch (uploadError) {
-      //     console.error('Error uploading profile picture:', uploadError);
-      //   }
-      // }
+      if (additionalData.profilePicture) {
+        try {
+          console.log('SignUp: Uploading profile picture...');
+          const imageRef = ref(storage, `profile-pictures/${firebaseUser.uid}`);
+          await uploadBytes(imageRef, additionalData.profilePicture);
+          profilePictureUrl = await getDownloadURL(imageRef);
+          console.log('SignUp: Profile picture uploaded successfully:', profilePictureUrl);
+        } catch (uploadError) {
+          console.error('Error uploading profile picture:', uploadError);
+          // Continue without profile picture if upload fails
+        }
+      }
       
       // Update Firebase Auth profile
       console.log('SignUp: Updating Firebase Auth profile...');
@@ -158,14 +182,24 @@ export const AuthProvider = ({ children }) => {
       };
       
       console.log('SignUp: Saving user data to Firestore:', userData);
-      await setDoc(doc(db, 'users', firebaseUser.uid), userData);
-      console.log('SignUp: User data saved successfully');
+      try {
+        await setDoc(doc(db, 'users', firebaseUser.uid), userData);
+        console.log('SignUp: User data saved successfully');
+      } catch (firestoreError) {
+        console.error('SignUp: Firestore error details:', {
+          code: firestoreError.code,
+          message: firestoreError.message,
+          details: firestoreError
+        });
+        throw firestoreError; // Re-throw to be caught by outer try-catch
+      }
       
       return { success: true, user: firebaseUser };
     } catch (error) {
       console.error('Sign up error:', error);
       console.error('Error code:', error.code);
       console.error('Error message:', error.message);
+      console.error('Full error details:', error);
       
       // Provide user-friendly error messages
       let errorMessage = 'Account creation failed';
@@ -177,6 +211,12 @@ export const AuthProvider = ({ children }) => {
         errorMessage = 'Invalid email address';
       } else if (error.code === 'permission-denied') {
         errorMessage = 'Database access denied. Please check Firebase rules.';
+      } else if (error.code === 'failed-precondition') {
+        errorMessage = 'Database not properly configured.';
+      } else if (error.code === 'unavailable') {
+        errorMessage = 'Database temporarily unavailable. Please try again.';
+      } else {
+        errorMessage = `Account creation failed: ${error.message}`;
       }
       
       return { success: false, error: errorMessage };
@@ -226,14 +266,17 @@ export const AuthProvider = ({ children }) => {
 
   const signInWithApple = async () => {
     try {
+      console.log('Apple sign-in: Starting authentication...');
       const result = await signInWithPopup(auth, appleProvider);
       const firebaseUser = result.user;
+      console.log('Apple sign-in: Firebase user created:', firebaseUser);
       
       // Check if this is a new user by checking Firestore
       const userDocRef = doc(db, 'users', firebaseUser.uid);
       const userDocSnap = await getDoc(userDocRef);
       
       const isNewUser = !userDocSnap.exists();
+      console.log('Apple sign-in: Is new user?', isNewUser);
       
       if (isNewUser) {
         // Create basic user document for new Apple users
@@ -247,12 +290,19 @@ export const AuthProvider = ({ children }) => {
           updatedAt: new Date()
         };
         
+        console.log('Apple sign-in: Creating user document:', userData);
         await setDoc(userDocRef, userData);
+        console.log('Apple sign-in: User document created successfully');
       }
       
       return { success: true, user: firebaseUser, isNewUser };
     } catch (error) {
       console.error('Apple sign in error:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
       
       let errorMessage = 'Apple sign-in failed';
       if (error.code === 'auth/popup-closed-by-user') {
@@ -284,19 +334,21 @@ export const AuthProvider = ({ children }) => {
       
       const firebaseUser = auth.currentUser;
       
-      // Skip profile picture upload for now (requires Blaze plan)
+      // Handle profile picture upload
       let profilePictureUrl = profileData.profilePictureUrl || '';
       
-      // TODO: Enable when Firebase Storage is available
-      // if (profileData.profilePicture) {
-      //   try {
-      //     const imageRef = ref(storage, `profile-pictures/${firebaseUser.uid}`);
-      //     await uploadBytes(imageRef, profileData.profilePicture);
-      //     profilePictureUrl = await getDownloadURL(imageRef);
-      //   } catch (uploadError) {
-      //     console.error('Error uploading profile picture:', uploadError);
-      //   }
-      // }
+      if (profileData.profilePicture) {
+        try {
+          console.log('Profile Update: Uploading profile picture...');
+          const imageRef = ref(storage, `profile-pictures/${firebaseUser.uid}`);
+          await uploadBytes(imageRef, profileData.profilePicture);
+          profilePictureUrl = await getDownloadURL(imageRef);
+          console.log('Profile Update: Profile picture uploaded successfully:', profilePictureUrl);
+        } catch (uploadError) {
+          console.error('Error uploading profile picture:', uploadError);
+          // Continue without profile picture if upload fails
+        }
+      }
       
       // Update Firebase Auth profile
       await updateProfile(firebaseUser, {

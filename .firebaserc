@@ -7,6 +7,9 @@
       "hosting": {
         "production": [
           "thesocialpickle"
+        ],
+        "main": [
+          "the-social-pickle-6be90"
         ]
       }
     }

@@ -203,6 +203,7 @@ const Onboarding = () => {
           skillLevel: userData.skillLevel,
           duprRating: userData.duprRating,
           availability: userData.availability,
+          profilePicture: userData.profilePicture, // Pass the actual file
           profilePictureUrl: userData.profilePictureUrl,
           bio: userData.bio
         });
@@ -215,6 +216,7 @@ const Onboarding = () => {
           skillLevel: userData.skillLevel,
           duprRating: userData.duprRating,
           availability: userData.availability,
+          profilePicture: userData.profilePicture, // Pass the actual file
           profilePictureUrl: userData.profilePictureUrl,
           bio: userData.bio
         });
