@@ -4,6 +4,7 @@ import './DatePicker.css';
 const DatePicker = ({ value, onChange, className = '' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [dropdownPosition, setDropdownPosition] = useState('bottom');
   const datePickerRef = useRef(null);
 
   // Close calendar when clicking outside
@@ -19,12 +20,18 @@ const DatePicker = ({ value, onChange, className = '' }) => {
   }, []);
 
   const formatDate = (date) => {
-    return date.toISOString().split('T')[0];
+    // Use local date formatting to avoid timezone issues
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const formatDisplayDate = (dateString) => {
     if (!dateString) return 'Select a date';
-    const date = new Date(dateString);
+    // Parse the date string as local date to avoid timezone issues
+    const [year, month, day] = dateString.split('-');
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric', 
@@ -61,6 +68,22 @@ const DatePicker = ({ value, onChange, className = '' }) => {
     setIsOpen(false);
   };
 
+  const toggleCalendar = () => {
+    if (!isOpen && datePickerRef.current) {
+      // Calculate available space
+      const rect = datePickerRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const spaceRight = viewportWidth - rect.left;
+      
+      // If not enough space below, position above
+      setDropdownPosition(spaceBelow < 350 && spaceAbove > 350 ? 'top' : 'bottom');
+    }
+    setIsOpen(!isOpen);
+  };
+
   const goToPreviousMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
   };
@@ -82,7 +105,9 @@ const DatePicker = ({ value, onChange, className = '' }) => {
 
   const isSelected = (date) => {
     if (!value) return false;
-    const selectedDate = new Date(value);
+    // Parse the selected date as local date to avoid timezone issues
+    const [year, month, day] = value.split('-');
+    const selectedDate = new Date(year, month - 1, day);
     return date.toDateString() === selectedDate.toDateString();
   };
 
@@ -102,7 +127,7 @@ const DatePicker = ({ value, onChange, className = '' }) => {
     <div className={`date-picker ${className}`} ref={datePickerRef}>
       <div 
         className={`date-picker-input ${isOpen ? 'open' : ''}`}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleCalendar}
       >
         <span className="date-picker-value">
           {formatDisplayDate(value)}
@@ -127,7 +152,7 @@ const DatePicker = ({ value, onChange, className = '' }) => {
       </div>
 
       {isOpen && (
-        <div className="date-picker-calendar">
+        <div className={`date-picker-calendar ${dropdownPosition === 'top' ? 'date-picker-calendar-top' : ''}`}>
           <div className="date-picker-header">
             <button 
               type="button"

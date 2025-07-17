@@ -1,29 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import './Notification.css';
 
-const Notification = ({ message, name, emoji = "💬", onClose, duration = 3000 }) => {
-  const [isVisible, setIsVisible] = useState(true);
-
+const Notification = ({ message, name, emoji = "💬", onClose, duration = 2000 }) => {
   useEffect(() => {
+    // Simple auto-dismiss timer
     const timer = setTimeout(() => {
-      setIsVisible(false);
-      setTimeout(() => {
-        if (onClose) onClose();
-      }, 300); // Allow time for fade-out animation
+      onClose();
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [duration, onClose]);
-
-  if (!isVisible) return null;
+  }, [onClose, duration]);
 
   return (
-    <div className={`app-notification ${isVisible ? 'notification-show' : 'notification-hide'}`}>
+    <div className="app-notification notification-show">
       <div className="notification-content">
         <span className="notification-emoji">{emoji}</span>
         <span className="notification-text">
           {message} <strong>{name}</strong>
         </span>
+        <button 
+          className="notification-close-btn"
+          onClick={onClose}
+          aria-label="Close notification"
+        >
+          ×
+        </button>
       </div>
     </div>
   );

@@ -36,15 +36,24 @@
   position: absolute;
   top: 100%;
   left: 0;
+  right: 0;
   margin-top: 0.5rem;
   background: white;
   border: 1px solid rgba(44, 62, 80, 0.1);
   border-radius: 0.5rem;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  z-index: 9999;
-  overflow: visible;
-  width: 300px;
-  max-height: none;
+  z-index: 10000;
+  overflow: hidden;
+  width: 100%;
+  max-width: 300px;
+  max-height: 350px;
+}
+
+.date-picker-calendar-top {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
 }
 
 .date-picker-header {

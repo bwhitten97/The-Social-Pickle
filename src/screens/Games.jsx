@@ -331,11 +331,7 @@ const Games = ({ addAppNotification }) => {
     setShowEditModal(false);
     setEditGameData(null);
     setShowManageModal(false);
-    setNotification({
-      message: 'Game updated successfully!',
-      name: 'Game Updated',
-      emoji: '✅'
-    });
+    alert('Game updated successfully!');
   };
 
   const handleRemoveGame = (gameId) => {
@@ -1710,6 +1706,7 @@ const Games = ({ addAppNotification }) => {
           name={notification.name}
           emoji={notification.emoji}
           onClose={() => setNotification(null)}
+          duration={2000}
         />
       )}
     </div>

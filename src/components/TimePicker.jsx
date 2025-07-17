@@ -6,6 +6,7 @@ const TimePicker = ({ value, onChange, className = '' }) => {
   const [selectedHour, setSelectedHour] = useState(null);
   const [selectedMinute, setSelectedMinute] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('PM');
+  const [dropdownPosition, setDropdownPosition] = useState('bottom');
   const timePickerRef = useRef(null);
 
   // Initialize from value prop
@@ -61,6 +62,20 @@ const TimePicker = ({ value, onChange, className = '' }) => {
     }
   };
 
+  const toggleDropdown = () => {
+    if (!isOpen && timePickerRef.current) {
+      // Calculate available space
+      const rect = timePickerRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      
+      // If not enough space below, position above
+      setDropdownPosition(spaceBelow < 350 && spaceAbove > 350 ? 'top' : 'bottom');
+    }
+    setIsOpen(!isOpen);
+  };
+
   const hours = Array.from({ length: 12 }, (_, i) => i + 1);
   const minutes = Array.from({ length: 60 }, (_, i) => i);
 
@@ -68,7 +83,7 @@ const TimePicker = ({ value, onChange, className = '' }) => {
     <div className={`time-picker ${className}`} ref={timePickerRef}>
       <div 
         className={`time-picker-input ${isOpen ? 'open' : ''}`}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleDropdown}
       >
         <span className="time-picker-value">
           {formatTime(selectedHour, selectedMinute, selectedPeriod)}
@@ -91,7 +106,7 @@ const TimePicker = ({ value, onChange, className = '' }) => {
       </div>
 
       {isOpen && (
-        <div className="time-picker-dropdown">
+        <div className={`time-picker-dropdown ${dropdownPosition === 'top' ? 'time-picker-dropdown-top' : ''}`}>
           <div className="time-picker-header">
             <span>Select Time</span>
           </div>
