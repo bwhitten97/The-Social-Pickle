@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useGameContext } from '../context/GameContext';
 import DatePicker from '../components/DatePicker';
 import TimePicker from '../components/TimePicker';
 import Notification from '../components/Notification';
 import './Games.css';
 
-const Games = ({ addAppNotification }) => {
+const Games = memo(({ addAppNotification }) => {
   const { 
     games, 
     applications, 
@@ -20,8 +20,7 @@ const Games = ({ addAppNotification }) => {
     getGameApplications,
     hasUserApplied,
     updateApplicationStatus,
-    sendMessage,
-    cleanupExpiredGames
+    sendMessage
   } = useGameContext();
   
   const [showPostForm, setShowPostForm] = useState(false);
@@ -68,10 +67,21 @@ const Games = ({ addAppNotification }) => {
   const myGames = games.filter(game => game.createdBy === currentUserName);
   const myApplications = getUserApplications();
 
-  // Clean up expired games when component mounts
+  // Cleanup effect to ensure component properly unmounts
   useEffect(() => {
-    cleanupExpiredGames();
-  }, [cleanupExpiredGames]);
+    return () => {
+      // Clean up any pending states when component unmounts
+      setShowPostForm(false);
+      setShowEditModal(false);
+      setShowManageModal(false);
+      setShowRequestModal(false);
+      setShowMessageModal(false);
+      setShowRemoveConfirm(false);
+      setShowWithdrawConfirm(false);
+      setSelectedProfile(null);
+    };
+  }, []);
+
 
   // Helper function to check if game is happening soon
   const isGameSoon = (game) => {
@@ -996,8 +1006,8 @@ const Games = ({ addAppNotification }) => {
 
       {/* Post Game Modal */}
       {showPostForm && (
-        <div className="games-modal-overlay">
-          <div className="games-modal">
+        <div className="games-modal-overlay" onClick={() => setShowPostForm(false)}>
+          <div className="games-modal" onClick={(e) => e.stopPropagation()}>
             <div className="games-modal-header">
               <h2>Post a New Game</h2>
               <button 
@@ -1510,8 +1520,8 @@ const Games = ({ addAppNotification }) => {
 
       {/* Edit Game Modal */}
       {showEditModal && editGameData && (
-        <div className="games-modal-overlay">
-          <div className="games-modal">
+        <div className="games-modal-overlay" onClick={() => setShowEditModal(false)}>
+          <div className="games-modal" onClick={(e) => e.stopPropagation()}>
             <div className="games-modal-header">
               <h2>Edit Game</h2>
               <button 
@@ -1656,8 +1666,8 @@ const Games = ({ addAppNotification }) => {
 
       {/* Remove Game Confirmation Modal */}
       {showRemoveConfirm && gameToRemove && (
-        <div className="games-modal-overlay">
-          <div className="games-modal" style={{ maxWidth: '400px' }}>
+        <div className="games-modal-overlay" onClick={cancelRemoveGame}>
+          <div className="games-modal" style={{ maxWidth: '400px' }} onClick={(e) => e.stopPropagation()}>
             <div className="games-modal-header">
               <h2>Remove Game Listing</h2>
             </div>
@@ -1711,6 +1721,8 @@ const Games = ({ addAppNotification }) => {
       )}
     </div>
   );
-};
+});
+
+Games.displayName = 'Games';
 
 export default Games;

@@ -39,15 +39,12 @@ export const AuthProvider = ({ children }) => {
           
           if (userDocSnap.exists()) {
             const userData = userDocSnap.data();
-            console.log('Auth: User data from Firestore:', userData);
             
             // If user has basic profile data, assume profile is complete
             const hasBasicProfile = userData.name && userData.age && userData.skillLevel;
-            console.log('Auth: Has basic profile?', hasBasicProfile, { name: userData.name, age: userData.age, skillLevel: userData.skillLevel });
             
             // For returning users: if they have ANY previous profile data, skip onboarding
             const isReturningUser = userData.createdAt && (userData.name || userData.age || userData.skillLevel || userData.profileComplete);
-            console.log('Auth: Is returning user?', isReturningUser);
             
             // One-time migration: Update profileComplete field for existing users
             if ((userData.profileComplete === undefined && hasBasicProfile) || isReturningUser) {
@@ -56,7 +53,6 @@ export const AuthProvider = ({ children }) => {
                   profileComplete: true, 
                   hasSeenWelcome: true 
                 });
-                console.log('Auth: Updated Firestore for returning user');
               } catch (error) {
                 console.error('Error updating profileComplete:', error);
               }
@@ -65,11 +61,6 @@ export const AuthProvider = ({ children }) => {
             // For existing users with complete profiles, automatically set hasSeenWelcome
             const shouldHaveSeenWelcome = userData.profileComplete || hasBasicProfile || isReturningUser;
             const finalProfileComplete = userData.profileComplete !== undefined ? userData.profileComplete : (hasBasicProfile || isReturningUser);
-            
-            console.log('Auth: Final user state:', {
-              profileComplete: finalProfileComplete,
-              hasSeenWelcome: shouldHaveSeenWelcome
-            });
             
             setUser({
               id: firebaseUser.uid,
@@ -148,11 +139,9 @@ export const AuthProvider = ({ children }) => {
       
       if (additionalData.profilePicture) {
         try {
-          console.log('SignUp: Uploading profile picture...');
           const imageRef = ref(storage, `profile-pictures/${firebaseUser.uid}`);
           await uploadBytes(imageRef, additionalData.profilePicture);
           profilePictureUrl = await getDownloadURL(imageRef);
-          console.log('SignUp: Profile picture uploaded successfully:', profilePictureUrl);
         } catch (uploadError) {
           console.error('Error uploading profile picture:', uploadError);
           // Continue without profile picture if upload fails
@@ -339,11 +328,9 @@ export const AuthProvider = ({ children }) => {
       
       if (profileData.profilePicture) {
         try {
-          console.log('Profile Update: Uploading profile picture...');
           const imageRef = ref(storage, `profile-pictures/${firebaseUser.uid}`);
           await uploadBytes(imageRef, profileData.profilePicture);
           profilePictureUrl = await getDownloadURL(imageRef);
-          console.log('Profile Update: Profile picture uploaded successfully:', profilePictureUrl);
         } catch (uploadError) {
           console.error('Error uploading profile picture:', uploadError);
           // Continue without profile picture if upload fails
@@ -368,15 +355,14 @@ export const AuthProvider = ({ children }) => {
       await updateDoc(userDocRef, updateData);
       
       // Immediately update local user state to prevent navigation timing issues
-      setUser(prevUser => {
-        const updatedUser = {
-          ...prevUser,
-          ...updateData,
-          profileComplete: true
-        };
-        console.log('AuthContext: Updated user state', updatedUser);
-        return updatedUser;
-      });
+      const finalProfilePicture = profilePictureUrl || updateData.profilePicture || '';
+      
+      setUser(prevUser => ({
+        ...prevUser,
+        ...updateData,
+        profilePicture: finalProfilePicture,
+        profileComplete: true
+      }));
       
       return { success: true };
     } catch (error) {

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 
 const GameContext = createContext();
 
@@ -379,11 +379,38 @@ export const GameProvider = ({ children }) => {
 
   // Set up periodic cleanup - run every 5 minutes
   useEffect(() => {
+    // Define cleanup function inside useEffect to avoid stale closures
+    const runCleanup = () => {
+      const now = new Date();
+      setGames(prevGames => {
+        const expiredGameIds = [];
+        const activeGames = prevGames.filter(game => {
+          const gameDateTime = new Date(`${game.date}T${game.time}`);
+          const gameEndTime = new Date(gameDateTime.getTime() + 60 * 60 * 1000);
+          
+          if (now > gameEndTime) {
+            expiredGameIds.push(game.id);
+            return false;
+          }
+          return true;
+        });
+        
+        if (expiredGameIds.length > 0) {
+          setApplications(prevApps => prevApps.filter(app => !expiredGameIds.includes(app.gameId)));
+          setChatRooms(prevRooms => prevRooms.filter(room => !expiredGameIds.includes(room.gameId)));
+          
+          console.log(`Cleaned up ${expiredGameIds.length} expired games`);
+        }
+        
+        return activeGames;
+      });
+    };
+    
     // Run cleanup immediately when component mounts
-    cleanupExpiredGames();
+    runCleanup();
     
     // Set up interval to run cleanup every 5 minutes
-    const cleanupInterval = setInterval(cleanupExpiredGames, 5 * 60 * 1000);
+    const cleanupInterval = setInterval(runCleanup, 5 * 60 * 1000);
     
     // Cleanup interval on unmount
     return () => clearInterval(cleanupInterval);
@@ -620,7 +647,7 @@ export const GameProvider = ({ children }) => {
     return { success: true, message: "Chat deleted successfully!" };
   };
 
-  const value = {
+  const value = useMemo(() => ({
     games,
     applications,
     chatRooms,
@@ -644,9 +671,8 @@ export const GameProvider = ({ children }) => {
     sendMessage,
     getMessages,
     getConversation,
-    deleteChat,
-    cleanupExpiredGames
-  };
+    deleteChat
+  }), [games, applications, chatRooms, matchedPlayers, messages, currentUserId, currentUserName, currentUserSkill]);
 
   return (
     <GameContext.Provider value={value}>

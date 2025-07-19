@@ -34,6 +34,8 @@
   -moz-osx-font-smoothing: grayscale;
   max-width: 100vw;
   overflow-x: hidden;
+  position: relative;
+  padding-bottom: 80px; /* Space for navigation */
 }
 
 .games-main {
@@ -47,6 +49,8 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  position: relative;
+  z-index: 1; /* Ensure it's below navigation */
 }
 
 @media (min-width: 640px) {
@@ -207,6 +211,7 @@
   flex-direction: column;
   gap: 1.5rem;
   animation: games-fadeInUp 0.4s 0.25s both;
+  padding-bottom: 2rem; /* Extra padding at bottom */
 }
 
 .games-card {
@@ -486,6 +491,7 @@
   justify-content: center;
   z-index: 1000;
   padding: 1.25rem;
+  pointer-events: auto;
 }
 
 .games-modal {
@@ -623,6 +629,11 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .games-container {
+    min-height: calc(100vh - 80px); /* Account for navigation height */
+    padding-bottom: 100px; /* Extra space for navigation */
+  }
+  
   .games-content-wrapper {
     padding: 1.5rem 1rem;
     gap: 0.5rem;

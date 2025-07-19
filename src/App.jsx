@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Navigation from './components/Navigation';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -213,6 +213,7 @@ const mockPlayers = [
 ];
 
 function AppContent() {
+  const location = useLocation();
   const { addMatchedPlayer } = useGameContext();
   const { isAuthenticated, user } = useAuth();
   const [players, setPlayers] = useState(mockPlayers);

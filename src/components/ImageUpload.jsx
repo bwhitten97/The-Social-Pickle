@@ -59,7 +59,12 @@ const ImageUpload = ({ currentImage, onImageChange, className = '' }) => {
         
         canvas.toBlob(
           (blob) => {
-            resolve(blob);
+            // Convert blob to File object with proper name and type
+            const file = new File([blob], `profile-${Date.now()}.jpg`, {
+              type: 'image/jpeg',
+              lastModified: Date.now()
+            });
+            resolve(file);
           },
           'image/jpeg',
           0.85 // Quality

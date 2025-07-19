@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 import ImageUpload from '../components/ImageUpload';
 import Notification from '../components/Notification';
 import './Profile.css';
@@ -45,20 +47,43 @@ const Profile = () => {
   const [notification, setNotification] = useState(null);
   
   const [profile, setProfile] = useState({
-    name: user?.name || 'Alex Johnson',
-    email: user?.email || 'alex.johnson@email.com',
-    phone: '+1 (555) 123-4567',
-    skillLevel: user?.skillLevel || 'intermediate',
-    duprRating: user?.duprRating || '3.5',
-    gender: user?.gender || 'prefer-not-to-say',
-    age: user?.age || '28',
-    bio: user?.bio || 'Passionate pickleball player who loves meeting new people and improving my game. Available most weekends!',
-    availability: user?.availability || ['weekends', 'weeknights'],
+    name: user?.name || '',
+    email: user?.email || '',
+    skillLevel: user?.skillLevel || '',
+    duprRating: user?.duprRating || 'unrated',
+    gender: user?.gender || '',
+    age: user?.age || '',
+    bio: user?.bio || '',
+    availability: user?.availability || [],
   });
 
   const [isEditing, setIsEditing] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
-  const [profileImagePreview, setProfileImagePreview] = useState(user?.profilePicture || null);
+  const [profileImagePreview, setProfileImagePreview] = useState(null);
+
+  // Fetch profile picture directly from Firestore
+  useEffect(() => {
+    const fetchProfilePicture = async () => {
+      if (user?.id) {
+        try {
+          const userDocRef = doc(db, 'users', user.id);
+          const userDocSnap = await getDoc(userDocRef);
+          
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            if (userData.profilePicture) {
+              setProfileImagePreview(userData.profilePicture);
+              console.log('Profile: Loaded profile picture from Firestore:', userData.profilePicture);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching profile picture:', error);
+        }
+      }
+    };
+
+    fetchProfilePicture();
+  }, [user?.id]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -273,20 +298,6 @@ const Profile = () => {
                     />
                   ) : (
                     <div className="field-value">{profile.email}</div>
-                  )}
-                </div>
-                <div className="form-field">
-                  <label className="field-label">Phone</label>
-                  {isEditing ? (
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={profile.phone}
-                      onChange={handleInputChange}
-                      className="field-input"
-                    />
-                  ) : (
-                    <div className="field-value">{profile.phone}</div>
                   )}
                 </div>
               </div>

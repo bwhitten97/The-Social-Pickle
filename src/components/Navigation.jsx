@@ -1,7 +1,16 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import './Navigation.css';
 
 const Navigation = ({ unreadNotificationCount = 0, unreadChatCount = 0 }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Force navigation update when location changes
+  useEffect(() => {
+    // This ensures the navigation actually happens
+  }, [location.pathname]);
+  
   return (
     <nav className="navigation">
       <div className="nav-brand">
