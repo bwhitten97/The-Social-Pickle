@@ -1,4 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { collection, query, where, getDocs, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { useAuth } from '../context/AuthContext';
 import { useGameContext } from '../context/GameContext';
 import ChatRoom from '../components/ChatRoom';
 import Notification from '../components/Notification';
@@ -303,15 +306,124 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
 DirectMessageChat.displayName = 'DirectMessageChat';
 
 const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotificationsRead }) => {
+  const { user } = useAuth();
   const { getUserChatRooms, getConversation, sendMessage, currentUserName, deleteChat, getMessages } = useGameContext();
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [selectedChatName, setSelectedChatName] = useState(null);
   const [activeTab, setActiveTab] = useState('chat');
   const [chatUnreadCounts, setChatUnreadCounts] = useState({});
   const [notification, setNotification] = useState(null);
+  const [realChats, setRealChats] = useState([]);
+  const [isLoadingChats, setIsLoadingChats] = useState(true);
+  const [realNotifications, setRealNotifications] = useState([]);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
   
-  // Combine app notifications with default notifications (imported from mockData.js)
-  
+  // Fetch real chats from Firestore
+  const fetchChats = async () => {
+    if (!user) {
+      setIsLoadingChats(false);
+      return;
+    }
+
+    try {
+      setIsLoadingChats(true);
+      
+      // Query chats collection for current user
+      const chatsRef = collection(db, 'chats');
+      const q = query(
+        chatsRef,
+        where('participants', 'array-contains', user.id),
+        orderBy('lastMessageTime', 'desc')
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const fetchedChats = [];
+      
+      querySnapshot.forEach((doc) => {
+        const chatData = doc.data();
+        
+        // Get the other participant's name
+        const otherParticipantId = chatData.participants.find(id => id !== user.id);
+        const otherParticipantName = chatData.participantNames?.[otherParticipantId] || 'Unknown User';
+        
+        fetchedChats.push({
+          id: doc.id,
+          name: otherParticipantName,
+          lastMessage: chatData.lastMessage || 'Start a conversation',
+          timestamp: chatData.lastMessageTime?.toDate?.() || new Date(),
+          avatar: '💬',
+          unread: chatData.unreadCount?.[user.id] || 0,
+          isDummy: false,
+          isGameChat: false
+        });
+      });
+      
+      setRealChats(fetchedChats);
+      
+    } catch (error) {
+      setRealChats([]);
+    } finally {
+      setIsLoadingChats(false);
+    }
+  };
+
+  // Fetch real notifications from Firestore
+  const fetchNotifications = async () => {
+    if (!user) {
+      setIsLoadingNotifications(false);
+      return;
+    }
+
+    try {
+      setIsLoadingNotifications(true);
+      
+      // Query notifications collection for current user
+      const notificationsRef = collection(db, 'notifications');
+      const q = query(
+        notificationsRef,
+        where('userId', '==', user.id),
+        orderBy('createdAt', 'desc')
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const fetchedNotifications = [];
+      
+      querySnapshot.forEach((doc) => {
+        const notificationData = doc.data();
+        fetchedNotifications.push({
+          id: doc.id,
+          message: notificationData.message || 'New notification',
+          timestamp: notificationData.createdAt?.toDate?.()?.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: true 
+          }) || 'Now',
+          isRead: notificationData.isRead || false,
+          type: notificationData.type || 'system',
+          targetUser: notificationData.userId
+        });
+      });
+      
+      setRealNotifications(fetchedNotifications);
+      
+    } catch (error) {
+      setRealNotifications([]);
+    } finally {
+      setIsLoadingNotifications(false);
+    }
+  };
+
+  // Fetch data when component mounts or user changes
+  useEffect(() => {
+    if (user) {
+      fetchChats();
+      fetchNotifications();
+    } else {
+      setIsLoadingChats(false);
+      setIsLoadingNotifications(false);
+    }
+  }, [user]);
+
   // Filter appNotifications to only show ones for current user or general notifications
   const userNotifications = useMemo(() => {
     return appNotifications.filter(notification => 
@@ -319,10 +431,10 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
     );
   }, [appNotifications, currentUserName]);
   
-  // Combine filtered appNotifications with default notifications
+  // Combine real notifications, app notifications and default notifications
   const notifications = useMemo(() => {
-    return [...userNotifications, ...defaultNotifications];
-  }, [userNotifications]);
+    return [...realNotifications, ...userNotifications, ...defaultNotifications];
+  }, [realNotifications, userNotifications]);
   
   const userChatRooms = getUserChatRooms();
 
@@ -395,9 +507,9 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
   // Initialize game chat unread counts
   initializeGameChatUnreadCounts();
   
-  // Convert real chat rooms to display format, or use dummy chats
+  // Combine real chats, game chats and dummy chats
   const chatsToShow = useMemo(() => {
-    return userChatRooms.length > 0 ? userChatRooms.map(room => ({
+    const gameChats = userChatRooms.map(room => ({
       id: room.gameId || room.id,
       name: room.gameName,
       lastMessage: room.lastMessage || 'Start a conversation',
@@ -407,8 +519,24 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
       isDummy: false,
       isGameChat: !!room.gameId,
       chatRoom: room
-    })) : dummyChatsWithCounts;
-  }, [userChatRooms, dummyChatsWithCounts, formatTimestamp, getAvatarEmoji, chatUnreadCounts]);
+    }));
+    
+    const allChats = [...realChats, ...gameChats];
+    
+    // Remove duplicates based on name
+    const uniqueChats = allChats.filter((chat, index, self) => 
+      index === self.findIndex(c => c.name === chat.name)
+    );
+    
+    // Add unread counts for real chats
+    const chatsWithCounts = uniqueChats.map(chat => ({
+      ...chat,
+      unread: chat.unread || chatUnreadCounts[chat.id] || 0
+    }));
+    
+    // Fallback to dummy data if no chats
+    return chatsWithCounts.length > 0 ? chatsWithCounts : dummyChatsWithCounts;
+  }, [realChats, userChatRooms, dummyChatsWithCounts, formatTimestamp, getAvatarEmoji, chatUnreadCounts]);
 
   const handleChatSelect = useCallback((chat) => {
     // Mark chat as read by setting unread count to 0
@@ -606,7 +734,12 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
       {/* Chat Panel */}
       {activeTab === 'chat' && (
         <div className="chat-panel-modern">
-          {chatsToShow.length === 0 ? (
+          {isLoadingChats ? (
+            <div className="chat-loading">
+              <div className="loading-spinner"></div>
+              <p>Loading chats...</p>
+            </div>
+          ) : chatsToShow.length === 0 ? (
             <div className="no-chats-message">
               <p>No conversations yet. Start playing games to connect with other players!</p>
                     </div>
@@ -627,18 +760,25 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
       {/* Notification Panel */}
       {activeTab === 'notifications' && (
         <div className="notification-panel-modern">
-          {unreadNotificationsCount > 0 && (
-            <div className="notification-header">
-              <button 
-                className="mark-all-read-btn"
-                onClick={markAllNotificationsAsRead}
-              >
-                Mark all as read
-              </button>
+          {isLoadingNotifications ? (
+            <div className="notification-loading">
+              <div className="loading-spinner"></div>
+              <p>Loading notifications...</p>
             </div>
-          )}
-          
-                    {notifications.map((notification, index) => (
+          ) : (
+            <>
+              {unreadNotificationsCount > 0 && (
+                <div className="notification-header">
+                  <button 
+                    className="mark-all-read-btn"
+                    onClick={markAllNotificationsAsRead}
+                  >
+                    Mark all as read
+                  </button>
+                </div>
+              )}
+              
+              {notifications.map((notification, index) => (
             <article
               key={notification.id}
               className={`notification-card-modern fade-in-${(index % 4) + 1} ${!notification.isRead && !readNotifications.has(notification.id) ? 'unread' : ''}`}
@@ -658,13 +798,15 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
             </article>
           ))}
           
-          {notifications.length === 0 && (
-            <div className="no-notifications-message">
-              <p>No notifications yet. We'll let you know when something important happens!</p>
-            </div>
+              {notifications.length === 0 && (
+                <div className="no-notifications-message">
+                  <p>No notifications yet. We'll let you know when something important happens!</p>
+                </div>
+              )}
+            </>
           )}
-          </div>
-        )}
+        </div>
+      )}
 
       {/* Native Notification */}
       {notification && (

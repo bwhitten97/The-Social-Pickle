@@ -409,3 +409,29 @@
     font-size: 0.85rem;
   }
 }
+
+/* Loading states */
+.discover-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+  gap: 1rem;
+}
+
+.loading-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #22C55E;
+  border-radius: 50%;
+  animation: discover-spin-quick 0.8s linear infinite;
+}
+
+.discover-loading p {
+  color: #6B7280;
+  font-size: 0.9rem;
+  margin: 0;
+}

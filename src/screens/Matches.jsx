@@ -1,22 +1,106 @@
-import React, { useState, useMemo, useCallback, memo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { useAuth } from '../context/AuthContext';
 import { useGameContext } from '../context/GameContext';
 import Notification from '../components/Notification';
 import { mockMatches } from '../data/mockData';
 import './Matches.css';
 
 const Matches = memo(() => {
+  const { user } = useAuth();
   const { matchedPlayers, sendMessage: sendMessageToContext } = useGameContext();
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [realMatches, setRealMatches] = useState([]);
+  const [isLoadingMatches, setIsLoadingMatches] = useState(true);
 
-  // Mock data for demonstration when no real matches exist is now imported from mockData.js
+  // Fetch real matches from Firestore
+  const fetchMatches = async () => {
+    if (!user) {
+      setIsLoadingMatches(false);
+      return;
+    }
 
-  // Use real matched players if available, otherwise use mock data for demonstration
+    try {
+      setIsLoadingMatches(true);
+      
+      // Query matches collection for current user
+      const matchesRef = collection(db, 'matches');
+      const q = query(
+        matchesRef,
+        where('participants', 'array-contains', user.id),
+        orderBy('createdAt', 'desc')
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const fetchedMatches = [];
+      
+      for (const doc of querySnapshot.docs) {
+        const matchData = doc.data();
+        
+        // Get the other participant's data
+        const otherUserId = matchData.participants.find(id => id !== user.id);
+        if (otherUserId) {
+          try {
+            const userRef = collection(db, 'users');
+            const userQuery = query(userRef, where('id', '==', otherUserId));
+            const userSnapshot = await getDocs(userQuery);
+            
+            if (!userSnapshot.empty) {
+              const userData = userSnapshot.docs[0].data();
+              fetchedMatches.push({
+                id: doc.id,
+                name: userData.name || 'Unknown User',
+                age: userData.age || 25,
+                skillLevel: userData.skillLevel || 'intermediate',
+                duprRating: userData.duprRating || '3.5',
+                availability: userData.availability?.[0] || 'evenings',
+                bio: userData.bio || 'Love playing pickleball!',
+                image: userData.profilePicture || null,
+                matchedAt: matchData.createdAt?.toDate?.() || new Date(),
+                location: userData.location || 'Location not specified'
+              });
+            }
+          } catch (error) {
+            // Skip this match if we can't fetch user data
+          }
+        }
+      }
+      
+      setRealMatches(fetchedMatches);
+      
+    } catch (error) {
+      // Fallback to context matches on error
+      setRealMatches([]);
+    } finally {
+      setIsLoadingMatches(false);
+    }
+  };
+
+  // Fetch matches when component mounts or user changes
+  useEffect(() => {
+    if (user) {
+      fetchMatches();
+    } else {
+      setIsLoadingMatches(false);
+    }
+  }, [user]);
+
+  // Combine real matches, context matches, and mock data
   const matches = useMemo(() => {
-    return matchedPlayers.length > 0 ? matchedPlayers : mockMatches;
-  }, [matchedPlayers]);
+    const allMatches = [...realMatches, ...matchedPlayers];
+    
+    // Remove duplicates based on name
+    const uniqueMatches = allMatches.filter((match, index, self) => 
+      index === self.findIndex(m => m.name === match.name)
+    );
+    
+    // Fallback to mock data if no matches
+    return uniqueMatches.length > 0 ? uniqueMatches : mockMatches;
+  }, [realMatches, matchedPlayers]);
 
   const getSkillLevelColor = useCallback((skill) => {
     // All skill levels now use the same green color scheme
@@ -115,7 +199,12 @@ const Matches = memo(() => {
 
           {/* Match Cards */}
           <section className="matches-cards-section">
-            {matches.length > 0 ? (
+            {isLoadingMatches ? (
+              <div className="matches-loading">
+                <div className="loading-spinner"></div>
+                <p>Loading your matches...</p>
+              </div>
+            ) : matches.length > 0 ? (
               matches.map((match, index) => (
                 <article key={match.id} className={`matches-card matches-fade-in-${index + 1}`}>
                   <div className="matches-card-content">

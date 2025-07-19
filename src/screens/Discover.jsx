@@ -1,4 +1,8 @@
-import { useState, useMemo, useCallback, memo } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { collection, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { useAuth } from '../context/AuthContext';
+import { mockPlayers } from '../data/mockData';
 import DiscoverCard from '../components/DiscoverCard';
 import './Discover.css';
 
@@ -257,7 +261,12 @@ const Discover = memo(({
 
         {/* Card */}
         <div className="discover-card-container">
-          {currentProfile ? (
+          {players.length === 0 ? (
+            <div className="discover-loading">
+              <div className="loading-spinner"></div>
+              <p>Loading players...</p>
+            </div>
+          ) : currentProfile ? (
             <DiscoverCard 
               profile={currentProfile}
               onLike={handleLike}

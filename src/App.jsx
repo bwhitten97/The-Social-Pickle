@@ -1,5 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { db } from './config/firebase';
 import Navigation from './components/Navigation';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -41,7 +43,8 @@ function AppContent() {
   const location = useLocation();
   const { addMatchedPlayer } = useGameContext();
   const { isAuthenticated, user } = useAuth();
-  const [players, setPlayers] = useState(mockPlayers);
+  const [players, setPlayers] = useState([]);
+  const [isLoadingPlayers, setIsLoadingPlayers] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [filter, setFilter] = useState('All');
   const [connections, setConnections] = useState([]);
@@ -62,6 +65,78 @@ function AppContent() {
     location: user?.location || DEFAULT_USER_LOCATION,
     avatar: user?.avatar || DEFAULT_USER_AVATAR
   });
+
+  // Fetch real users from Firestore
+  const fetchUsers = async () => {
+    if (!user) {
+      setIsLoadingPlayers(false);
+      return;
+    }
+
+    try {
+      setIsLoadingPlayers(true);
+      
+      // Query users collection, only getting complete profiles
+      const usersRef = collection(db, 'users');
+      const q = query(
+        usersRef,
+        where('profileComplete', '==', true),
+        orderBy('createdAt', 'desc')
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const fetchedUsers = [];
+      
+      querySnapshot.forEach((doc) => {
+        const userData = doc.data();
+        // Exclude current user from results
+        if (userData.id === user.id || doc.id === user.id) {
+          return;
+        }
+        
+        // Transform Firestore user data to match expected player format
+        fetchedUsers.push({
+          id: userData.id || doc.id,
+          name: userData.name || 'Unknown User',
+          age: userData.age || 25,
+          skillLevel: userData.skillLevel || 'intermediate',
+          duprRating: userData.duprRating || '3.5',
+          playStyle: userData.playStyle || 'casual',
+          availability: userData.availability || ['weekends'],
+          gender: userData.gender || 'prefer-not-to-say',
+          bio: userData.bio || 'Love playing pickleball!',
+          location: userData.location || 'Location not specified',
+          distance: '-- miles away', // TODO: Calculate actual distance
+          avatar: userData.avatar || '🥒',
+          playingExperience: userData.experience || '2 years',
+          image: userData.profilePicture || null
+        });
+      });
+      
+      // Fallback to mock data if no users found or for development
+      if (fetchedUsers.length === 0) {
+        setPlayers(mockPlayers);
+      } else {
+        setPlayers(fetchedUsers);
+      }
+      
+    } catch (error) {
+      // Fallback to mock data on error
+      setPlayers(mockPlayers);
+    } finally {
+      setIsLoadingPlayers(false);
+    }
+  };
+
+  // Fetch users when component mounts or user changes
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchUsers();
+    } else {
+      setPlayers(mockPlayers);
+      setIsLoadingPlayers(false);
+    }
+  }, [isAuthenticated, user]);
 
   const filteredPlayers = players.filter(player => 
     filter === 'All' || player.skillLevel === filter.toLowerCase()
@@ -134,9 +209,9 @@ function AppContent() {
 
   const resetFeed = () => {
     setCurrentIndex(0);
-    setPlayers(mockPlayers);
     setConnections([]);
     setPlayersWhoLikedUser(INITIAL_LIKED_PLAYERS);
+    fetchUsers(); // Refetch from Firebase
     showNotification("Feed reset!", "", "🔄", "system");
   };
 
