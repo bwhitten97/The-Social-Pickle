@@ -100,12 +100,10 @@ const MatchFeed = () => {
   };
 
   const swiped = (direction, nameToDelete, index) => {
-    console.log('removing: ' + nameToDelete + ' to the ' + direction);
     setCurrentIndex(index - 1);
   };
 
   const outOfFrame = (name, idx) => {
-    console.log(name + ' (' + idx + ') left the screen!');
     currentIndexRef.current >= idx && childRefs.current[idx]?.restoreCard();
   };
 

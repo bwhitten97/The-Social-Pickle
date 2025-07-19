@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { useGameContext } from '../context/GameContext';
 import DatePicker from '../components/DatePicker';
 import TimePicker from '../components/TimePicker';
@@ -64,8 +64,13 @@ const Games = memo(({ addAppNotification }) => {
 
   const [showFilters, setShowFilters] = useState(false);
 
-  const myGames = games.filter(game => game.createdBy === currentUserName);
-  const myApplications = getUserApplications();
+  const myGames = useMemo(() => {
+    return games.filter(game => game.createdBy === currentUserName);
+  }, [games, currentUserName]);
+  
+  const myApplications = useMemo(() => {
+    return getUserApplications();
+  }, [getUserApplications]);
 
   // Cleanup effect to ensure component properly unmounts
   useEffect(() => {
@@ -112,7 +117,7 @@ const Games = memo(({ addAppNotification }) => {
     }
   };
 
-  const applyFilters = (games) => {
+  const applyFilters = useCallback((games) => {
     return games.filter(game => {
       // Date filter
       if (filters.date && game.date !== filters.date) return false;
@@ -140,14 +145,17 @@ const Games = memo(({ addAppNotification }) => {
       
       return true;
     });
-  };
+  }, [filters]);
 
-  const filteredOtherGames = applyFilters(games.filter(game => 
-    game.createdBy !== currentUserName && !hasUserApplied(game.id)
-  ));
+  const filteredOtherGames = useMemo(() => {
+    const otherGames = games.filter(game => 
+      game.createdBy !== currentUserName && !hasUserApplied(game.id)
+    );
+    return applyFilters(otherGames);
+  }, [games, currentUserName, hasUserApplied, applyFilters]);
 
   // Clear filters function
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setFilters({
       date: '',
       timeSlot: 'all',
@@ -155,10 +163,10 @@ const Games = memo(({ addAppNotification }) => {
       duprRange: { min: 2.0, max: 6.0 },
       playersNeeded: 'all'
     });
-  };
+  }, []);
 
   // Update DUPR range when skill level changes
-  const handleSkillLevelChange = (skillLevel) => {
+  const handleSkillLevelChange = useCallback((skillLevel) => {
     setFilters(prev => ({
       ...prev,
       skillLevel,
@@ -166,10 +174,10 @@ const Games = memo(({ addAppNotification }) => {
         ? { min: 2.0, max: 6.0 }
         : skillLevelToDupr(skillLevel)
     }));
-  };
+  }, []);
 
   // Update skill level when DUPR range changes
-  const handleDuprRangeChange = (duprRange) => {
+  const handleDuprRangeChange = useCallback((duprRange) => {
     let inferredSkillLevel = 'all';
     
     if (duprRange.min >= 2.0 && duprRange.max <= 3.0) {
@@ -185,15 +193,15 @@ const Games = memo(({ addAppNotification }) => {
       skillLevel: inferredSkillLevel,
       duprRange
     }));
-  };
+  }, []);
 
-  const getApplicationCount = (gameId) => {
+  const getApplicationCount = useCallback((gameId) => {
     return applications.filter(app => app.gameId === gameId && app.status === 'pending').length;
-  };
+  }, [applications]);
 
-  const hasApplied = (gameId) => {
+  const hasApplied = useCallback((gameId) => {
     return applications.some(app => app.gameId === gameId && app.playerId === currentUserId);
-  };
+  }, [applications, currentUserId]);
 
   const handlePostGame = (e) => {
     e.preventDefault();
@@ -227,13 +235,13 @@ const Games = memo(({ addAppNotification }) => {
     setActiveTab('mygames');
   };
 
-  const handleRequestToJoin = (gameId) => {
+  const handleRequestToJoin = useCallback((gameId) => {
     const game = games.find(g => g.id === gameId);
     setSelectedGame(game);
     setShowRequestModal(true);
-  };
+  }, [games]);
 
-  const submitJoinRequest = () => {
+  const submitJoinRequest = useCallback(() => {
     if (!selectedGame) return;
     
     const message = requestData.message || `I'd like to join this game with ${requestData.playerCount} player${requestData.playerCount > 1 ? 's' : ''}!`;
@@ -264,15 +272,15 @@ const Games = memo(({ addAppNotification }) => {
         emoji: '❌'
       });
     }
-  };
+  }, [selectedGame, requestData, requestToJoinGame, addAppNotification, currentUserName, formatDate]);
 
-  const cancelJoinRequest = () => {
+  const cancelJoinRequest = useCallback(() => {
     setShowRequestModal(false);
     setRequestData({ playerCount: 1, message: '' });
     setSelectedGame(null);
-  };
+  }, []);
 
-  const handleViewProfile = (hostName) => {
+  const handleViewProfile = useCallback((hostName) => {
     // Create a mock profile object with the host's information
     // In a real app, this would fetch the user's profile data
     const mockProfile = {
@@ -287,9 +295,9 @@ const Games = memo(({ addAppNotification }) => {
     };
     
     setSelectedProfile(mockProfile);
-  };
+  }, [getHostAvatar]);
 
-  const handleViewApplicantProfile = (application) => {
+  const handleViewApplicantProfile = useCallback((application) => {
     // Create a profile object with the applicant's information
     const applicantProfile = {
       name: application.playerName,
@@ -304,12 +312,12 @@ const Games = memo(({ addAppNotification }) => {
     
     // Show the profile modal on top of the manage applications modal
     setSelectedProfile(applicantProfile);
-  };
+  }, [getHostAvatar]);
 
-  const handleManageApplications = (game) => {
+  const handleManageApplications = useCallback((game) => {
     setSelectedGame(game);
     setShowManageModal(true);
-  };
+  }, []);
 
   const handleEditGame = (game) => {
     setEditGameData({
@@ -440,9 +448,9 @@ const Games = memo(({ addAppNotification }) => {
     setMessageData({ recipientName: '', message: '' });
   };
 
-  const closeProfileModal = () => {
+  const closeProfileModal = useCallback(() => {
     setSelectedProfile(null);
-  };
+  }, []);
 
   const handleWithdrawClick = (application, game) => {
     setWithdrawData({ application, game });
@@ -470,17 +478,17 @@ const Games = memo(({ addAppNotification }) => {
   };
 
   // Helper function to format date
-  const formatDate = (dateString) => {
+  const formatDate = useCallback((dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric', 
       year: 'numeric' 
     });
-  };
+  }, []);
 
   // Helper function to format time
-  const formatTime = (timeString) => {
+  const formatTime = useCallback((timeString) => {
     const [hours, minutes] = timeString.split(':');
     const date = new Date();
     date.setHours(parseInt(hours), parseInt(minutes));
@@ -489,27 +497,27 @@ const Games = memo(({ addAppNotification }) => {
       minute: '2-digit',
       hour12: true 
     });
-  };
+  }, []);
 
   // Helper function to get host avatar
-  const getHostAvatar = (hostName) => {
+  const getHostAvatar = useCallback((hostName) => {
     const avatars = ['👩‍🦰', '🧑‍🦱', '👩‍🎓', '👨‍💼', '👩‍💻', '🧑‍🎨'];
     const index = hostName.length % avatars.length;
     return avatars[index];
-  };
+  }, []);
 
-  const getSkillLevelColor = (level) => {
+  const getSkillLevelColor = useCallback((level) => {
     switch(level.toLowerCase()) {
       case 'beginner': return { bg: '#3E5D45', color: '#F5EEDC' };
       case 'intermediate': return { bg: '#F39C12', color: '#F5EEDC' };
       case 'advanced': return { bg: '#F25C5C', color: '#F5EEDC' };
       default: return { bg: '#3E5D45', color: '#F5EEDC' };
     }
-  };
+  }, []);
 
-  const capitalizeSkillLevel = (level) => {
+  const capitalizeSkillLevel = useCallback((level) => {
     return level.charAt(0).toUpperCase() + level.slice(1).toLowerCase();
-  };
+  }, []);
 
   return (
     <div className="games-container">

@@ -1,7 +1,16 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import LocationSelector from '../components/LocationSelector';
 import ImageUpload from '../components/ImageUpload';
+import Notification from '../components/Notification';
 import './Signup.css';
+
+// Form constants
+const MIN_AGE = 18;
+const MAX_AGE = 100;
+const TOTAL_STEPS = 2;
+const SUCCESS_REDIRECT_DELAY = 2000; // ms
 
 const AvailabilitySelector = ({ selected, onChange }) => {
   const availabilityOptions = [
@@ -38,6 +47,8 @@ const AvailabilitySelector = ({ selected, onChange }) => {
 };
 
 const Signup = () => {
+  const navigate = useNavigate();
+  const { signUp } = useAuth();
   const [formData, setFormData] = useState({
     // Basic Information
     name: '',
@@ -65,6 +76,8 @@ const Signup = () => {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [notification, setNotification] = useState(null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -122,17 +135,58 @@ const Signup = () => {
     setCurrentStep(currentStep - 1);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateStep(currentStep)) {
-      // TODO: Implement actual signup logic
-      const completeSignupData = {
-        ...formData,
-        profileImage,
-        profileImagePreview
-      };
-      console.log('Signup data:', completeSignupData);
-      alert('Account created successfully!');
+      setIsLoading(true);
+      
+      try {
+        // Prepare signup data
+        const signupData = {
+          name: formData.name,
+          age: parseInt(formData.age),
+          gender: formData.gender,
+          skillLevel: formData.skillLevel,
+          duprRating: formData.duprRating,
+          playStyle: formData.playStyle,
+          playingExperience: formData.playingExperience,
+          availability: formData.availability,
+          bio: formData.bio,
+          location: formData.location,
+          phone: formData.phone,
+          profilePicture: profileImage
+        };
+
+        // Call signup function from AuthContext
+        const result = await signUp(formData.email, formData.password, signupData);
+        
+        if (result.success) {
+          setNotification({
+            message: "Account created successfully!",
+            name: "Welcome to The Social Pickle",
+            emoji: "🎉"
+          });
+          
+          // Navigate to main app after a brief delay
+          setTimeout(() => {
+            navigate('/discover');
+          }, SUCCESS_REDIRECT_DELAY);
+        } else {
+          setNotification({
+            message: "Account creation failed",
+            name: result.error || "Please try again",
+            emoji: "❌"
+          });
+        }
+      } catch (error) {
+        setNotification({
+          message: "Account creation failed",
+          name: "Please try again",
+          emoji: "❌"
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -216,8 +270,8 @@ const Signup = () => {
             onChange={handleInputChange}
             className={`form-input ${errors.age ? 'error' : ''}`}
             placeholder="Enter your age"
-            min="18"
-            max="100"
+            min={MIN_AGE}
+            max={MAX_AGE}
           />
           {errors.age && <span className="error-message">{errors.age}</span>}
         </div>
@@ -370,13 +424,13 @@ const Signup = () => {
               <div className="step-number">1</div>
               <div className="step-label">Basic Info</div>
             </div>
-            <div className={`progress-step ${currentStep >= 2 ? 'active' : ''}`}>
+            <div className={`progress-step ${currentStep >= TOTAL_STEPS ? 'active' : ''}`}>
               <div className="step-number">2</div>
               <div className="step-label">Pickleball</div>
             </div>
           </div>
           <div className="progress-line">
-            <div className="progress-fill" style={{ width: `${(currentStep / 2) * 100}%` }}></div>
+            <div className="progress-fill" style={{ width: `${(currentStep / TOTAL_STEPS) * 100}%` }}></div>
           </div>
         </div>
       </div>
@@ -393,19 +447,29 @@ const Signup = () => {
                   Back
                 </button>
               )}
-              {currentStep < 2 ? (
-                <button type="button" onClick={nextStep} className="btn-primary">
+              {currentStep < TOTAL_STEPS ? (
+                <button type="button" onClick={nextStep} className="btn-primary" disabled={isLoading}>
                   Next
                 </button>
               ) : (
-                <button type="submit" className="btn-primary">
-                  Create Account
+                <button type="submit" className="btn-primary" disabled={isLoading}>
+                  {isLoading ? 'Creating Account...' : 'Create Account'}
                 </button>
               )}
             </div>
           </form>
         </div>
       </div>
+
+      {/* Notification */}
+      {notification && (
+        <Notification
+          message={notification.message}
+          name={notification.name}
+          emoji={notification.emoji}
+          onClose={() => setNotification(null)}
+        />
+      )}
     </div>
   );
 };

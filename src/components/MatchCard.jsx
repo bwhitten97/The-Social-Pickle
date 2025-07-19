@@ -1,7 +1,8 @@
+import React, { memo, useCallback } from 'react';
 import './MatchCard.css';
 
-const MatchCard = ({ player, onPass, onConnect, isConnecting }) => {
-  const getSkillColor = (skill) => {
+const MatchCard = memo(({ player, onPass, onConnect, isConnecting }) => {
+  const getSkillColor = useCallback((skill) => {
     switch (skill.toLowerCase()) {
       case 'beginner':
         return '#10b981';
@@ -12,9 +13,9 @@ const MatchCard = ({ player, onPass, onConnect, isConnecting }) => {
       default:
         return '#6b7280';
     }
-  };
+  }, []);
 
-  const getAvailabilityIcon = (availability) => {
+  const getAvailabilityIcon = useCallback((availability) => {
     switch (availability.toLowerCase()) {
       case 'mornings':
         return '🌅';
@@ -27,7 +28,7 @@ const MatchCard = ({ player, onPass, onConnect, isConnecting }) => {
       default:
         return '⏰';
     }
-  };
+  }, []);
 
   return (
     <div className="swipe-card-container">
@@ -91,6 +92,8 @@ const MatchCard = ({ player, onPass, onConnect, isConnecting }) => {
       </div>
     </div>
   );
-};
+});
+
+MatchCard.displayName = 'MatchCard';
 
 export default MatchCard;

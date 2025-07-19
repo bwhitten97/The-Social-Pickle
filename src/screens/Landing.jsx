@@ -81,13 +81,15 @@ const Landing = () => {
   };
 
   const handleEmailSignup = async () => {
-    console.log('handleEmailSignup called');
     try {
       // For email signup, go to onboarding flow (no URL params = email signup)
       navigate('/onboarding');
-      console.log('Navigation to /onboarding initiated');
     } catch (error) {
-      console.error('Error in handleEmailSignup:', error);
+      setNotification({
+        message: "Navigation failed",
+        name: "Please try again",
+        emoji: "❌"
+      });
     }
   };
 

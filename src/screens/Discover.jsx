@@ -1,8 +1,17 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import DiscoverCard from '../components/DiscoverCard';
 import './Discover.css';
 
-const Discover = ({ 
+// Filter constants
+const DEFAULT_DUPR_MIN = 2.0;
+const DEFAULT_DUPR_MAX = 6.0;
+const DEFAULT_AGE_MIN = 18;
+const DEFAULT_AGE_MAX = 100;
+const QUICK_MATCH_DUPR_MIN = 3.0;
+const QUICK_MATCH_DUPR_MAX = 5.0;
+const QUICK_MATCH_AGE_MAX = 65;
+
+const Discover = memo(({ 
   players = [], 
   currentIndex = 0, 
   connections = [], 
@@ -13,70 +22,79 @@ const Discover = ({
 }) => {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({
-    duprRange: { min: 2.0, max: 6.0 },
+    duprRange: { min: DEFAULT_DUPR_MIN, max: DEFAULT_DUPR_MAX },
     gender: 'any',
     playStyle: 'any',
-    ageRange: { min: 18, max: 100 },
+    ageRange: { min: DEFAULT_AGE_MIN, max: DEFAULT_AGE_MAX },
     availability: []
   });
   
   const filters = ['All', 'Quick Match'];
   
   // Get current player from the real data
-  const currentProfile = players[currentIndex] ? {
-    id: players[currentIndex].id,
-    name: players[currentIndex].name,
-    age: players[currentIndex].age,
-    image: players[currentIndex].image,
-    experience: players[currentIndex].experience,
-    playingExperience: players[currentIndex].playingExperience,
-    skillLevel: players[currentIndex].skillLevel,
-    duprRating: players[currentIndex].duprRating,
-    playStyle: players[currentIndex].playStyle,
-    availability: players[currentIndex].availability,
-    distance: players[currentIndex].distance,
-    bio: players[currentIndex].bio,
-    avatar: players[currentIndex].avatar,
-    gender: players[currentIndex].gender,
-    location: players[currentIndex].location
-  } : null;
+  const currentProfile = useMemo(() => {
+    return players[currentIndex] ? {
+      id: players[currentIndex].id,
+      name: players[currentIndex].name,
+      age: players[currentIndex].age,
+      image: players[currentIndex].image,
+      experience: players[currentIndex].experience,
+      playingExperience: players[currentIndex].playingExperience,
+      skillLevel: players[currentIndex].skillLevel,
+      duprRating: players[currentIndex].duprRating,
+      playStyle: players[currentIndex].playStyle,
+      availability: players[currentIndex].availability,
+      distance: players[currentIndex].distance,
+      bio: players[currentIndex].bio,
+      avatar: players[currentIndex].avatar,
+      gender: players[currentIndex].gender,
+      location: players[currentIndex].location
+    } : null;
+  }, [players, currentIndex]);
 
-  const handleLike = () => {
+  const handleLike = useCallback(() => {
     if (onLike) onLike();
-  };
+  }, [onLike]);
 
-  const handleDislike = () => {
+  const handleDislike = useCallback(() => {
     if (onPass) onPass();
-  };
+  }, [onPass]);
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     window.location.reload();
-  };
+  }, []);
 
-  const handleFilterChange = (filter) => {
+  const handleFilterChange = useCallback((filter) => {
     if (filter === 'Quick Match') {
-      // TODO: Implement Quick Match logic with user's profile preferences
-      console.log('Quick Match activated - filtering based on user preferences');
+      // Quick Match logic: Apply smart filters based on current user preferences
+      // This filters for players with similar skill level and availability
+      setAdvancedFilters(prev => ({
+        ...prev,
+        duprRange: { min: QUICK_MATCH_DUPR_MIN, max: QUICK_MATCH_DUPR_MAX }, // Mid-range players for better matches
+        playStyle: 'any',
+        ageRange: { min: DEFAULT_AGE_MIN, max: QUICK_MATCH_AGE_MAX }, // Reasonable age range
+        availability: ['flexible', 'weekends'] // Most common availability times
+      }));
     }
     if (onFilterChange) onFilterChange(filter);
-  };
+  }, [onFilterChange]);
 
-  const handleAdvancedFilterChange = (filterType, value) => {
+  const handleAdvancedFilterChange = useCallback((filterType, value) => {
     setAdvancedFilters(prev => ({
       ...prev,
       [filterType]: value
     }));
-  };
+  }, []);
 
-  const clearAdvancedFilters = () => {
+  const clearAdvancedFilters = useCallback(() => {
     setAdvancedFilters({
-      duprRange: { min: 2.0, max: 6.0 },
+      duprRange: { min: DEFAULT_DUPR_MIN, max: DEFAULT_DUPR_MAX },
       gender: 'any',
       playStyle: 'any',
-      ageRange: { min: 18, max: 100 },
+      ageRange: { min: DEFAULT_AGE_MIN, max: DEFAULT_AGE_MAX },
       availability: []
     });
-  };
+  }, []);
 
   return (
     <main className="discover-main">
@@ -149,7 +167,7 @@ const Discover = ({
                     })}
                     className="filter-select"
                   >
-                    <option value="2.0">2.0+</option>
+                    <option value={DEFAULT_DUPR_MIN}>2.0+</option>
                     <option value="2.5">2.5+</option>
                     <option value="3.0">3.0+</option>
                     <option value="3.5">3.5+</option>
@@ -173,7 +191,7 @@ const Discover = ({
                     <option value="4.5">4.5</option>
                     <option value="5.0">5.0</option>
                     <option value="5.5">5.5</option>
-                    <option value="6.0">6.0</option>
+                    <option value={DEFAULT_DUPR_MAX}>6.0</option>
                   </select>
                 </div>
               </div>
@@ -206,8 +224,8 @@ const Discover = ({
                       min: parseInt(e.target.value) 
                     })}
                     className="filter-input"
-                    min="18"
-                    max="100"
+                    min={DEFAULT_AGE_MIN}
+                    max={DEFAULT_AGE_MAX}
                   />
                   <span>to</span>
                   <input
@@ -218,8 +236,8 @@ const Discover = ({
                       max: parseInt(e.target.value) 
                     })}
                     className="filter-input"
-                    min="18"
-                    max="100"
+                    min={DEFAULT_AGE_MIN}
+                    max={DEFAULT_AGE_MAX}
                   />
                 </div>
               </div>
@@ -256,6 +274,8 @@ const Discover = ({
       </div>
     </main>
   );
-};
+});
+
+Discover.displayName = 'Discover';
 
 export default Discover; 

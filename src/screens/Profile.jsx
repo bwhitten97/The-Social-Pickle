@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
@@ -7,7 +7,7 @@ import ImageUpload from '../components/ImageUpload';
 import Notification from '../components/Notification';
 import './Profile.css';
 
-const AvailabilitySelector = ({ selected, onChange }) => {
+const AvailabilitySelector = memo(({ selected, onChange }) => {
   const availabilityOptions = [
     { value: 'flexible', label: 'Flexible' },
     { value: 'mornings', label: 'Mornings' },
@@ -17,13 +17,13 @@ const AvailabilitySelector = ({ selected, onChange }) => {
     { value: 'holidays', label: 'Holidays' }
   ];
 
-  const toggleOption = (value) => {
+  const toggleOption = useCallback((value) => {
     if (selected.includes(value)) {
       onChange(selected.filter(item => item !== value));
     } else {
       onChange([...selected, value]);
     }
-  };
+  }, [selected, onChange]);
 
   return (
     <div className="availability-selector">
@@ -39,9 +39,11 @@ const AvailabilitySelector = ({ selected, onChange }) => {
       ))}
     </div>
   );
-};
+});
 
-const Profile = () => {
+AvailabilitySelector.displayName = 'AvailabilitySelector';
+
+const Profile = memo(() => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [notification, setNotification] = useState(null);
@@ -73,11 +75,14 @@ const Profile = () => {
             const userData = userDocSnap.data();
             if (userData.profilePicture) {
               setProfileImagePreview(userData.profilePicture);
-              console.log('Profile: Loaded profile picture from Firestore:', userData.profilePicture);
             }
           }
         } catch (error) {
-          console.error('Error fetching profile picture:', error);
+          setNotification({
+            message: "Failed to load profile picture",
+            name: "Please refresh the page",
+            emoji: "⚠️"
+          });
         }
       }
     };
@@ -85,27 +90,27 @@ const Profile = () => {
     fetchProfilePicture();
   }, [user?.id]);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
     setProfile(prev => ({
       ...prev,
       [name]: value
     }));
-  };
+  }, []);
 
-  const handleAvailabilityChange = (availability) => {
+  const handleAvailabilityChange = useCallback((availability) => {
     setProfile(prev => ({
       ...prev,
       availability
     }));
-  };
+  }, []);
 
-  const handleImageChange = (file, previewUrl) => {
+  const handleImageChange = useCallback((file, previewUrl) => {
     setProfileImage(file);
     setProfileImagePreview(previewUrl);
-  };
+  }, []);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     setIsEditing(false);
     // In a real app, this would save to a backend
     setNotification({
@@ -113,9 +118,9 @@ const Profile = () => {
       name: "successfully",
       emoji: "✅"
     });
-  };
+  }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       const result = await signOut();
       if (result.success) {
@@ -137,9 +142,9 @@ const Profile = () => {
         emoji: "❌"
       });
     }
-  };
+  }, [signOut, navigate]);
 
-  const getSkillColor = (skill) => {
+  const getSkillColor = useCallback((skill) => {
     switch (skill) {
       case 'beginner':
         return '#3E5D45';
@@ -150,7 +155,7 @@ const Profile = () => {
       default:
         return '#6B7280';
     }
-  };
+  }, []);
 
   return (
     <div className="profile-modern">
@@ -469,6 +474,8 @@ const Profile = () => {
       )}
     </div>
   );
-};
+});
+
+Profile.displayName = 'Profile';
 
 export default Profile;

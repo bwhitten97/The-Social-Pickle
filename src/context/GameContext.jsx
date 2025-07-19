@@ -370,7 +370,6 @@ export const GameProvider = ({ children }) => {
         setApplications(prevApps => prevApps.filter(app => !expiredGameIds.includes(app.gameId)));
         setChatRooms(prevRooms => prevRooms.filter(room => !expiredGameIds.includes(room.gameId)));
         
-        console.log(`Cleaned up ${expiredGameIds.length} expired games`);
       }
       
       return activeGames;
@@ -399,8 +398,7 @@ export const GameProvider = ({ children }) => {
           setApplications(prevApps => prevApps.filter(app => !expiredGameIds.includes(app.gameId)));
           setChatRooms(prevRooms => prevRooms.filter(room => !expiredGameIds.includes(room.gameId)));
           
-          console.log(`Cleaned up ${expiredGameIds.length} expired games`);
-        }
+          }
         
         return activeGames;
       });
@@ -556,10 +554,6 @@ export const GameProvider = ({ children }) => {
   };
 
   const getUserChatRooms = () => {
-    console.log('Getting user chat rooms...');
-    console.log('Current user ID:', currentUserId);
-    console.log('Current user name:', currentUserName);
-    console.log('All chat rooms:', chatRooms);
     
     const filteredRooms = chatRooms.filter(room => 
       room.participants.includes(currentUserId) || 
@@ -567,7 +561,6 @@ export const GameProvider = ({ children }) => {
       room.participants.includes(currentUserName)
     );
     
-    console.log('Filtered chat rooms:', filteredRooms);
     return filteredRooms;
   };
 

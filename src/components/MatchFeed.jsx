@@ -39,9 +39,7 @@ const MatchFeed = () => {
 
   const handleSwipe = (direction) => {
     if (direction === 'right') {
-      console.log('Liked:', profiles[currentIndex].name);
     } else {
-      console.log('Passed:', profiles[currentIndex].name);
     }
     
     setCurrentIndex(prev => prev + 1);

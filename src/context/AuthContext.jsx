@@ -126,13 +126,10 @@ export const AuthProvider = ({ children }) => {
 
   const signUp = async (email, password, additionalData = {}) => {
     try {
-      console.log('SignUp: Starting account creation for:', email);
-      console.log('SignUp: Additional data:', additionalData);
       
       // Create user account
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
-      console.log('SignUp: Firebase user created successfully:', firebaseUser.uid);
       
       // Handle profile picture upload
       let profilePictureUrl = additionalData.profilePictureUrl || '';
@@ -149,7 +146,6 @@ export const AuthProvider = ({ children }) => {
       }
       
       // Update Firebase Auth profile
-      console.log('SignUp: Updating Firebase Auth profile...');
       await updateProfile(firebaseUser, {
         displayName: additionalData.name || '',
         photoURL: profilePictureUrl || additionalData.profilePictureUrl || ''
@@ -170,10 +166,8 @@ export const AuthProvider = ({ children }) => {
         updatedAt: new Date()
       };
       
-      console.log('SignUp: Saving user data to Firestore:', userData);
       try {
         await setDoc(doc(db, 'users', firebaseUser.uid), userData);
-        console.log('SignUp: User data saved successfully');
       } catch (firestoreError) {
         console.error('SignUp: Firestore error details:', {
           code: firestoreError.code,
@@ -255,17 +249,14 @@ export const AuthProvider = ({ children }) => {
 
   const signInWithApple = async () => {
     try {
-      console.log('Apple sign-in: Starting authentication...');
       const result = await signInWithPopup(auth, appleProvider);
       const firebaseUser = result.user;
-      console.log('Apple sign-in: Firebase user created:', firebaseUser);
       
       // Check if this is a new user by checking Firestore
       const userDocRef = doc(db, 'users', firebaseUser.uid);
       const userDocSnap = await getDoc(userDocRef);
       
       const isNewUser = !userDocSnap.exists();
-      console.log('Apple sign-in: Is new user?', isNewUser);
       
       if (isNewUser) {
         // Create basic user document for new Apple users
@@ -279,9 +270,7 @@ export const AuthProvider = ({ children }) => {
           updatedAt: new Date()
         };
         
-        console.log('Apple sign-in: Creating user document:', userData);
         await setDoc(userDocRef, userData);
-        console.log('Apple sign-in: User document created successfully');
       }
       
       return { success: true, user: firebaseUser, isNewUser };

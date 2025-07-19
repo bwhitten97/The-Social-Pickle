@@ -1,21 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { useGameContext } from '../context/GameContext';
 import ChatRoom from '../components/ChatRoom';
 import Notification from '../components/Notification';
+import { defaultNotifications, dummyChats } from '../data/mockData';
 import './Chat.css';
 
 // SwipeableChat component for swipe-to-delete functionality
-const SwipeableChatCard = ({ chat, index, onSelect, onDelete }) => {
+const SWIPE_THRESHOLD = 40; // px - minimum swipe distance to trigger action
+const MAX_SWIPE_DISTANCE = 80; // px - maximum swipe distance allowed
+const UNREAD_BADGE_LIMIT = 9; // Maximum number to show in unread badge before showing "9+"
+
+const SwipeableChatCard = memo(({ chat, index, onSelect, onDelete }) => {
   const [swipeX, setSwipeX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
 
-  const handleTouchStart = (e) => {
+  const handleTouchStart = useCallback((e) => {
     setStartX(e.touches[0].clientX);
     setIsDragging(true);
-  };
+  }, []);
 
-  const handleTouchMove = (e) => {
+  const handleTouchMove = useCallback((e) => {
     if (!isDragging) return;
     
     const currentX = e.touches[0].clientX;
@@ -23,28 +28,28 @@ const SwipeableChatCard = ({ chat, index, onSelect, onDelete }) => {
     
     // Only allow swiping right (positive deltaX) and limit the distance
     if (deltaX > 0) {
-      setSwipeX(Math.min(deltaX, 80)); // Max swipe distance of 80px
+      setSwipeX(Math.min(deltaX, MAX_SWIPE_DISTANCE));
     }
-  };
+  }, [isDragging, startX]);
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = useCallback(() => {
     setIsDragging(false);
     
-    // If swiped less than 40px, snap back to original position
-    if (swipeX < 40) {
+    // If swiped less than threshold, snap back to original position
+    if (swipeX < SWIPE_THRESHOLD) {
       setSwipeX(0);
     } else {
-      // If swiped more than 40px, show delete button
-      setSwipeX(80);
+      // If swiped more than threshold, show delete button
+      setSwipeX(MAX_SWIPE_DISTANCE);
     }
-  };
+  }, [swipeX]);
 
-  const handleMouseDown = (e) => {
+  const handleMouseDown = useCallback((e) => {
     setStartX(e.clientX);
     setIsDragging(true);
-  };
+  }, []);
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = useCallback((e) => {
     if (!isDragging) return;
     
     const currentX = e.clientX;
@@ -52,29 +57,29 @@ const SwipeableChatCard = ({ chat, index, onSelect, onDelete }) => {
     
     // Only allow swiping right (positive deltaX) and limit the distance
     if (deltaX > 0) {
-      setSwipeX(Math.min(deltaX, 80)); // Max swipe distance of 80px
+      setSwipeX(Math.min(deltaX, MAX_SWIPE_DISTANCE));
     }
-  };
+  }, [isDragging, startX]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsDragging(false);
     
-    // If swiped less than 40px, snap back to original position
-    if (swipeX < 40) {
+    // If swiped less than threshold, snap back to original position
+    if (swipeX < SWIPE_THRESHOLD) {
       setSwipeX(0);
     } else {
-      // If swiped more than 40px, show delete button
-      setSwipeX(80);
+      // If swiped more than threshold, show delete button
+      setSwipeX(MAX_SWIPE_DISTANCE);
     }
-  };
+  }, [swipeX]);
 
-  const handleDelete = (e) => {
+  const handleDelete = useCallback((e) => {
     e.stopPropagation();
     onDelete(chat.name);
     setSwipeX(0); // Reset swipe position
-  };
+  }, [chat.name, onDelete]);
 
-  const handleCardClick = () => {
+  const handleCardClick = useCallback(() => {
     if (swipeX > 0) {
       // If swiped, close the swipe instead of opening chat
       setSwipeX(0);
@@ -82,7 +87,7 @@ const SwipeableChatCard = ({ chat, index, onSelect, onDelete }) => {
       // If not swiped, open the chat
       onSelect(chat);
     }
-  };
+  }, [swipeX, chat, onSelect]);
 
   return (
     <div className="swipeable-chat-container">
@@ -91,7 +96,7 @@ const SwipeableChatCard = ({ chat, index, onSelect, onDelete }) => {
         className="chat-delete-action"
         style={{ 
           opacity: swipeX > 0 ? 1 : 0,
-          transform: `translateX(${swipeX - 80}px)`
+          transform: `translateX(${swipeX - MAX_SWIPE_DISTANCE}px)`
         }}
       >
         <button 
@@ -133,16 +138,18 @@ const SwipeableChatCard = ({ chat, index, onSelect, onDelete }) => {
           <time className="chat-time-modern">{chat.timestamp}</time>
           {chat.unread > 0 && (
             <span className="chat-badge-modern">
-              {chat.unread > 9 ? '9+' : chat.unread}
+              {chat.unread > UNREAD_BADGE_LIMIT ? `${UNREAD_BADGE_LIMIT}+` : chat.unread}
             </span>
           )}
         </div>
       </article>
     </div>
   );
-};
+});
 
-const DirectMessageChat = ({ chat, onClose, onSendMessage, onDeleteChat, onShowNotification }) => {
+SwipeableChatCard.displayName = 'SwipeableChatCard';
+
+const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, onShowNotification }) => {
   const { getConversation, currentUserName, deleteChat } = useGameContext();
   const [newMessage, setNewMessage] = useState('');
   
@@ -166,7 +173,7 @@ const DirectMessageChat = ({ chat, onClose, onSendMessage, onDeleteChat, onShowN
           id: 1,
           from: chat.name,
           message: chat.lastMessage,
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
+          timestamp: new Date(Date.now() - (60 * 60 * 1000)).toISOString(), // 1 hour ago
           isCurrentUser: false
         }
       ];
@@ -188,7 +195,7 @@ const DirectMessageChat = ({ chat, onClose, onSendMessage, onDeleteChat, onShowN
     }
   }, [chat.name, currentUserName, getConversation]);
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = useCallback((e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
@@ -207,18 +214,18 @@ const DirectMessageChat = ({ chat, onClose, onSendMessage, onDeleteChat, onShowN
     if (onSendMessage && !chat.isDummy) {
       onSendMessage(chat.name, newMessage.trim());
     }
-  };
+  }, [newMessage, currentUserName, chat.isDummy, chat.name, onSendMessage]);
 
-  const formatTime = (timestamp) => {
+  const formatTime = useCallback((timestamp) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString('en-US', { 
       hour: 'numeric', 
       minute: '2-digit',
       hour12: true 
     });
-  };
+  }, []);
 
-  const handleDeleteChat = () => {
+  const handleDeleteChat = useCallback(() => {
     const result = deleteChat(chat.name);
     if (result.success) {
       // Show success notification
@@ -234,7 +241,7 @@ const DirectMessageChat = ({ chat, onClose, onSendMessage, onDeleteChat, onShowN
       }
       onClose();
     }
-  };
+  }, [chat.name, deleteChat, onShowNotification, onDeleteChat, onClose]);
 
   return (
     <div className="unified-chat">
@@ -291,9 +298,11 @@ const DirectMessageChat = ({ chat, onClose, onSendMessage, onDeleteChat, onShowN
       </div>
     </div>
   );
-};
+});
 
-const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead }) => {
+DirectMessageChat.displayName = 'DirectMessageChat';
+
+const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotificationsRead }) => {
   const { getUserChatRooms, getConversation, sendMessage, currentUserName, deleteChat, getMessages } = useGameContext();
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [selectedChatName, setSelectedChatName] = useState(null);
@@ -301,43 +310,24 @@ const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead
   const [chatUnreadCounts, setChatUnreadCounts] = useState({});
   const [notification, setNotification] = useState(null);
   
-  // Combine app notifications with default notifications
-  const defaultNotifications = [
-    {
-      id: 'default-1',
-      message: "Court 3 is available at 5 PM today.",
-      timestamp: "10:05 AM",
-      isRead: false,
-      type: "court_availability"
-    },
-    {
-      id: 'default-2', 
-      message: "You have a new friend request.",
-      timestamp: "Yesterday",
-      isRead: false,
-      type: "friend_request"
-    },
-    {
-      id: 'default-3',
-      message: "Game reminder: Tomorrow at 2 PM.",
-      timestamp: "2 days ago",
-      isRead: false,
-      type: "game_reminder"
-    }
-  ];
+  // Combine app notifications with default notifications (imported from mockData.js)
   
   // Filter appNotifications to only show ones for current user or general notifications
-  const userNotifications = appNotifications.filter(notification => 
-    !notification.targetUser || notification.targetUser === currentUserName
-  );
+  const userNotifications = useMemo(() => {
+    return appNotifications.filter(notification => 
+      !notification.targetUser || notification.targetUser === currentUserName
+    );
+  }, [appNotifications, currentUserName]);
   
   // Combine filtered appNotifications with default notifications
-  const notifications = [...userNotifications, ...defaultNotifications];
+  const notifications = useMemo(() => {
+    return [...userNotifications, ...defaultNotifications];
+  }, [userNotifications]);
   
   const userChatRooms = getUserChatRooms();
 
   // Helper function to format timestamps
-  const formatTimestamp = (timestamp) => {
+  const formatTimestamp = useCallback((timestamp) => {
     if (!timestamp) return 'Now';
     const date = new Date(timestamp);
     return date.toLocaleTimeString('en-US', { 
@@ -345,10 +335,10 @@ const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead
       minute: '2-digit',
       hour12: true 
     });
-  };
+  }, []);
 
   // Helper function to get avatar emoji based on name
-  const getAvatarEmoji = (name) => {
+  const getAvatarEmoji = useCallback((name) => {
     const emojiMap = {
       'Sarah Wilson': '🦁',
       'Mike Chen': '🙂',
@@ -357,7 +347,7 @@ const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead
       'Maria Gonzalez': '🎯'
     };
     return emojiMap[name] || '👤';
-  };
+  }, []);
 
   // Initialize unread counts for dummy chats if not already set
   const initializeDummyUnreadCounts = () => {
@@ -369,27 +359,11 @@ const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead
     }
   };
 
-  // Dummy chats for demo purposes (shown when no real chats exist)
-  const dummyChats = [
-    {
-      id: 'dummy-sarah',
-      name: "Sarah Wilson",
-      lastMessage: "Great game yesterday!",
-      timestamp: "04:30 AM",
-      avatar: "🦁",
-      unread: chatUnreadCounts['dummy-sarah'] || 0,
-      isDummy: true
-    },
-    {
-      id: 'dummy-mike',
-      name: "Mike Chen", 
-      lastMessage: "Are you free for doubles tomorrow?",
-      timestamp: "03:15 AM",
-      avatar: "🙂",
-      unread: chatUnreadCounts['dummy-mike'] || 0,
-      isDummy: true
-    }
-  ];
+  // Dummy chats for demo purposes (shown when no real chats exist) - base data imported from mockData.js
+  const dummyChatsWithCounts = dummyChats.map(chat => ({
+    ...chat,
+    unread: chatUnreadCounts[chat.id] || 0
+  }));
 
   // Initialize dummy chat unread counts
   if (userChatRooms.length === 0) {
@@ -422,19 +396,21 @@ const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead
   initializeGameChatUnreadCounts();
   
   // Convert real chat rooms to display format, or use dummy chats
-  const chatsToShow = userChatRooms.length > 0 ? userChatRooms.map(room => ({
-    id: room.gameId || room.id,
-    name: room.gameName,
-    lastMessage: room.lastMessage || 'Start a conversation',
-    timestamp: formatTimestamp(room.lastMessageTime),
-    avatar: getAvatarEmoji(room.gameName),
-    unread: chatUnreadCounts[room.gameId || room.id] || 0,
-    isDummy: false,
-    isGameChat: !!room.gameId,
-    chatRoom: room
-  })) : dummyChats;
+  const chatsToShow = useMemo(() => {
+    return userChatRooms.length > 0 ? userChatRooms.map(room => ({
+      id: room.gameId || room.id,
+      name: room.gameName,
+      lastMessage: room.lastMessage || 'Start a conversation',
+      timestamp: formatTimestamp(room.lastMessageTime),
+      avatar: getAvatarEmoji(room.gameName),
+      unread: chatUnreadCounts[room.gameId || room.id] || 0,
+      isDummy: false,
+      isGameChat: !!room.gameId,
+      chatRoom: room
+    })) : dummyChatsWithCounts;
+  }, [userChatRooms, dummyChatsWithCounts, formatTimestamp, getAvatarEmoji, chatUnreadCounts]);
 
-  const handleChatSelect = (chat) => {
+  const handleChatSelect = useCallback((chat) => {
     // Mark chat as read by setting unread count to 0
     setChatUnreadCounts(prev => ({
       ...prev,
@@ -457,14 +433,14 @@ const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead
       setSelectedChatId(chat.id);
       setSelectedChatName(chat.name);
     }
-  };
+  }, []);
 
-  const handleCloseChat = () => {
+  const handleCloseChat = useCallback(() => {
     setSelectedChatId(null);
     setSelectedChatName(null);
-  };
+  }, []);
 
-  const handleDeleteChat = (chatName) => {
+  const handleDeleteChat = useCallback((chatName) => {
     // Force a re-render by updating the chat unread counts (removing the deleted chat)
     setChatUnreadCounts(prev => {
       const updated = { ...prev };
@@ -475,9 +451,9 @@ const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead
       }
       return updated;
     });
-  };
+  }, [chatsToShow]);
 
-  const handleDeleteChatFromSwipe = (chatName) => {
+  const handleDeleteChatFromSwipe = useCallback((chatName) => {
     // Call the deleteChat function from GameContext
     const result = deleteChat(chatName);
     if (result.success) {
@@ -490,11 +466,11 @@ const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead
       // Update local state
       handleDeleteChat(chatName);
     }
-  };
+  }, [deleteChat, handleDeleteChat]);
 
   const [readNotifications, setReadNotifications] = useState(new Set());
 
-  const handleNotificationClick = (notificationId) => {
+  const handleNotificationClick = useCallback((notificationId) => {
     // Mark notification as read locally
     setReadNotifications(prev => new Set([...prev, notificationId]));
     
@@ -529,9 +505,9 @@ const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead
           break;
       }
     }
-  };
+  }, [notifications, onNotificationsRead]);
 
-  const markAllNotificationsAsRead = () => {
+  const markAllNotificationsAsRead = useCallback(() => {
     const unreadNotificationIds = notifications
       .filter(n => !readNotifications.has(n.id) && !n.isRead)
       .map(n => n.id);
@@ -544,12 +520,16 @@ const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead
     if (onNotificationsRead && appNotificationIds.length > 0) {
       onNotificationsRead(appNotificationIds);
     }
-  };
+  }, [notifications, readNotifications, onNotificationsRead]);
 
-  const unreadNotificationsCount = notifications.filter(n => !n.isRead && !readNotifications.has(n.id)).length;
+  const unreadNotificationsCount = useMemo(() => {
+    return notifications.filter(n => !n.isRead && !readNotifications.has(n.id)).length;
+  }, [notifications, readNotifications]);
   
   // Calculate total unread chat messages
-  const totalUnreadChats = chatsToShow.reduce((total, chat) => total + (chat.unread || 0), 0);
+  const totalUnreadChats = useMemo(() => {
+    return chatsToShow.reduce((total, chat) => total + (chat.unread || 0), 0);
+  }, [chatsToShow]);
 
   // Notify parent component of unread count changes
   useEffect(() => {
@@ -697,6 +677,8 @@ const Chat = ({ appNotifications = [], onUnreadCountsChange, onNotificationsRead
       )}
     </div>
   );
-};
+});
+
+Chat.displayName = 'Chat';
 
 export default Chat;

@@ -26,22 +26,8 @@ const ProtectedRoute = ({ children }) => {
   // Unless they just completed onboarding (indicated by navigation state or sessionStorage)
   const justCompletedProfile = location.state?.profileJustCompleted || sessionStorage.getItem('profileJustCompleted') === 'true';
   
-  console.log('ProtectedRoute: Checking user state', {
-    user: user,
-    profileComplete: user?.profileComplete,
-    hasSeenWelcome: user?.hasSeenWelcome,
-    pathname: location.pathname,
-    justCompletedProfile: justCompletedProfile
-  });
   
   if (user && !user.profileComplete && location.pathname !== '/onboarding' && !justCompletedProfile) {
-    console.log('ProtectedRoute: Redirecting to onboarding', { 
-      user: user, 
-      profileComplete: user.profileComplete, 
-      pathname: location.pathname,
-      navigationState: location.state,
-      justCompletedProfile: justCompletedProfile
-    });
     return <Navigate to="/onboarding" replace />;
   }
   

@@ -1,59 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import { useGameContext } from '../context/GameContext';
 import Notification from '../components/Notification';
+import { mockMatches } from '../data/mockData';
 import './Matches.css';
 
-const Matches = () => {
+const Matches = memo(() => {
   const { matchedPlayers, sendMessage: sendMessageToContext } = useGameContext();
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [notification, setNotification] = useState(null);
 
-  // Mock data for demonstration when no real matches exist
-  const mockMatches = [
-    {
-      id: 1,
-      name: "Jessica Martinez",
-      age: 29,
-      skillLevel: "Intermediate",
-      availability: "Evenings",
-      bio: "Pickleball enthusiast who loves the social aspect of the game. Always down for post-game coffee!",
-      image: "https://images.unsplash.com/photo-1494790108755-2616b612b776?w=800&q=80&fit=crop&crop=face",
-      matchedAt: new Date().toISOString()
-    },
-    {
-      id: 2,
-      name: "Priya Patel",
-      age: 32,
-      skillLevel: "Advanced",
-      duprRating: "4.2",
-      availability: "Weekends",
-      bio: "Competitive spirit with a calm mindset—from yoga mat to pickleball court!",
-      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=800&q=80&fit=crop&crop=face",
-      matchedAt: new Date().toISOString()
-    },
-    {
-      id: 3,
-      name: "Maria Gonzalez",
-      age: 36,
-      skillLevel: "Intermediate",
-      availability: "Afternoons",
-      bio: "Love the strategy of pickleball! Always working on my third-shot drop and looking for doubles partners.",
-      image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=800&q=80&fit=crop&crop=face",
-      matchedAt: new Date().toISOString()
-    }
-  ];
+  // Mock data for demonstration when no real matches exist is now imported from mockData.js
 
   // Use real matched players if available, otherwise use mock data for demonstration
-  const matches = matchedPlayers.length > 0 ? matchedPlayers : mockMatches;
+  const matches = useMemo(() => {
+    return matchedPlayers.length > 0 ? matchedPlayers : mockMatches;
+  }, [matchedPlayers]);
 
-  const getSkillLevelColor = (skill) => {
+  const getSkillLevelColor = useCallback((skill) => {
     // All skill levels now use the same green color scheme
     return { backgroundColor: 'rgba(62,93,69,0.1)', color: '#3E5D45' };
-  };
+  }, []);
 
-  const getAvailabilityColor = (availability) => {
+  const getAvailabilityColor = useCallback((availability) => {
     switch (availability?.toLowerCase()) {
       case 'evenings':
         return { backgroundColor: 'rgba(62,93,69,0.1)', color: '#3E5D45' };
@@ -66,9 +36,9 @@ const Matches = () => {
       default:
         return { backgroundColor: 'rgba(62,93,69,0.1)', color: '#3E5D45' };
     }
-  };
+  }, []);
 
-  const formatMatchDate = (dateString) => {
+  const formatMatchDate = useCallback((dateString) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffTime = Math.abs(now - date);
@@ -81,30 +51,27 @@ const Matches = () => {
     } else {
       return `Connected on ${date.toLocaleDateString()}`;
     }
-  };
+  }, []);
 
-  const handleViewProfile = (match) => {
+  const handleViewProfile = useCallback((match) => {
     setSelectedProfile(match);
-    console.log('Viewing profile for:', match.name);
-  };
+  }, []);
 
-  const handleMessage = (match) => {
+  const handleMessage = useCallback((match) => {
     setSelectedMatch(match);
     setShowMessageModal(true);
-    console.log('Starting conversation with:', match.name);
-  };
+  }, []);
 
-  const closeProfileModal = () => {
+  const closeProfileModal = useCallback(() => {
     setSelectedProfile(null);
-  };
+  }, []);
 
-  const closeMessageModal = () => {
+  const closeMessageModal = useCallback(() => {
     setShowMessageModal(false);
     setSelectedMatch(null);
-  };
+  }, []);
 
-  const sendMessage = (message) => {
-    console.log(`Sending message to ${selectedMatch.name}: ${message}`);
+  const sendMessage = useCallback((message) => {
     const result = sendMessageToContext(selectedMatch.name, message);
     if (result.success) {
       setNotification({
@@ -120,7 +87,7 @@ const Matches = () => {
         emoji: "❌"
       });
     }
-  };
+  }, [selectedMatch, sendMessageToContext, closeMessageModal]);
 
   return (
     <div className="matches-container">
@@ -372,6 +339,8 @@ const Matches = () => {
       )}
     </div>
   );
-};
+});
+
+Matches.displayName = 'Matches';
 
 export default Matches; 

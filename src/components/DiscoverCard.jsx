@@ -1,22 +1,27 @@
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import './DiscoverCard.css';
 
-const DiscoverCard = ({ profile, onLike, onDislike }) => {
+// Animation and display constants
+const ANIMATION_DURATION = 350; // ms
+const BIO_PREVIEW_LENGTH = 80; // characters
+const MAX_AVAILABILITY_DISPLAY = 3; // number of availability options to show
+
+const DiscoverCard = memo(({ profile, onLike, onDislike }) => {
   const [isAnimating, setIsAnimating] = useState(false);
 
-  const handleLike = () => {
+  const handleLike = useCallback(() => {
     setIsAnimating(true);
     onLike();
-    setTimeout(() => setIsAnimating(false), 350);
-  };
+    setTimeout(() => setIsAnimating(false), ANIMATION_DURATION);
+  }, [onLike]);
 
-  const handleDislike = () => {
+  const handleDislike = useCallback(() => {
     setIsAnimating(true);
     onDislike();
-    setTimeout(() => setIsAnimating(false), 350);
-  };
+    setTimeout(() => setIsAnimating(false), ANIMATION_DURATION);
+  }, [onDislike]);
 
-  const getSkillColor = (skill) => {
+  const getSkillColor = useCallback((skill) => {
     switch (skill?.toLowerCase()) {
       case 'beginner':
         return '#10b981';
@@ -27,7 +32,7 @@ const DiscoverCard = ({ profile, onLike, onDislike }) => {
       default:
         return '#6b7280';
     }
-  };
+  }, []);
 
 
   return (
@@ -103,14 +108,14 @@ const DiscoverCard = ({ profile, onLike, onDislike }) => {
           <div className="discover-card-availability">
             <span className="discover-card-availability-label">Available:</span>
             <div className="discover-card-availability-tags">
-              {profile.availability.slice(0, 3).map((time, index) => (
+              {profile.availability.slice(0, MAX_AVAILABILITY_DISPLAY).map((time, index) => (
                 <span key={index} className="discover-card-availability-tag">
                   {time}
                 </span>
               ))}
-              {profile.availability.length > 3 && (
+              {profile.availability.length > MAX_AVAILABILITY_DISPLAY && (
                 <span className="discover-card-availability-tag more">
-                  +{profile.availability.length - 3} more
+                  +{profile.availability.length - MAX_AVAILABILITY_DISPLAY} more
                 </span>
               )}
             </div>
@@ -120,7 +125,7 @@ const DiscoverCard = ({ profile, onLike, onDislike }) => {
         {/* Bio Preview */}
         {profile.bio && (
           <div className="discover-card-bio">
-            <p>{profile.bio.length > 80 ? `${profile.bio.slice(0, 80)}...` : profile.bio}</p>
+            <p>{profile.bio.length > BIO_PREVIEW_LENGTH ? `${profile.bio.slice(0, BIO_PREVIEW_LENGTH)}...` : profile.bio}</p>
           </div>
         )}
 
@@ -150,6 +155,8 @@ const DiscoverCard = ({ profile, onLike, onDislike }) => {
       </div>
     </article>
   );
-};
+});
+
+DiscoverCard.displayName = 'DiscoverCard';
 
 export default DiscoverCard; 

@@ -231,7 +231,6 @@ const Onboarding = () => {
         
         // Force navigation with state that indicates profile is complete
         setTimeout(() => {
-          console.log('Onboarding: About to navigate, user state:', user);
           // Set a temporary flag to bypass ProtectedRoute checks
           sessionStorage.setItem('profileJustCompleted', 'true');
           navigate('/welcome', { 
