@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { useAuth } from './AuthContext';
 
 const GameContext = createContext();
 
@@ -277,6 +278,7 @@ const mockApplications = [
 ];
 
 export const GameProvider = ({ children }) => {
+  const { user } = useAuth();
   const [games, setGames] = useState(mockGames);
   const [applications, setApplications] = useState(mockApplications);
   const [chatRooms, setChatRooms] = useState([
@@ -339,76 +341,64 @@ export const GameProvider = ({ children }) => {
       read: false
     }
   ]);
-  const currentUserId = "current-user";
-  const currentUserName = "Alex Thompson";
-  const currentUserSkill = "Intermediate";
+  // Use real user data or fallback values
+  const currentUserId = user?.id || user?.uid || "current-user";
+  const currentUserName = user?.name || user?.displayName || "Anonymous User";
+  const currentUserSkill = user?.skillLevel || "Beginner";
 
   // Function to clean up expired games (games that are more than 1 hour past their start time)
   const cleanupExpiredGames = () => {
-    const now = new Date();
-    
-    setGames(prevGames => {
-      const expiredGameIds = [];
+    try {
+      const now = new Date();
       
-      const activeGames = prevGames.filter(game => {
-        // Parse the game date and time
-        const gameDateTime = new Date(`${game.date}T${game.time}`);
+      setGames(prevGames => {
+        const expiredGameIds = [];
         
-        // Add 1 hour to the game start time
-        const gameEndTime = new Date(gameDateTime.getTime() + 60 * 60 * 1000);
+        const activeGames = prevGames.filter(game => {
+          try {
+            // Parse the game date and time safely
+            if (!game.date || !game.time) return true; // Keep games without date/time
+            
+            const gameDateTime = new Date(`${game.date}T${game.time}`);
+            
+            // Check if the date is valid
+            if (isNaN(gameDateTime.getTime())) return true; // Keep invalid dates
+            
+            // Add 1 hour to the game start time
+            const gameEndTime = new Date(gameDateTime.getTime() + 60 * 60 * 1000);
+            
+            // Check if current time is past the game end time (1 hour after start)
+            if (now > gameEndTime) {
+              expiredGameIds.push(game.id);
+              return false; // Remove this game
+            }
+            return true; // Keep this game
+          } catch (error) {
+            // If there's any error processing this game, keep it
+            return true;
+          }
+        });
         
-        // Check if current time is past the game end time (1 hour after start)
-        if (now > gameEndTime) {
-          expiredGameIds.push(game.id);
-          return false; // Remove this game
+        // If we removed any games, also clean up their applications and chat rooms
+        if (expiredGameIds.length > 0) {
+          setApplications(prevApps => prevApps.filter(app => !expiredGameIds.includes(app.gameId)));
+          setChatRooms(prevRooms => prevRooms.filter(room => !expiredGameIds.includes(room.gameId)));
         }
-        return true; // Keep this game
-      });
-      
-      // If we removed any games, also clean up their applications and chat rooms
-      if (expiredGameIds.length > 0) {
-        setApplications(prevApps => prevApps.filter(app => !expiredGameIds.includes(app.gameId)));
-        setChatRooms(prevRooms => prevRooms.filter(room => !expiredGameIds.includes(room.gameId)));
         
-      }
-      
-      return activeGames;
-    });
+        return activeGames;
+      });
+    } catch (error) {
+      // If cleanup fails, don't crash the app
+    }
   };
 
   // Set up periodic cleanup - run every 5 minutes
   useEffect(() => {
-    // Define cleanup function inside useEffect to avoid stale closures
-    const runCleanup = () => {
-      const now = new Date();
-      setGames(prevGames => {
-        const expiredGameIds = [];
-        const activeGames = prevGames.filter(game => {
-          const gameDateTime = new Date(`${game.date}T${game.time}`);
-          const gameEndTime = new Date(gameDateTime.getTime() + 60 * 60 * 1000);
-          
-          if (now > gameEndTime) {
-            expiredGameIds.push(game.id);
-            return false;
-          }
-          return true;
-        });
-        
-        if (expiredGameIds.length > 0) {
-          setApplications(prevApps => prevApps.filter(app => !expiredGameIds.includes(app.gameId)));
-          setChatRooms(prevRooms => prevRooms.filter(room => !expiredGameIds.includes(room.gameId)));
-          
-          }
-        
-        return activeGames;
-      });
-    };
-    
     // Run cleanup immediately when component mounts
-    runCleanup();
+    cleanupExpiredGames();
     
     // Set up interval to run cleanup every 5 minutes
-    const cleanupInterval = setInterval(runCleanup, 5 * 60 * 1000);
+    const cleanupInterval = setInterval(cleanupExpiredGames, 5 * 60 * 1000);
     
     // Cleanup interval on unmount
     return () => clearInterval(cleanupInterval);
