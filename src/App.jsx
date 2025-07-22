@@ -16,7 +16,7 @@ import Profile from './screens/Profile';
 import Notification from './components/Notification';
 import { GameProvider, useGameContext } from './context/GameContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { mockPlayers } from './data/mockData';
+import { logPlayerLiked, logPlayerPassed, logMatchCreated, logPageView } from './utils/analytics';
 import './App.css';
 import './screens/Profile.css';
 import './components/ProtectedRoute.css';
@@ -69,6 +69,7 @@ function AppContent() {
   // Fetch real users from Firestore
   const fetchUsers = async () => {
     if (!user) {
+      setPlayers([]);
       setIsLoadingPlayers(false);
       return;
     }
@@ -76,53 +77,44 @@ function AppContent() {
     try {
       setIsLoadingPlayers(true);
       
-      // Query users collection, only getting complete profiles
+      // Query users collection for real users
       const usersRef = collection(db, 'users');
-      const q = query(
-        usersRef,
-        where('profileComplete', '==', true),
-        orderBy('createdAt', 'desc')
-      );
-      
-      const querySnapshot = await getDocs(q);
+      const querySnapshot = await getDocs(usersRef);
       const fetchedUsers = [];
       
       querySnapshot.forEach((doc) => {
         const userData = doc.data();
         // Exclude current user from results
-        if (userData.id === user.id || doc.id === user.id) {
+        if (doc.id === user.id || doc.id === user.uid) {
           return;
         }
         
-        // Transform Firestore user data to match expected player format
-        fetchedUsers.push({
-          id: userData.id || doc.id,
-          name: userData.name || 'Unknown User',
-          age: userData.age || 25,
-          skillLevel: userData.skillLevel || 'intermediate',
-          duprRating: userData.duprRating || '3.5',
-          playStyle: userData.playStyle || 'casual',
-          availability: userData.availability || ['weekends'],
-          gender: userData.gender || 'prefer-not-to-say',
-          bio: userData.bio || 'Love playing pickleball!',
-          location: userData.location || 'Location not specified',
-          distance: '-- miles away', // TODO: Calculate actual distance
-          avatar: userData.avatar || '🥒',
-          playingExperience: userData.experience || '2 years',
-          image: userData.profilePicture || null
-        });
+        // Only include users with at least basic profile info
+        if (userData.name) {
+          fetchedUsers.push({
+            id: doc.id,
+            name: userData.name || 'Unknown User',
+            age: userData.age || 25,
+            skillLevel: userData.skillLevel || 'intermediate',
+            duprRating: userData.duprRating || 'unrated',
+            playStyle: userData.playStyle || 'casual',
+            availability: userData.availability || ['weekends'],
+            gender: userData.gender || 'prefer-not-to-say',
+            bio: userData.bio || 'New to The Social Pickle!',
+            location: userData.location || 'Location not specified',
+            distance: '-- miles away',
+            avatar: userData.avatar || '🥒',
+            playingExperience: userData.experience || '1+ years',
+            image: userData.profilePicture || null
+          });
+        }
       });
       
-      // Fallback to mock data if no users found or for development
-      if (fetchedUsers.length === 0) {
-        setPlayers(mockPlayers);
-      } else {
-        setPlayers(fetchedUsers);
-      }
+      setPlayers(fetchedUsers);
       
     } catch (error) {
-      // Fallback to mock data on error
-      setPlayers(mockPlayers);
+      // If error, just show empty state instead of mock data
+      setPlayers([]);
     } finally {
       setIsLoadingPlayers(false);
     }
@@ -133,10 +125,18 @@ function AppContent() {
     if (isAuthenticated && user) {
       fetchUsers();
     } else {
-      setPlayers(mockPlayers);
+      setPlayers([]);
       setIsLoadingPlayers(false);
     }
   }, [isAuthenticated, user]);
+
+  // Track page views when route changes
+  useEffect(() => {
+    if (user && location.pathname) {
+      const pageName = location.pathname.substring(1) || 'home';
+      logPageView(pageName, user.id);
+    }
+  }, [location.pathname, user]);
 
   const filteredPlayers = players.filter(player => 
     filter === 'All' || player.skillLevel === filter.toLowerCase()
@@ -177,6 +177,10 @@ function AppContent() {
   };
 
   const handlePass = () => {
+    // Log analytics event
+    if (user) {
+      logPlayerPassed(user.id, currentPlayer.id, currentPlayer.skillLevel);
+    }
     showNotification("You passed on", currentPlayer.name, "👋", "action");
     nextPlayer();
   };
@@ -193,9 +197,17 @@ function AppContent() {
       showNotification("It's a match! You and", currentPlayer.name, "🎉", "match");
       // Remove from the "who liked user" list since it's now a match
       setPlayersWhoLikedUser(prev => prev.filter(id => id !== playerId));
+      // Log analytics for match
+      if (user) {
+        logMatchCreated(user.id, currentPlayer.id, 'swipe');
+      }
     } else {
       // Just a regular like
       showNotification("You liked", currentPlayer.name, "💚", "like");
+      // Log analytics for like
+      if (user) {
+        logPlayerLiked(user.id, currentPlayer.id, currentPlayer.skillLevel);
+      }
     }
     
     nextPlayer();

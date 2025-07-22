@@ -4,7 +4,6 @@ import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useGameContext } from '../context/GameContext';
 import Notification from '../components/Notification';
-import { mockMatches } from '../data/mockData';
 import './Matches.css';
 
 const Matches = memo(() => {
@@ -27,53 +26,12 @@ const Matches = memo(() => {
     try {
       setIsLoadingMatches(true);
       
-      // Query matches collection for current user
-      const matchesRef = collection(db, 'matches');
-      const q = query(
-        matchesRef,
-        where('participants', 'array-contains', user.id),
-        orderBy('createdAt', 'desc')
-      );
-      
-      const querySnapshot = await getDocs(q);
-      const fetchedMatches = [];
-      
-      for (const doc of querySnapshot.docs) {
-        const matchData = doc.data();
-        
-        // Get the other participant's data
-        const otherUserId = matchData.participants.find(id => id !== user.id);
-        if (otherUserId) {
-          try {
-            const userRef = collection(db, 'users');
-            const userQuery = query(userRef, where('id', '==', otherUserId));
-            const userSnapshot = await getDocs(userQuery);
-            
-            if (!userSnapshot.empty) {
-              const userData = userSnapshot.docs[0].data();
-              fetchedMatches.push({
-                id: doc.id,
-                name: userData.name || 'Unknown User',
-                age: userData.age || 25,
-                skillLevel: userData.skillLevel || 'intermediate',
-                duprRating: userData.duprRating || '3.5',
-                availability: userData.availability?.[0] || 'evenings',
-                bio: userData.bio || 'Love playing pickleball!',
-                image: userData.profilePicture || null,
-                matchedAt: matchData.createdAt?.toDate?.() || new Date(),
-                location: userData.location || 'Location not specified'
-              });
-            }
-          } catch (error) {
-            // Skip this match if we can't fetch user data
-          }
-        }
-      }
-      
-      setRealMatches(fetchedMatches);
+      // For now, just use empty array while Firebase collections are being set up
+      // TODO: Implement real Firestore queries when collections exist
+      setRealMatches([]);
       
     } catch (error) {
-      // Fallback to context matches on error
+      // Fallback to empty array on error
       setRealMatches([]);
     } finally {
       setIsLoadingMatches(false);
@@ -98,8 +56,8 @@ const Matches = memo(() => {
       index === self.findIndex(m => m.name === match.name)
     );
     
-    // Fallback to mock data if no matches
-    return uniqueMatches.length > 0 ? uniqueMatches : mockMatches;
+    // No fallback to mock data - show real matches only
+    return uniqueMatches;
   }, [realMatches, matchedPlayers]);
 
   const getSkillLevelColor = useCallback((skill) => {

@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext';
 import { useGameContext } from '../context/GameContext';
 import ChatRoom from '../components/ChatRoom';
 import Notification from '../components/Notification';
-import { defaultNotifications, dummyChats } from '../data/mockData';
 import './Chat.css';
 
 // SwipeableChat component for swipe-to-delete functionality
@@ -328,37 +327,9 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
     try {
       setIsLoadingChats(true);
       
-      // Query chats collection for current user
-      const chatsRef = collection(db, 'chats');
-      const q = query(
-        chatsRef,
-        where('participants', 'array-contains', user.id),
-        orderBy('lastMessageTime', 'desc')
-      );
-      
-      const querySnapshot = await getDocs(q);
-      const fetchedChats = [];
-      
-      querySnapshot.forEach((doc) => {
-        const chatData = doc.data();
-        
-        // Get the other participant's name
-        const otherParticipantId = chatData.participants.find(id => id !== user.id);
-        const otherParticipantName = chatData.participantNames?.[otherParticipantId] || 'Unknown User';
-        
-        fetchedChats.push({
-          id: doc.id,
-          name: otherParticipantName,
-          lastMessage: chatData.lastMessage || 'Start a conversation',
-          timestamp: chatData.lastMessageTime?.toDate?.() || new Date(),
-          avatar: '💬',
-          unread: chatData.unreadCount?.[user.id] || 0,
-          isDummy: false,
-          isGameChat: false
-        });
-      });
-      
-      setRealChats(fetchedChats);
+      // For now, just use empty array while Firebase collections are being set up
+      // TODO: Implement real Firestore queries when collections exist
+      setRealChats([]);
       
     } catch (error) {
       setRealChats([]);
@@ -377,34 +348,9 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
     try {
       setIsLoadingNotifications(true);
       
-      // Query notifications collection for current user
-      const notificationsRef = collection(db, 'notifications');
-      const q = query(
-        notificationsRef,
-        where('userId', '==', user.id),
-        orderBy('createdAt', 'desc')
-      );
-      
-      const querySnapshot = await getDocs(q);
-      const fetchedNotifications = [];
-      
-      querySnapshot.forEach((doc) => {
-        const notificationData = doc.data();
-        fetchedNotifications.push({
-          id: doc.id,
-          message: notificationData.message || 'New notification',
-          timestamp: notificationData.createdAt?.toDate?.()?.toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            hour12: true 
-          }) || 'Now',
-          isRead: notificationData.isRead || false,
-          type: notificationData.type || 'system',
-          targetUser: notificationData.userId
-        });
-      });
-      
-      setRealNotifications(fetchedNotifications);
+      // For now, just use empty array while Firebase collections are being set up
+      // TODO: Implement real Firestore queries when collections exist
+      setRealNotifications([]);
       
     } catch (error) {
       setRealNotifications([]);
@@ -431,9 +377,9 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
     );
   }, [appNotifications, currentUserName]);
   
-  // Combine real notifications, app notifications and default notifications
+  // Combine real notifications and app notifications only
   const notifications = useMemo(() => {
-    return [...realNotifications, ...userNotifications, ...defaultNotifications];
+    return [...realNotifications, ...userNotifications];
   }, [realNotifications, userNotifications]);
   
   const userChatRooms = getUserChatRooms();
@@ -461,26 +407,7 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
     return emojiMap[name] || '👤';
   }, []);
 
-  // Initialize unread counts for dummy chats if not already set
-  const initializeDummyUnreadCounts = () => {
-    if (!chatUnreadCounts['dummy-sarah'] && !chatUnreadCounts['dummy-mike']) {
-      setChatUnreadCounts({
-        'dummy-sarah': 1,
-        'dummy-mike': 1
-      });
-    }
-  };
-
-  // Dummy chats for demo purposes (shown when no real chats exist) - base data imported from mockData.js
-  const dummyChatsWithCounts = dummyChats.map(chat => ({
-    ...chat,
-    unread: chatUnreadCounts[chat.id] || 0
-  }));
-
-  // Initialize dummy chat unread counts
-  if (userChatRooms.length === 0) {
-    initializeDummyUnreadCounts();
-  }
+  // Remove dummy chat initialization - only use real chats
 
   // Initialize unread counts for real game chats if not already set
   const initializeGameChatUnreadCounts = () => {
@@ -534,9 +461,9 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
       unread: chat.unread || chatUnreadCounts[chat.id] || 0
     }));
     
-    // Fallback to dummy data if no chats
-    return chatsWithCounts.length > 0 ? chatsWithCounts : dummyChatsWithCounts;
-  }, [realChats, userChatRooms, dummyChatsWithCounts, formatTimestamp, getAvatarEmoji, chatUnreadCounts]);
+    // No fallback to dummy data - show real chats only
+    return chatsWithCounts;
+  }, [realChats, userChatRooms, formatTimestamp, getAvatarEmoji, chatUnreadCounts]);
 
   const handleChatSelect = useCallback((chat) => {
     // Mark chat as read by setting unread count to 0

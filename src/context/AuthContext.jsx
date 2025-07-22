@@ -10,6 +10,7 @@ import {
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, db, storage, googleProvider, appleProvider } from '../config/firebase';
+import { logUserSignUp, logUserLogin } from '../utils/analytics';
 
 const AuthContext = createContext();
 
@@ -103,6 +104,8 @@ export const AuthProvider = ({ children }) => {
   const signIn = async (email, password) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      // Log analytics event
+      logUserLogin('email', userCredential.user.uid);
       // User state will be updated by onAuthStateChanged listener
       return { success: true, user: userCredential.user };
     } catch (error) {
@@ -177,6 +180,9 @@ export const AuthProvider = ({ children }) => {
         throw firestoreError; // Re-throw to be caught by outer try-catch
       }
       
+      // Log analytics event
+      logUserSignUp('email', firebaseUser.uid);
+      
       return { success: true, user: firebaseUser };
     } catch (error) {
       console.error('Sign up error:', error);
@@ -230,6 +236,11 @@ export const AuthProvider = ({ children }) => {
         };
         
         await setDoc(userDocRef, userData);
+        // Log analytics for new user signup
+        logUserSignUp('google', firebaseUser.uid);
+      } else {
+        // Log analytics for returning user login
+        logUserLogin('google', firebaseUser.uid);
       }
       
       return { success: true, user: firebaseUser, isNewUser };
@@ -271,6 +282,11 @@ export const AuthProvider = ({ children }) => {
         };
         
         await setDoc(userDocRef, userData);
+        // Log analytics for new user signup
+        logUserSignUp('apple', firebaseUser.uid);
+      } else {
+        // Log analytics for returning user login
+        logUserLogin('apple', firebaseUser.uid);
       }
       
       return { success: true, user: firebaseUser, isNewUser };
