@@ -26,7 +26,7 @@
   align-items: center;
   position: relative;
   z-index: 1;
-  margin-top: -3rem;
+  margin-top: -4rem;
 }
 
 @media (max-width: 968px) {
@@ -54,7 +54,7 @@
 .landing-hero {
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
+  gap: 1.5rem;
   padding-top: 0;
 }
 
@@ -67,7 +67,7 @@
 }
 
 .logo-image {
-  width: 500px;
+  width: 1100px;
   height: auto;
 }
 
@@ -128,15 +128,15 @@
   }
   
   .logo-image {
-    width: 320px;
+    width: 550px;
   }
 }
 
 .landing-features {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  margin-top: 0;
+  gap: 0.75rem;
+  margin-top: -0.5rem;
   max-width: 90%;
 }
 
@@ -235,7 +235,7 @@
   backdrop-filter: blur(10px);
   position: relative;
   overflow: hidden;
-  margin-top: 1.5rem;
+  margin-top: 0.5rem;
 }
 
 /* Decorative corner accent - removed */
@@ -514,6 +514,6 @@
   }
   
   .logo-image {
-    width: 300px; /* Still prominent but fits smaller screens */
+    width: 420px; /* Larger but still fits smaller screens */
   }
 }

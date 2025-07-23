@@ -97,7 +97,7 @@ const Landing = () => {
     <div className="landing-container">
       {/* Logo Section */}
       <div className="landing-logo">
-        <img src="/logo.png" alt="The Social Pickle" className="logo-image" />
+        <img src="/logo-new.png?t=1753292428" alt="Social Pickle" className="logo-image" />
       </div>
 
       <div className="landing-content">
@@ -105,7 +105,7 @@ const Landing = () => {
         <div className="landing-hero">
           <div className="landing-tagline">
             <h2>Pickleball your way.</h2>
-            <p className="tagline-subtitle">Find a partner, host or join a game - and become part of The Social Pickle community.</p>
+            <p className="tagline-subtitle">Find a partner, host or find a game - and become part of The Social Pickle community.</p>
           </div>
 
           <div className="landing-features">
