@@ -22,11 +22,11 @@
   width: 100%;
   display: grid;
   grid-template-columns: 1.2fr 1fr;
-  gap: 4rem;
+  gap: 2rem;
   align-items: center;
   position: relative;
   z-index: 1;
-  margin-top: -4rem;
+  margin-top: -3rem;
 }
 
 @media (max-width: 968px) {
@@ -38,10 +38,11 @@
     grid-template-columns: 1fr;
     gap: 1rem;
     text-align: center;
-    margin-top: -2rem; /* Pull content section up closer to logo */
+    margin-top: -4.5rem; /* Pull content section up closer to logo */
   }
   
   .landing-logo {
+    margin-top: -6rem !important; /* Pull up to perfectly fit Get Started form */
     margin-bottom: 0;
     display: flex;
     justify-content: center; /* Ensure perfect centering */
@@ -54,7 +55,7 @@
 .landing-hero {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.8rem;
   padding-top: 0;
 }
 
@@ -63,11 +64,11 @@
   align-items: center;
   justify-content: center;
   margin-bottom: 0;
-  margin-top: -2.5rem;
+  margin-top: -6rem;
 }
 
 .logo-image {
-  width: 1100px;
+  width: 600px;
   height: auto;
 }
 
@@ -108,6 +109,15 @@
     padding-top: 0; /* Remove any top padding */
   }
   
+  .landing-features {
+    gap: 0.75rem; /* Tighter spacing on mobile */
+    margin-top: -0.5rem;
+  }
+  
+  .landing-auth {
+    margin-top: 0.5rem; /* Closer on mobile */
+  }
+  
   .landing-tagline {
     margin: 0; /* Remove all margins */
     padding-top: 0; /* Remove any top padding */
@@ -135,8 +145,8 @@
 .landing-features {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-top: -0.5rem;
+  gap: 1rem;
+  margin-top: 0;
   max-width: 90%;
 }
 
@@ -235,7 +245,7 @@
   backdrop-filter: blur(10px);
   position: relative;
   overflow: hidden;
-  margin-top: 0.5rem;
+  margin-top: 1rem;
 }
 
 /* Decorative corner accent - removed */
