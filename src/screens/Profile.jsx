@@ -49,45 +49,87 @@ const Profile = memo(() => {
   const [notification, setNotification] = useState(null);
   
   const [profile, setProfile] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    skillLevel: user?.skillLevel || '',
-    duprRating: user?.duprRating || 'unrated',
-    gender: user?.gender || '',
-    age: user?.age || '',
-    bio: user?.bio || '',
-    availability: user?.availability || [],
+    name: '',
+    email: '',
+    skillLevel: '',
+    duprRating: 'unrated',
+    gender: '',
+    age: '',
+    bio: '',
+    availability: [],
   });
 
   const [isEditing, setIsEditing] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
   const [profileImagePreview, setProfileImagePreview] = useState(null);
 
-  // Fetch profile picture directly from Firestore
+  // Update profile state when user context changes
   useEffect(() => {
-    const fetchProfilePicture = async () => {
-      if (user?.id) {
-        try {
-          const userDocRef = doc(db, 'users', user.id);
-          const userDocSnap = await getDoc(userDocRef);
+    if (user) {
+      console.log('Profile: User context updated:', {
+        id: user.id,
+        name: user.name,
+        profilePicture: user.profilePicture,
+        hasProfilePicture: !!user.profilePicture
+      });
+      
+      setProfile({
+        name: user.name || '',
+        email: user.email || '',
+        skillLevel: user.skillLevel || '',
+        duprRating: user.duprRating || 'unrated',
+        gender: user.gender || '',
+        age: user.age || '',
+        bio: user.bio || '',
+        availability: user.availability || [],
+      });
+      
+      // Also update profile picture if available
+      if (user.profilePicture) {
+        console.log('Profile: Setting profile picture from user context:', user.profilePicture);
+        setProfileImagePreview(user.profilePicture);
+      }
+    }
+  }, [user]);
+
+  // Fetch complete profile data from Firestore if user context is incomplete
+  useEffect(() => {
+    const fetchCompleteProfile = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const userDocRef = doc(db, 'users', user.id);
+        const userDocSnap = await getDoc(userDocRef);
+        
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
           
-          if (userDocSnap.exists()) {
-            const userData = userDocSnap.data();
-            if (userData.profilePicture) {
-              setProfileImagePreview(userData.profilePicture);
-            }
+          // Update profile with Firestore data
+          setProfile(prev => ({
+            name: userData.name || prev.name,
+            email: userData.email || prev.email,
+            skillLevel: userData.skillLevel || prev.skillLevel,
+            duprRating: userData.duprRating || prev.duprRating,
+            gender: userData.gender || prev.gender,
+            age: userData.age || prev.age,
+            bio: userData.bio || prev.bio,
+            availability: userData.availability || prev.availability,
+          }));
+          
+          // Update profile picture
+          if (userData.profilePicture) {
+            console.log('Profile: Setting profile picture from Firestore:', userData.profilePicture);
+            setProfileImagePreview(userData.profilePicture);
+          } else {
+            console.log('Profile: No profile picture found in Firestore');
           }
-        } catch (error) {
-          setNotification({
-            message: "Failed to load profile picture",
-            name: "Please refresh the page",
-            emoji: "⚠️"
-          });
         }
+      } catch (error) {
+        console.error('Error fetching complete profile:', error);
       }
     };
 
-    fetchProfilePicture();
+    fetchCompleteProfile();
   }, [user?.id]);
 
   const handleInputChange = useCallback((e) => {

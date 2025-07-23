@@ -40,7 +40,6 @@ export const AuthProvider = ({ children }) => {
           
           if (userDocSnap.exists()) {
             const userData = userDocSnap.data();
-            
             // If user has basic profile data, assume profile is complete
             const hasBasicProfile = userData.name && userData.age && userData.skillLevel;
             
@@ -139,11 +138,25 @@ export const AuthProvider = ({ children }) => {
       
       if (additionalData.profilePicture) {
         try {
+          console.log('SignUp: Starting profile picture upload for user:', firebaseUser.uid);
+          console.log('SignUp: File details:', {
+            name: additionalData.profilePicture.name,
+            size: additionalData.profilePicture.size,
+            type: additionalData.profilePicture.type
+          });
+          
           const imageRef = ref(storage, `profile-pictures/${firebaseUser.uid}`);
-          await uploadBytes(imageRef, additionalData.profilePicture);
+          const uploadResult = await uploadBytes(imageRef, additionalData.profilePicture);
           profilePictureUrl = await getDownloadURL(imageRef);
+          
+          console.log('SignUp: Upload successful!');
+          console.log('SignUp: Download URL:', profilePictureUrl);
         } catch (uploadError) {
-          console.error('Error uploading profile picture:', uploadError);
+          console.error('SignUp: Error uploading profile picture:', uploadError);
+          console.error('SignUp: Upload error details:', {
+            code: uploadError.code,
+            message: uploadError.message
+          });
           // Continue without profile picture if upload fails
         }
       }
@@ -333,11 +346,25 @@ export const AuthProvider = ({ children }) => {
       
       if (profileData.profilePicture) {
         try {
+          console.log('UpdateProfile: Starting profile picture upload for user:', firebaseUser.uid);
+          console.log('UpdateProfile: File details:', {
+            name: profileData.profilePicture.name,
+            size: profileData.profilePicture.size,
+            type: profileData.profilePicture.type
+          });
+          
           const imageRef = ref(storage, `profile-pictures/${firebaseUser.uid}`);
-          await uploadBytes(imageRef, profileData.profilePicture);
+          const uploadResult = await uploadBytes(imageRef, profileData.profilePicture);
           profilePictureUrl = await getDownloadURL(imageRef);
+          
+          console.log('UpdateProfile: Upload successful!');
+          console.log('UpdateProfile: Download URL:', profilePictureUrl);
         } catch (uploadError) {
-          console.error('Error uploading profile picture:', uploadError);
+          console.error('UpdateProfile: Error uploading profile picture:', uploadError);
+          console.error('UpdateProfile: Upload error details:', {
+            code: uploadError.code,
+            message: uploadError.message
+          });
           // Continue without profile picture if upload fails
         }
       }
@@ -368,6 +395,18 @@ export const AuthProvider = ({ children }) => {
         profilePicture: finalProfilePicture,
         profileComplete: true
       }));
+      
+      // Also update Firebase Auth profile with the new photo URL
+      if (finalProfilePicture) {
+        try {
+          await updateProfile(firebaseUser, {
+            displayName: profileData.name || firebaseUser.displayName,
+            photoURL: finalProfilePicture
+          });
+        } catch (authUpdateError) {
+          console.error('Error updating Firebase Auth profile:', authUpdateError);
+        }
+      }
       
       return { success: true };
     } catch (error) {

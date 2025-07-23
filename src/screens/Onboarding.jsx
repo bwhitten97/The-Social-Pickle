@@ -192,6 +192,13 @@ const Onboarding = () => {
     setIsLoading(true);
     
     try {
+      console.log('Onboarding: Submitting with userData:', {
+        name: userData.name,
+        hasProfilePicture: !!userData.profilePicture,
+        profilePictureType: userData.profilePicture?.type,
+        profilePictureSize: userData.profilePicture?.size
+      });
+      
       let result;
       
       if (isEmailSignup) {
@@ -260,6 +267,12 @@ const Onboarding = () => {
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
+      console.log('Onboarding: File selected:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+      
       // Validate file type
       if (!file.type.startsWith('image/')) {
         setNotification({
@@ -281,11 +294,13 @@ const Onboarding = () => {
       }
       
       updateUserData('profilePicture', file);
+      console.log('Onboarding: File stored in userData');
       
       // Create preview URL
       const reader = new FileReader();
       reader.onload = (e) => {
         updateUserData('profilePictureUrl', e.target.result);
+        console.log('Onboarding: Preview URL created');
       };
       reader.readAsDataURL(file);
     }

@@ -22,8 +22,8 @@ import './screens/Profile.css';
 import './components/ProtectedRoute.css';
 
 // App constants
-const INITIAL_UNREAD_NOTIFICATIONS = 3;
-const INITIAL_UNREAD_CHATS = 2;
+const INITIAL_UNREAD_NOTIFICATIONS = 0;
+const INITIAL_UNREAD_CHATS = 0;
 const INITIAL_LIKED_PLAYERS = [1]; // Alex Johnson (id: 1) has already swiped right
 const PLAYER_TRANSITION_DELAY = 1000; // ms
 
@@ -287,7 +287,7 @@ function AppContent() {
                 unreadChatCount={unreadChatCount}
               />
               <main className="main-content">
-                <ErrorBoundary>
+                <ErrorBoundary showDetails={true}>
                   <Games addAppNotification={addAppNotification} />
                 </ErrorBoundary>
               </main>
@@ -303,7 +303,7 @@ function AppContent() {
                 unreadChatCount={unreadChatCount}
               />
               <main className="main-content">
-                <ErrorBoundary>
+                <ErrorBoundary showDetails={true}>
                   <Matches />
                 </ErrorBoundary>
               </main>

@@ -1,12 +1,44 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useAuth } from './AuthContext';
+import { gameService, applicationService, hasUserAppliedToGame } from '../services/gameService';
+import { initializeFirestoreCollections, checkFirestoreSetup } from '../utils/firestoreSetup';
 
-const GameContext = createContext();
+const GameContext = createContext(null);
 
 export const useGameContext = () => {
   const context = useContext(GameContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useGameContext must be used within a GameProvider');
+  }
+  // Return a safe default if context is still initializing
+  if (!context) {
+    return {
+      games: [],
+      applications: [],
+      chatRooms: [],
+      matchedPlayers: [],
+      messages: [],
+      currentUserId: '',
+      currentUserName: '',
+      currentUserSkill: '',
+      isInitialized: false,
+      addGame: () => {},
+      updateGame: () => {},
+      removeGame: () => {},
+      requestToJoinGame: () => ({ success: false, message: 'Context not ready' }),
+      updateApplicationStatus: () => {},
+      withdrawApplication: () => ({ success: false, message: 'Context not ready' }),
+      getUserApplications: () => [],
+      getGameApplications: () => [],
+      hasUserApplied: () => false,
+      getUserChatRooms: () => [],
+      getChatRoom: () => null,
+      addMatchedPlayer: () => {},
+      sendMessage: () => ({ success: false, message: 'Context not ready' }),
+      getMessages: () => [],
+      getConversation: () => [],
+      deleteChat: () => ({ success: false, message: 'Context not ready' })
+    };
   }
   return context;
 };
@@ -278,86 +310,98 @@ const mockApplications = [
 ];
 
 export const GameProvider = ({ children }) => {
+  // Get auth context
   const { user } = useAuth();
-  const [games, setGames] = useState(mockGames);
-  const [applications, setApplications] = useState(mockApplications);
-  const [chatRooms, setChatRooms] = useState([
-    // Game chat rooms for accepted applications
-    {
-      id: 'chat-1',
-      gameId: 1,
-      gameName: 'Central Park Courts',
-      participants: ['host-user', 'current-user'],
-      createdAt: new Date().toISOString(),
-      lastMessage: 'Welcome to the game chat! Looking forward to playing.',
-      lastMessageTime: new Date().toISOString()
-    },
-    {
-      id: 'chat-3',
-      gameId: 3,
-      gameName: 'Downtown Sports Complex',
-      participants: ['host-user', 'current-user'],
-      createdAt: new Date().toISOString(),
-      lastMessage: 'Ready for some competitive play!',
-      lastMessageTime: new Date().toISOString()
-    },
-    // Direct message chat rooms
-    {
-      id: 'chat-jessica-martinez',
-      gameId: null,
-      gameName: 'Jessica Martinez',
-      participants: ['Alex Thompson', 'Jessica Martinez'],
-      createdAt: new Date().toISOString(),
-      lastMessage: 'Looking forward to our game tomorrow!',
-      lastMessageTime: new Date().toISOString()
-    },
-    {
-      id: 'chat-priya-patel',
-      gameId: null,
-      gameName: 'Priya Patel',
-      participants: ['Alex Thompson', 'Priya Patel'],
-      createdAt: new Date().toISOString(),
-      lastMessage: 'Thanks for the great match today!',
-      lastMessageTime: new Date().toISOString()
-    },
-    {
-      id: 'chat-maria-gonzalez',
-      gameId: null,
-      gameName: 'Maria Gonzalez',
-      participants: ['Alex Thompson', 'Maria Gonzalez'],
-      createdAt: new Date().toISOString(),
-      lastMessage: 'What time should we meet at the courts?',
-      lastMessageTime: new Date().toISOString()
-    }
-  ]);
+  
+  // Initialize state with empty arrays first, then populate
+  const [games, setGames] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [chatRooms, setChatRooms] = useState([]);
   const [matchedPlayers, setMatchedPlayers] = useState([]);
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      from: 'Jessica Martinez',
-      to: 'Alex Thompson',
-      message: 'Looking forward to our game tomorrow!',
-      timestamp: new Date().toISOString(),
-      read: false
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
   // Use real user data or fallback values
-  const currentUserId = user?.id || user?.uid || "current-user";
-  const currentUserName = user?.name || user?.displayName || "Anonymous User";
-  const currentUserSkill = user?.skillLevel || "Beginner";
+  const currentUserId = user?.uid || "anonymous-user";
+  const currentUserName = user?.displayName || user?.name || "Anonymous User";
+  const currentUserSkill = user?.skillLevel || "Intermediate";
+
+  // Initialize Firestore data and set up real-time listeners
+  useEffect(() => {
+    const initializeData = async () => {
+      if (!isInitialized) {
+        setIsLoading(true);
+        
+        try {
+          // Check if Firestore is set up, if not initialize it
+          const setupCheck = await checkFirestoreSetup();
+          
+          if (!setupCheck.isSetup) {
+            console.log('Initializing Firestore collections...');
+            await initializeFirestoreCollections();
+          }
+          
+          // Set up real-time listeners for games
+          const unsubscribeGames = gameService.setupGamesListener((gamesData) => {
+            setGames(gamesData);
+          });
+          
+          // Set up real-time listeners for user applications if user is authenticated
+          let unsubscribeApplications = null;
+          if (user && user.uid) {
+            unsubscribeApplications = applicationService.setupUserApplicationsListener(
+              user.uid, 
+              (applicationsData) => {
+                setApplications(applicationsData);
+              }
+            );
+          }
+          
+          // Initialize other data (keeping some mock data for now)
+          setChatRooms([]);
+          setMessages([]);
+          setMatchedPlayers([]);
+          
+          setIsInitialized(true);
+          setIsLoading(false);
+          
+          // Cleanup function
+          return () => {
+            unsubscribeGames();
+            if (unsubscribeApplications) {
+              unsubscribeApplications();
+            }
+          };
+          
+        } catch (error) {
+          console.error('Error initializing Firestore data:', error);
+          // Fallback to mock data on error
+          setGames(mockGames);
+          setApplications(mockApplications);
+          setIsInitialized(true);
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    initializeData();
+  }, [isInitialized, user]);
 
   // Function to clean up expired games (games that are more than 1 hour past their start time)
-  const cleanupExpiredGames = () => {
+  const cleanupExpiredGames = React.useCallback(() => {
     try {
       const now = new Date();
       
       setGames(prevGames => {
+        if (!prevGames || !Array.isArray(prevGames)) return prevGames;
+        
         const expiredGameIds = [];
         
         const activeGames = prevGames.filter(game => {
           try {
             // Parse the game date and time safely
-            if (!game.date || !game.time) return true; // Keep games without date/time
+            if (!game?.date || !game?.time) return true; // Keep games without date/time
             
             const gameDateTime = new Date(`${game.date}T${game.time}`);
             
@@ -381,89 +425,124 @@ export const GameProvider = ({ children }) => {
         
         // If we removed any games, also clean up their applications and chat rooms
         if (expiredGameIds.length > 0) {
-          setApplications(prevApps => prevApps.filter(app => !expiredGameIds.includes(app.gameId)));
-          setChatRooms(prevRooms => prevRooms.filter(room => !expiredGameIds.includes(room.gameId)));
+          // Use setTimeout to avoid state update during render
+          setTimeout(() => {
+            setApplications(prevApps => prevApps.filter(app => !expiredGameIds.includes(app.gameId)));
+            setChatRooms(prevRooms => prevRooms.filter(room => !expiredGameIds.includes(room.gameId)));
+          }, 0);
         }
         
         return activeGames;
       });
     } catch (error) {
       // If cleanup fails, don't crash the app
+      console.warn('Game cleanup failed:', error);
     }
-  };
+  }, []);
 
-  // Set up periodic cleanup - run every 5 minutes
+  // Set up periodic cleanup - run every 5 minutes, but only after initialization
   useEffect(() => {
-    // Run cleanup immediately when component mounts
-    cleanupExpiredGames();
+    if (!isInitialized) return;
+    
+    // Run cleanup after a short delay to ensure context is fully initialized
+    const initialCleanup = setTimeout(() => {
+      cleanupExpiredGames();
+    }, 2000);
     
     // Set up interval to run cleanup every 5 minutes
     const cleanupInterval = setInterval(cleanupExpiredGames, 5 * 60 * 1000);
     
     // Cleanup interval on unmount
-    return () => clearInterval(cleanupInterval);
-  }, []);
-
-  const addGame = (gameData) => {
-    const newGame = {
-      ...gameData,
-      id: Date.now(),
-      createdBy: currentUserName,
-      createdAt: new Date().toISOString(),
-      applicants: []
+    return () => {
+      clearTimeout(initialCleanup);
+      clearInterval(cleanupInterval);
     };
-    setGames(prev => [newGame, ...prev]);
-    return newGame;
+  }, [cleanupExpiredGames, isInitialized]);
+
+  const addGame = async (gameData) => {
+    try {
+      const result = await gameService.createGame(gameData, currentUserId, currentUserName);
+      if (result.success) {
+        // Game will be added to state via real-time listener
+        return { success: true, message: "Game created successfully!" };
+      } else {
+        return { success: false, message: result.error };
+      }
+    } catch (error) {
+      console.error('Error adding game:', error);
+      return { success: false, message: "Failed to create game" };
+    }
   };
 
-  const updateGame = (gameId, updateData) => {
-    setGames(prev => prev.map(game => 
-      game.id === gameId 
-        ? { ...game, ...updateData, totalSpots: updateData.openSpots }
-        : game
-    ));
+  const updateGame = async (gameId, updateData) => {
+    try {
+      const result = await gameService.updateGame(gameId, updateData);
+      if (result.success) {
+        // Game will be updated in state via real-time listener
+        return { success: true, message: "Game updated successfully!" };
+      } else {
+        return { success: false, message: result.error };
+      }
+    } catch (error) {
+      console.error('Error updating game:', error);
+      return { success: false, message: "Failed to update game" };
+    }
   };
 
-  const removeGame = (gameId) => {
-    setGames(prev => prev.filter(game => game.id !== gameId));
-    // Also remove related applications
-    setApplications(prev => prev.filter(app => app.gameId !== gameId));
+  const removeGame = async (gameId) => {
+    try {
+      const result = await gameService.deleteGame(gameId);
+      if (result.success) {
+        // Game and related data will be removed via real-time listeners
+        return { success: true, message: "Game removed successfully!" };
+      } else {
+        return { success: false, message: result.error };
+      }
+    } catch (error) {
+      console.error('Error removing game:', error);
+      return { success: false, message: "Failed to remove game" };
+    }
   };
 
-  const requestToJoinGame = (gameId, message = "") => {
-    // Check if user already applied
-    const existingApplication = applications.find(
-      app => app.gameId === gameId && app.playerId === currentUserId
-    );
-    
-    if (existingApplication) {
-      return { success: false, message: "You have already applied to this game." };
-    }
+  const requestToJoinGame = async (gameId, message = "", playerCount = 1) => {
+    try {
+      // Check if user already applied
+      const hasApplied = await hasUserAppliedToGame(currentUserId, gameId);
+      if (hasApplied) {
+        return { success: false, message: "You have already applied to this game." };
+      }
 
-    // Check if game exists and has open spots
-    const game = games.find(g => g.id === gameId);
-    if (!game) {
-      return { success: false, message: "Game not found." };
-    }
-    
-    if (game.openSpots <= 0) {
-      return { success: false, message: "This game is full." };
-    }
+      // Check if game exists and has open spots
+      const game = games.find(g => g.id === gameId);
+      if (!game) {
+        return { success: false, message: "Game not found." };
+      }
+      
+      if (game.openSpots <= 0) {
+        return { success: false, message: "This game is full." };
+      }
 
-    // Create new application
-    const newApplication = {
-      id: Date.now(),
-      gameId,
-      playerId: currentUserId,
-      playerName: currentUserName,
-      playerSkill: currentUserSkill,
-      applicationDate: new Date().toISOString(),
-      message,
-      status: "pending"
-    };
+      // Create new application
+      const applicationData = {
+        gameId,
+        playerId: currentUserId,
+        playerName: currentUserName,
+        playerSkill: currentUserSkill,
+        playerCount,
+        message
+      };
 
-    setApplications(prev => [...prev, newApplication]);
-    return { success: true, message: "Application submitted successfully!" };
+      const result = await applicationService.createApplication(applicationData);
+      if (result.success) {
+        // Application will be added to state via real-time listener
+        return { success: true, message: "Application submitted successfully!" };
+      } else {
+        return { success: false, message: result.error };
+      }
+    } catch (error) {
+      console.error('Error submitting application:', error);
+      return { success: false, message: "Failed to submit application" };
+    }
   };
 
   const updateApplicationStatus = (applicationId, status) => {
@@ -526,24 +605,28 @@ export const GameProvider = ({ children }) => {
   };
 
 
-  const getUserApplications = () => {
+  const getUserApplications = React.useCallback(() => {
     return applications.filter(app => app.playerId === currentUserId);
-  };
+  }, [applications, currentUserId]);
 
-  const getGameApplications = () => {
-    // Get applications for games created by current user
+  const getGameApplications = React.useCallback((gameId) => {
+    if (gameId) {
+      // Get applications for a specific game
+      return applications.filter(app => app.gameId === gameId && app.status === 'pending');
+    }
+    // Get applications for all games created by current user
     const userGames = games.filter(game => game.createdBy === currentUserName);
     const userGameIds = userGames.map(game => game.id);
     return applications.filter(app => userGameIds.includes(app.gameId));
-  };
+  }, [applications, games, currentUserName]);
 
-  const hasUserApplied = (gameId) => {
+  const hasUserApplied = React.useCallback((gameId) => {
     return applications.some(
       app => app.gameId === gameId && app.playerId === currentUserId
     );
-  };
+  }, [applications, currentUserId]);
 
-  const getUserChatRooms = () => {
+  const getUserChatRooms = React.useCallback(() => {
     
     const filteredRooms = chatRooms.filter(room => 
       room.participants.includes(currentUserId) || 
@@ -552,11 +635,11 @@ export const GameProvider = ({ children }) => {
     );
     
     return filteredRooms;
-  };
+  }, [chatRooms, currentUserId, currentUserName]);
 
-  const getChatRoom = (gameId) => {
+  const getChatRoom = React.useCallback((gameId) => {
     return chatRooms.find(room => room.gameId === gameId);
-  };
+  }, [chatRooms]);
 
   const addMatchedPlayer = (player) => {
     setMatchedPlayers(prev => [...prev, { 
@@ -605,16 +688,16 @@ export const GameProvider = ({ children }) => {
     return { success: true, message: "Message sent successfully!" };
   };
 
-  const getMessages = () => {
+  const getMessages = React.useCallback(() => {
     return messages;
-  };
+  }, [messages]);
 
-  const getConversation = (recipientName) => {
+  const getConversation = React.useCallback((recipientName) => {
     return messages.filter(msg => 
       (msg.from === currentUserName && msg.to === recipientName) ||
       (msg.from === recipientName && msg.to === currentUserName)
     );
-  };
+  }, [messages, currentUserName]);
 
   const deleteChat = (recipientName) => {
     // Remove all messages for this conversation
@@ -639,6 +722,8 @@ export const GameProvider = ({ children }) => {
     currentUserId,
     currentUserName,
     currentUserSkill,
+    isInitialized,
+    isLoading,
     addGame,
     updateGame,
     removeGame,
@@ -655,7 +740,25 @@ export const GameProvider = ({ children }) => {
     getMessages,
     getConversation,
     deleteChat
-  }), [games, applications, chatRooms, matchedPlayers, messages, currentUserId, currentUserName, currentUserSkill]);
+  }), [
+    games, 
+    applications, 
+    chatRooms, 
+    matchedPlayers, 
+    messages, 
+    currentUserId, 
+    currentUserName, 
+    currentUserSkill,
+    isInitialized,
+    isLoading,
+    getUserApplications,
+    getGameApplications,
+    hasUserApplied,
+    getUserChatRooms,
+    getChatRoom,
+    getMessages,
+    getConversation
+  ]);
 
   return (
     <GameContext.Provider value={value}>
