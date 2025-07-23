@@ -119,7 +119,7 @@ const Landing = () => {
             </div>
             <div className="feature-item">
               <span className="feature-icon">💬</span>
-              <span className="feature-text">Chat & coordinate with your matches</span>
+              <span className="feature-text">Chat with players & hosts</span>
             </div>
           </div>
         </div>
