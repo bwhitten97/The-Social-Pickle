@@ -38,12 +38,12 @@
     grid-template-columns: 1fr;
     gap: 1rem;
     text-align: center;
-    margin-top: -4.5rem; /* Pull content section up closer to logo */
+    margin-top: -3rem; /* Less negative margin = more space between logo and content */
   }
   
   .landing-logo {
     margin-top: -3.8rem !important; /* Pull up to perfectly fit Get Started form */
-    margin-bottom: 0;
+    margin-bottom: 1.5rem;
     display: flex;
     justify-content: center; /* Ensure perfect centering */
     align-items: center;
