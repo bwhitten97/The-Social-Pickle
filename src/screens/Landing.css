@@ -22,14 +22,15 @@
   width: 100%;
   display: grid;
   grid-template-columns: 1.2fr 1fr;
-  gap: 2rem;
+  gap: 2rem !important; /* PROTECTED: Desktop content gap */
   align-items: center;
   position: relative;
   z-index: 1;
-  margin-top: -3rem;
+  margin-top: -3rem !important; /* PROTECTED: Desktop content positioning */
 }
 
 @media (max-width: 968px) {
+  /* CRITICAL: DO NOT MODIFY THESE VALUES - CAREFULLY TUNED FOR MOBILE LAYOUT */
   .landing-container {
     gap: 0; /* Remove any gap between logo and content */
   }
@@ -38,12 +39,12 @@
     grid-template-columns: 1fr;
     gap: 1rem;
     text-align: center;
-    margin-top: -3rem; /* Less negative margin = more space between logo and content */
+    margin-top: -3rem !important; /* PROTECTED: Optimal logo-to-content spacing */
   }
   
   .landing-logo {
-    margin-top: -3.8rem !important; /* Pull up to perfectly fit Get Started form */
-    margin-bottom: 1.5rem;
+    margin-top: -3.8rem !important; /* PROTECTED: Perfect mobile logo position */
+    margin-bottom: 1.5rem !important; /* PROTECTED: Space below logo */
     display: flex;
     justify-content: center; /* Ensure perfect centering */
     align-items: center;
