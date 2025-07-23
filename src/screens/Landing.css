@@ -42,7 +42,7 @@
   }
   
   .landing-logo {
-    margin-top: -6rem !important; /* Pull up to perfectly fit Get Started form */
+    margin-top: -3.8rem !important; /* Pull up to perfectly fit Get Started form */
     margin-bottom: 0;
     display: flex;
     justify-content: center; /* Ensure perfect centering */
