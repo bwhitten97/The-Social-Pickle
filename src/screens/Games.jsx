@@ -160,7 +160,12 @@ const Games = memo(({ addAppNotification }) => {
       <main className="games-main">
         <div className="games-content-wrapper">
           <section className="games-header-section">
-            <h1 className="games-title">Games</h1>
+            <h1 className="games-title">
+              <svg xmlns="http://www.w3.org/2000/svg" className="games-title-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.348 14.651a3.75 3.75 0 010-5.303m5.304 0a3.75 3.75 0 010 5.303m-7.425 2.122a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546M5.106 18.894c3.808-3.808 9.98-3.808 13.788 0M9.348 14.651a3.75 3.75 0 010-5.303m5.304 0a3.75 3.75 0 010 5.303m-7.425 2.122a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546M5.106 18.894c3.808-3.808 9.98-3.808 13.788 0"/>
+              </svg>
+              Games
+            </h1>
             <div className="games-actions">
               <div className="games-nav-section">
                 <button 

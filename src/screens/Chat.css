@@ -672,7 +672,7 @@
 .messages-modern {
   background-color: #F1F2F4;
   min-height: 100vh;
-  padding: 2.5rem 0 4rem;
+  padding: 0;
   font-family: 'Inter', sans-serif;
 }
 
@@ -681,7 +681,7 @@
 .messages-tabs-modern,
 .chat-panel-modern,
 .notification-panel-modern {
-  max-width: 80rem;
+  max-width: 1200px;
   margin: 0 auto;
   padding-left: 1rem;
   padding-right: 1rem;
@@ -689,6 +689,7 @@
 
 /* Header Section */
 .messages-header-modern {
+  padding: 0.5rem 1rem;
   margin-bottom: 3rem;
 }
 
