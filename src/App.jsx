@@ -232,7 +232,11 @@ function AppContent() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={
-          isAuthenticated ? <Navigate to="/discover" replace /> : (
+          isAuthenticated ? (
+            user && user.profileComplete && !user.hasSeenWelcome ? 
+              <Navigate to="/welcome" replace /> : 
+              <Navigate to="/discover" replace />
+          ) : (
             <ErrorBoundary>
               <Landing />
             </ErrorBoundary>

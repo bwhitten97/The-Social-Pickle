@@ -26,6 +26,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isUpdatingWelcome, setIsUpdatingWelcome] = useState(false);
 
   // Firebase auth state listener
   useEffect(() => {
@@ -62,6 +63,12 @@ export const AuthProvider = ({ children }) => {
             const shouldHaveSeenWelcome = userData.profileComplete || hasBasicProfile || isReturningUser;
             const finalProfileComplete = userData.profileComplete !== undefined ? userData.profileComplete : (hasBasicProfile || isReturningUser);
             
+            // Don't overwrite hasSeenWelcome if we're in the process of updating it
+            const currentUser = user;
+            const hasSeenWelcomeValue = isUpdatingWelcome && currentUser?.hasSeenWelcome === true 
+              ? true 
+              : (userData.hasSeenWelcome !== undefined ? userData.hasSeenWelcome : shouldHaveSeenWelcome);
+            
             setUser({
               id: firebaseUser.uid,
               email: firebaseUser.email,
@@ -69,7 +76,7 @@ export const AuthProvider = ({ children }) => {
               // Set profileComplete to true if they have basic profile data or are returning user
               profileComplete: finalProfileComplete,
               // For returning users with complete profiles, skip welcome screen
-              hasSeenWelcome: userData.hasSeenWelcome !== undefined ? userData.hasSeenWelcome : shouldHaveSeenWelcome
+              hasSeenWelcome: hasSeenWelcomeValue
             });
           } else {
             // User exists in Auth but not in Firestore (social login first time)
@@ -167,23 +174,36 @@ export const AuthProvider = ({ children }) => {
         photoURL: profilePictureUrl || additionalData.profilePictureUrl || ''
       });
       
-      // Save user data to Firestore
+      // Save user data to Firestore (exclude File object)
+      const { profilePicture: fileObj, ...additionalDataWithoutFile } = additionalData;
+      
       const userData = {
-        name: additionalData.name || '',
-        age: additionalData.age || '',
-        gender: additionalData.gender || '',
-        skillLevel: additionalData.skillLevel || '',
-        duprRating: additionalData.duprRating || '',
-        availability: additionalData.availability || [],
-        profilePicture: profilePictureUrl || additionalData.profilePictureUrl || '',
-        bio: additionalData.bio || '',
+        name: additionalDataWithoutFile.name || '',
+        age: additionalDataWithoutFile.age || '',
+        gender: additionalDataWithoutFile.gender || '',
+        skillLevel: additionalDataWithoutFile.skillLevel || '',
+        duprRating: additionalDataWithoutFile.duprRating || '',
+        availability: additionalDataWithoutFile.availability || [],
+        profilePicture: profilePictureUrl || additionalDataWithoutFile.profilePictureUrl || '',
+        bio: additionalDataWithoutFile.bio || '',
         profileComplete: true,
         createdAt: new Date(),
         updatedAt: new Date()
       };
       
+      console.log('SignUp: Saving user data to Firestore:', {
+        uid: firebaseUser.uid,
+        profilePictureUrl,
+        hasProfilePicture: !!userData.profilePicture,
+        userData
+      });
+      
       try {
         await setDoc(doc(db, 'users', firebaseUser.uid), userData);
+        console.log('SignUp: User data saved to Firestore successfully');
+        
+        // Add a small delay to ensure Firestore write completes
+        await new Promise(resolve => setTimeout(resolve, 500));
       } catch (firestoreError) {
         console.error('SignUp: Firestore error details:', {
           code: firestoreError.code,
@@ -195,6 +215,22 @@ export const AuthProvider = ({ children }) => {
       
       // Log analytics event
       logUserSignUp('email', firebaseUser.uid);
+      
+      // Force reload user data from Firestore to ensure auth state has latest data
+      const userDocRefReload = doc(db, 'users', firebaseUser.uid);
+      const userDocSnapReload = await getDoc(userDocRefReload);
+      
+      if (userDocSnapReload.exists()) {
+        const latestUserData = userDocSnapReload.data();
+        console.log('SignUp: Reloaded user data from Firestore:', latestUserData);
+        
+        setUser({
+          id: firebaseUser.uid,
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          ...latestUserData
+        });
+      }
       
       return { success: true, user: firebaseUser };
     } catch (error) {
@@ -354,8 +390,17 @@ export const AuthProvider = ({ children }) => {
           });
           
           const imageRef = ref(storage, `profile-pictures/${firebaseUser.uid}`);
+          console.log('UpdateProfile: Uploading to path:', `profile-pictures/${firebaseUser.uid}`);
+          
           const uploadResult = await uploadBytes(imageRef, profileData.profilePicture);
+          console.log('UpdateProfile: Upload result:', uploadResult);
+          
           profilePictureUrl = await getDownloadURL(imageRef);
+          console.log('UpdateProfile: Got download URL:', profilePictureUrl);
+          
+          if (!profilePictureUrl) {
+            throw new Error('Failed to get download URL after upload');
+          }
           
           console.log('UpdateProfile: Upload successful!');
           console.log('UpdateProfile: Download URL:', profilePictureUrl);
@@ -377,26 +422,40 @@ export const AuthProvider = ({ children }) => {
       
       // Update user document in Firestore
       const userDocRef = doc(db, 'users', firebaseUser.uid);
+      // Build update data explicitly to ensure profilePicture is included
       const updateData = {
-        ...profileData,
+        name: profileData.name || '',
+        age: profileData.age || '',
+        gender: profileData.gender || '',
+        skillLevel: profileData.skillLevel || '',
+        duprRating: profileData.duprRating || '',
+        availability: profileData.availability || [],
+        bio: profileData.bio || '',
         profilePicture: profilePictureUrl || profileData.profilePictureUrl || '',
         profileComplete: true,
         updatedAt: new Date()
       };
       
-      await updateDoc(userDocRef, updateData);
+      console.log('UpdateProfile: Profile picture URL to save:', profilePictureUrl);
+      console.log('UpdateProfile: Update data profilePicture field:', updateData.profilePicture);
+      console.log('UpdateProfile: Full update data:', JSON.stringify(updateData, null, 2));
+      
+      try {
+        await updateDoc(userDocRef, updateData);
+        console.log('UpdateProfile: User data saved to Firestore successfully');
+      } catch (updateError) {
+        console.error('UpdateProfile: Failed to save to Firestore:', updateError);
+        console.error('UpdateProfile: Update data that failed:', updateData);
+        throw updateError;
+      }
+      
+      // Add a small delay to ensure Firestore write completes
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Immediately update local user state to prevent navigation timing issues
       const finalProfilePicture = profilePictureUrl || updateData.profilePicture || '';
       
-      setUser(prevUser => ({
-        ...prevUser,
-        ...updateData,
-        profilePicture: finalProfilePicture,
-        profileComplete: true
-      }));
-      
-      // Also update Firebase Auth profile with the new photo URL
+      // First update Firebase Auth profile with the new photo URL
       if (finalProfilePicture) {
         try {
           await updateProfile(firebaseUser, {
@@ -408,9 +467,76 @@ export const AuthProvider = ({ children }) => {
         }
       }
       
+      // Force reload user data from Firestore to ensure we have the latest data
+      const userDocRefReload = doc(db, 'users', firebaseUser.uid);
+      const userDocSnapReload = await getDoc(userDocRefReload);
+      
+      if (userDocSnapReload.exists()) {
+        const latestUserData = userDocSnapReload.data();
+        console.log('UpdateProfile: Reloaded user data from Firestore:', JSON.stringify(latestUserData, null, 2));
+        console.log('UpdateProfile: Reloaded profilePicture field:', latestUserData.profilePicture);
+        
+        setUser({
+          id: firebaseUser.uid,
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          ...latestUserData,
+          profileComplete: true
+        });
+      } else {
+        // Fallback to local update
+        setUser(prevUser => ({
+          ...prevUser,
+          ...updateData,
+          profilePicture: finalProfilePicture,
+          profileComplete: true
+        }));
+      }
+      
       return { success: true };
     } catch (error) {
       console.error('Profile update error:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const updateWelcomeStatus = async () => {
+    try {
+      if (!auth.currentUser) {
+        throw new Error('No authenticated user');
+      }
+      
+      const firebaseUser = auth.currentUser;
+      const userDocRef = doc(db, 'users', firebaseUser.uid);
+      
+      // Set flag to prevent auth state listener from overwriting
+      setIsUpdatingWelcome(true);
+      
+      // Update local state FIRST to prevent redirect loops
+      setUser(prevUser => ({
+        ...prevUser,
+        hasSeenWelcome: true
+      }));
+      
+      // Then update Firestore (in background)
+      await updateDoc(userDocRef, {
+        hasSeenWelcome: true
+      });
+      
+      // Small delay to ensure state propagates
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Clear the flag
+      setIsUpdatingWelcome(false);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating welcome status:', error);
+      // Revert local state on error
+      setUser(prevUser => ({
+        ...prevUser,
+        hasSeenWelcome: false
+      }));
       return { success: false, error: error.message };
     }
   };
@@ -424,7 +550,8 @@ export const AuthProvider = ({ children }) => {
     signInWithGoogle,
     signInWithApple,
     signOut,
-    updateUserProfile
+    updateUserProfile,
+    updateWelcomeStatus
   };
 
   return (

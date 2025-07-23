@@ -46,14 +46,10 @@ const ProtectedRoute = ({ children }) => {
     }
   }
 
-  // If user has completed profile but hasn't seen welcome, redirect to welcome
-  // But skip this for users who clearly have existing data (returning users)
+  // If user has completed profile but hasn't seen welcome, redirect to welcome immediately
+  // This check happens before rendering any content to prevent flash
   if (user && user.profileComplete && !user.hasSeenWelcome && location.pathname !== '/welcome') {
-    // If user has detailed profile data, assume they're a returning user and skip welcome
-    const hasDetailedProfile = user.name && user.age && user.skillLevel;
-    if (!hasDetailedProfile) {
-      return <Navigate to="/welcome" replace />;
-    }
+    return <Navigate to="/welcome" replace />;
   }
 
   // All good, render the protected content

@@ -5,7 +5,7 @@ import './Welcome.css';
 
 const Welcome = () => {
   const navigate = useNavigate();
-  const { updateUserProfile } = useAuth();
+  const { updateWelcomeStatus, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSelection = async (selection) => {
@@ -13,7 +13,7 @@ const Welcome = () => {
     
     try {
       // Mark that user has seen the welcome page
-      await updateUserProfile({ hasSeenWelcome: true });
+      await updateWelcomeStatus();
       
       // Navigate to appropriate page based on selection
       switch (selection) {
