@@ -39,7 +39,7 @@
     grid-template-columns: 1fr;
     gap: 1rem;
     text-align: center;
-    margin-top: -3rem !important; /* PROTECTED: Optimal logo-to-content spacing */
+    margin-top: -3.5rem !important; /* PROTECTED: Optimal logo-to-content spacing */
   }
   
   .landing-logo {
@@ -49,6 +49,10 @@
     justify-content: center; /* Ensure perfect centering */
     align-items: center;
     margin-left: 1rem; /* Shift logo a hair more to the right */
+  }
+  
+  .landing-auth {
+    margin-top: -1rem !important; /* Negative spacing for compact mobile view */
   }
 }
 
@@ -115,9 +119,6 @@
     margin-top: -0.5rem;
   }
   
-  .landing-auth {
-    margin-top: 0.5rem; /* Closer on mobile */
-  }
   
   .landing-tagline {
     margin: 0; /* Remove all margins */
