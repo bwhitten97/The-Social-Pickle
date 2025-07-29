@@ -1,12 +1,14 @@
 import { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { useGameContext } from '../context/GameContext';
 import './Applicants.css';
 
 const Applicants = () => {
+  const { gameId } = useParams();
   const { getGameApplications, updateApplicationStatus, games } = useGameContext();
   const [filter, setFilter] = useState('all');
   
-  const gameApplications = getGameApplications();
+  const gameApplications = getGameApplications(gameId);
   
   // Enrich applications with game data
   const enrichedApplications = gameApplications.map(app => {
@@ -151,7 +153,7 @@ const Applicants = () => {
               )}
 
               <div className="application-meta">
-                Applied {new Date(application.applicationDate).toLocaleDateString()}
+                Applied {application.appliedAt ? new Date(application.appliedAt.toDate()).toLocaleDateString() : 'Recently'}
               </div>
             </div>
 
