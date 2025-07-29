@@ -56,9 +56,9 @@ const Onboarding = () => {
     {
       id: 'gender',
       title: "What's your gender?",
-      subtitle: "This information helps personalize your experience (optional)",
+      subtitle: "This information helps personalize your experience",
       field: 'gender',
-      type: 'optional-select',
+      type: 'select',
       options: [
         { value: 'male', label: 'Male' },
         { value: 'female', label: 'Female' },
@@ -188,9 +188,6 @@ const Onboarding = () => {
           });
           return false;
         }
-        return true;
-      case 'optional-select':
-        // Optional field, always valid
         return true;
       case 'number':
         if (!value || value === '') {
@@ -469,48 +466,22 @@ const Onboarding = () => {
           </div>
         );
 
-      case 'optional-select':
-        return (
-          <div className="step-content">
-            <div className="option-grid">
-              <button
-                className={`option-btn ${!userData[step.field] || userData[step.field] === '' ? 'selected' : ''}`}
-                onClick={() => updateUserData(step.field, '')}
-              >
-                Skip
-              </button>
-              {step.options.map((option) => (
-                <button
-                  key={option.value}
-                  className={`option-btn ${userData[step.field] === option.value ? 'selected' : ''}`}
-                  onClick={() => updateUserData(step.field, option.value)}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        );
-
       case 'skill-select':
         const skillOptions = [
           { 
             value: 'beginner', 
             label: 'Beginner', 
-            description: 'DUPR 1.0 - 2.5',
-            details: 'New to pickleball or still learning basics'
+            description: 'New to pickleball or still learning basics'
           },
           { 
             value: 'intermediate', 
             label: 'Intermediate', 
-            description: 'DUPR 2.5 - 4.0',
-            details: 'Comfortable with rules and basic strategy'
+            description: 'Comfortable with rules and basic strategy'
           },
           { 
             value: 'advanced', 
             label: 'Advanced', 
-            description: 'DUPR 4.0+',
-            details: 'Strong player with advanced techniques'
+            description: 'Strong player with advanced techniques'
           }
         ];
 
@@ -521,7 +492,7 @@ const Onboarding = () => {
               <label className="dupr-label">DUPR Rating (Optional)</label>
               <input
                 type="number"
-                placeholder="Enter your DUPR rating (e.g., 3.5)"
+                placeholder="e.g. 3.5"
                 value={userData.duprRating}
                 onChange={(e) => {
                   const value = e.target.value;
@@ -559,9 +530,8 @@ const Onboarding = () => {
                 >
                   <div className="skill-header">
                     <span className="skill-label">{option.label}</span>
-                    <span className="skill-description">{option.description}</span>
                   </div>
-                  <div className="skill-details">{option.details}</div>
+                  <div className="skill-details">{option.description}</div>
                 </button>
               ))}
             </div>

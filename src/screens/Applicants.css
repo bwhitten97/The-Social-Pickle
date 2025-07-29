@@ -15,12 +15,8 @@
 .screen-header h1 {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #1f2937;
+  color: #3E5D45;
   margin: 0 0 8px 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 .screen-header p {
@@ -61,7 +57,7 @@
 }
 
 .filter-btn.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #3E5D45;
   color: white;
 }
 
@@ -130,7 +126,7 @@
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #3E5D45;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -168,7 +164,7 @@
   padding: 12px 16px;
   background: #f9fafb;
   border-radius: 8px;
-  border-left: 3px solid #667eea;
+  border-left: 3px solid #3E5D45;
 }
 
 .application-message p {
@@ -211,12 +207,12 @@
 }
 
 .accept-btn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: #3E5D45;
   color: white;
 }
 
 .accept-btn:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  background: #2d4332;
   transform: translateY(-1px);
 }
 

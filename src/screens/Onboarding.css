@@ -441,6 +441,7 @@
 .back-btn {
   background: rgba(44, 62, 80, 0.1);
   color: #2C3E50;
+  font-size: 0.85rem !important;
 }
 
 .back-btn:hover:not(:disabled) {

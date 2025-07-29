@@ -14,18 +14,26 @@ const Games = memo(({ addAppNotification }) => {
   const { 
     games, 
     applications,
+    hostApplications,
     currentUserName,
     currentUserId,
     isInitialized,
     hasUserApplied,
     getUserApplications,
+    getGameApplications,
     addGame,
-    requestToJoinGame
+    requestToJoinGame,
+    updateGame,
+    removeGame,
+    updateApplicationStatus,
+    withdrawApplication
   } = useGameContext();
   
   // Component state
   const [showPostForm, setShowPostForm] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [showManageModal, setShowManageModal] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
   const [selectedGame, setSelectedGame] = useState(null);
   const [notification, setNotification] = useState(null);
   const [requestData, setRequestData] = useState({
@@ -43,49 +51,145 @@ const Games = memo(({ addAppNotification }) => {
     description: '',
     price: ''
   });
+  const [filters, setFilters] = useState({
+    location: '',
+    date: '',
+    time: '',
+    skillLevel: 'all',
+    gameType: 'all',
+    playersNeeded: 'all',
+    duprMin: '',
+    duprMax: ''
+  });
   
   // Use context games if initialized, otherwise show loading
   const displayGames = isInitialized ? games : [];
   
-  // Debug: Log games structure
-  useEffect(() => {
-    if (games.length > 0) {
-      console.log('Games: Current games structure', games);
+  // Helper function to format date
+  const formatDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      const options = { 
+        weekday: 'long', 
+        month: 'long', 
+        day: 'numeric'
+      };
+      return date.toLocaleDateString('en-US', options);
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return dateString; // fallback to original
     }
-  }, [games]);
+  };
+
+  // Helper function to format time
+  const formatTime = (timeString) => {
+    try {
+      const [hours, minutes] = timeString.split(':');
+      const hour = parseInt(hours);
+      const ampm = hour >= 12 ? 'pm' : 'am';
+      const hour12 = hour % 12 || 12;
+      return `${hour12}:${minutes}${ampm}`;
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return timeString; // fallback to original
+    }
+  };
+
+  // Helper function to capitalize badge text
+  const capitalizeBadge = (text) => {
+    if (!text) return text;
+    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+  };
   
   // Helper function to check if a game is in the past
   const isGameInPast = (game) => {
     try {
       const gameDateTime = new Date(`${game.date}T${game.time}`);
       const now = new Date();
-      const isPast = gameDateTime < now;
-      console.log('Games: isGameInPast check', { 
-        gameDate: game.date, 
-        gameTime: game.time, 
-        gameDateTime: gameDateTime.toISOString(), 
-        now: now.toISOString(), 
-        isPast 
-      });
-      return isPast;
+      return gameDateTime < now;
     } catch (error) {
       console.error('Games: Error checking if game is past', { game, error });
       return false; // If error, don't filter out the game
     }
   };
 
-  // Filter games for "Find" tab (exclude user's own games, applied games, and past games)
-  const findGames = displayGames.filter(game => 
-    game.createdBy !== currentUserName && 
-    !hasUserApplied(game.id) && 
-    !isGameInPast(game)
+  // Helper function to check if a game is expired by more than 1 hour
+  const isGameExpired = (game) => {
+    try {
+      const gameDateTime = new Date(`${game.date}T${game.time}`);
+      const now = new Date();
+      const oneHourAfterGame = new Date(gameDateTime.getTime() + (60 * 60 * 1000)); // Add 1 hour
+      return now > oneHourAfterGame;
+    } catch (error) {
+      console.error('Games: Error checking if game is expired', { game, error });
+      return false; // If error, don't filter out the game
+    }
+  };
+
+  // Filter games for "Find" tab (exclude user's own games, applied games, past games, and apply filters)
+  const findGames = displayGames.filter(game => {
+    // Basic filters
+    if (game.createdBy === currentUserName) return false;
+    if (hasUserApplied(game.id)) return false;
+    if (isGameInPast(game)) return false;
+    
+    // Apply additional filters
+    if (filters.date && game.date !== filters.date) {
+      return false;
+    }
+    
+    if (filters.skillLevel !== 'all' && game.skillLevel !== filters.skillLevel) {
+      return false;
+    }
+    
+    if (filters.gameType !== 'all' && game.gameType !== filters.gameType) {
+      return false;
+    }
+    
+    if (filters.time && filters.time !== '') {
+      const gameTime = game.time;
+      if (gameTime) {
+        const hour = parseInt(gameTime.split(':')[0]);
+        
+        if (filters.time === 'morning' && (hour < 6 || hour >= 11)) {
+          return false;
+        } else if (filters.time === 'afternoon' && (hour < 11 || hour >= 16)) {
+          return false;
+        } else if (filters.time === 'evening' && (hour < 16 || hour >= 24)) {
+          return false;
+        }
+      }
+    }
+    
+    if (filters.playersNeeded !== 'all') {
+      const needed = parseInt(filters.playersNeeded);
+      const gameOpenSpots = game.openSpots || 0;
+      
+      if (needed === 4) {
+        // 4+ players needed
+        if (gameOpenSpots < 4) return false;
+      } else {
+        // Exact number of players needed
+        if (gameOpenSpots !== needed) return false;
+      }
+    }
+    
+    return true;
+  });
+  
+  // Get user's own games (exclude games expired by more than 1 hour)
+  const myGames = displayGames.filter(game => 
+    game.createdBy === currentUserName && 
+    !isGameExpired(game)
   );
   
-  // Get user's own games
-  const myGames = displayGames.filter(game => game.createdBy === currentUserName);
+  // Get user's applications (exclude applications for games expired by more than 1 hour)
+  const myApplications = getUserApplications ? 
+    getUserApplications().filter(application => {
+      const game = games.find(g => g.id === application.gameId);
+      return game && !isGameExpired(game);
+    }) : [];
   
-  // Get user's applications
-  const myApplications = getUserApplications ? getUserApplications() : [];
 
   // Handler functions
   const handlePostGame = async (e) => {
@@ -232,21 +336,145 @@ const Games = memo(({ addAppNotification }) => {
                   My Requests ({myApplications.length})
                 </button>
               </div>
-
-              {activeTab === 'find' && (
-                <button 
-                  className="games-post-btn"
-                  onClick={() => setShowPostForm(true)}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                  Post a Game
-                </button>
-              )}
             </div>
           </section>
+
+          {/* Action Buttons */}
+          {activeTab === 'find' && (
+            <div className="games-action-buttons">
+              <button 
+                className="games-post-btn"
+                onClick={() => setShowPostForm(true)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Post a Game
+              </button>
+              <button 
+                className="games-filter-toggle"
+                onClick={() => setShowFilter(!showFilter)}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
+                </svg>
+                Filters
+              </button>
+            </div>
+          )}
+
+          {/* Filter Panel */}
+          {showFilter && activeTab === 'find' && (
+            <div className="games-filter-panel">
+              <div className="games-filter-header">
+                <h3 className="games-filter-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
+                  </svg>
+                  Filter Games
+                </h3>
+                <button 
+                  className="games-filter-clear"
+                  onClick={() => setFilters({
+                    location: '',
+                    date: '',
+                    time: '',
+                    skillLevel: 'all',
+                    gameType: 'all',
+                    playersNeeded: 'all',
+                    duprMin: '',
+                    duprMax: ''
+                  })}
+                >
+                  Clear
+                </button>
+              </div>
+              
+              <div className="games-filter-grid">
+                <div className="games-filter-group">
+                  <label className="games-filter-label">Date</label>
+                  <input 
+                    type="date"
+                    className="games-filter-input"
+                    value={filters.date}
+                    onChange={(e) => setFilters({...filters, date: e.target.value})}
+                  />
+                </div>
+                
+                <div className="games-filter-group">
+                  <label className="games-filter-label">Time</label>
+                  <select 
+                    className="games-filter-select"
+                    value={filters.time}
+                    onChange={(e) => setFilters({...filters, time: e.target.value})}
+                  >
+                    <option value="">Any Time</option>
+                    <option value="morning">Morning (6am - 11am)</option>
+                    <option value="afternoon">Afternoon (11am - 4pm)</option>
+                    <option value="evening">Evening (4pm - 12am)</option>
+                  </select>
+                </div>
+                
+                <div className="games-filter-group">
+                  <label className="games-filter-label">Skill Level</label>
+                  <select 
+                    className="games-filter-select"
+                    value={filters.skillLevel}
+                    onChange={(e) => setFilters({...filters, skillLevel: e.target.value})}
+                  >
+                    <option value="all">All Levels</option>
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
+                </div>
+                
+                <div className="games-filter-group">
+                  <label className="games-filter-label">Game Type</label>
+                  <select 
+                    className="games-filter-select"
+                    value={filters.gameType}
+                    onChange={(e) => setFilters({...filters, gameType: e.target.value})}
+                  >
+                    <option value="all">All Types</option>
+                    <option value="singles">Singles</option>
+                    <option value="doubles">Doubles</option>
+                  </select>
+                </div>
+                
+                <div className="games-filter-group">
+                  <label className="games-filter-label">Players Needed</label>
+                  <select 
+                    className="games-filter-select"
+                    value={filters.playersNeeded}
+                    onChange={(e) => setFilters({...filters, playersNeeded: e.target.value})}
+                  >
+                    <option value="all">Any</option>
+                    <option value="1">1 Player</option>
+                    <option value="2">2 Players</option>
+                    <option value="3">3 Players</option>
+                    <option value="4">4+ Players</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="games-filter-actions-bottom">
+                <button 
+                  className="games-clear-filters-btn"
+                  onClick={() => setShowFilter(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="games-apply-filters-btn"
+                  onClick={() => setShowFilter(false)}
+                >
+                  Apply Filters
+                </button>
+              </div>
+            </div>
+          )}
 
           <h2 className="games-section-title">
             {activeTab === 'find' && `Available Games (${findGames.length})`}
@@ -263,13 +491,35 @@ const Games = memo(({ addAppNotification }) => {
             
             {isInitialized && activeTab === 'find' && findGames.map((game) => (
               <article key={game.id} className="games-card">
-                <h3 className="games-card-title">{game.location}</h3>
+                <h3 className="games-card-title">
+                  <svg className="games-location-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  {game.location}
+                </h3>
                 <div className="games-card-content">
-                  <div className="games-datetime">{game.date} • {game.time}</div>
-                  <div className="games-players">{game.totalSpots - game.openSpots} / {game.totalSpots} players</div>
+                  <div className="games-datetime">
+                    <svg className="games-datetime-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                      <line x1="16" y1="2" x2="16" y2="6"/>
+                      <line x1="8" y1="2" x2="8" y2="6"/>
+                      <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    {formatDate(game.date)} • {formatTime(game.time)}
+                  </div>
+                  <div className="games-players">
+                    <svg className="games-players-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                      <circle cx="9" cy="7" r="4"/>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    {game.totalSpots - game.openSpots} / {game.totalSpots} players
+                  </div>
                   <div className="games-details-row">
-                    <span className="games-type-badge">{game.gameType}</span>
-                    <span className="games-type-badge">{game.skillLevel}</span>
+                    <span className="games-type-badge">{capitalizeBadge(game.gameType)}</span>
+                    <span className="games-type-badge">{capitalizeBadge(game.skillLevel)}</span>
                   </div>
                 </div>
                 <button 
@@ -286,20 +536,43 @@ const Games = memo(({ addAppNotification }) => {
               myGames.length > 0 ? (
                 myGames.map((game) => (
                   <article key={game.id} className="games-card">
-                    <h3 className="games-card-title">{game.location}</h3>
+                    <h3 className="games-card-title">
+                      <svg className="games-location-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                      </svg>
+                      {game.location}
+                    </h3>
                     <div className="games-card-content">
-                      <div className="games-datetime">{game.date} • {game.time}</div>
-                      <div className="games-players">{game.totalSpots - game.openSpots} / {game.totalSpots} players</div>
+                      <div className="games-datetime">
+                        <svg className="games-datetime-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                          <line x1="16" y1="2" x2="16" y2="6"/>
+                          <line x1="8" y1="2" x2="8" y2="6"/>
+                          <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        {formatDate(game.date)} • {formatTime(game.time)}
+                      </div>
+                      <div className="games-players">
+                        <svg className="games-players-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                          <circle cx="9" cy="7" r="4"/>
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        {game.totalSpots - game.openSpots} / {game.totalSpots} players
+                      </div>
                       <div className="games-details-row">
-                        <span className="games-type-badge">{game.gameType}</span>
-                        <span className="games-type-badge">{game.skillLevel}</span>
+                        <span className="games-type-badge">{capitalizeBadge(game.gameType)}</span>
+                        <span className="games-type-badge">{capitalizeBadge(game.skillLevel)}</span>
                       </div>
                     </div>
                     <button 
                       className="games-join-btn"
                       onClick={() => {
                         console.log('Games: Manage Game clicked', { gameId: game.id, game });
-                        navigate(`/applicants/${game.id}`);
+                        setSelectedGame(game);
+                        setShowManageModal(true);
                       }}
                     >
                       Manage Game
@@ -323,22 +596,134 @@ const Games = memo(({ addAppNotification }) => {
                   
                   return (
                     <article key={application.id} className="games-card">
-                      <h3 className="games-card-title">{game.location}</h3>
+                      <h3 className="games-card-title">
+                        <svg className="games-location-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                          <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        {game.location}
+                      </h3>
                       <div className="games-card-content">
-                        <div className="games-datetime">{game.date} • {game.time}</div>
-                        <div className="games-players">{game.totalSpots - game.openSpots} / {game.totalSpots} players</div>
+                        <div className="games-datetime">
+                          <svg className="games-datetime-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                          </svg>
+                          {formatDate(game.date)} • {formatTime(game.time)}
+                        </div>
+                        <div className="games-players">
+                          <svg className="games-players-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                          </svg>
+                          {game.totalSpots - game.openSpots} / {game.totalSpots} players
+                        </div>
                         <div className="games-details-row">
-                          <span className="games-type-badge">{game.gameType}</span>
-                          <span className="games-type-badge">{game.skillLevel}</span>
-                          <span className="games-type-badge" style={{ 
-                            backgroundColor: application.status === 'accepted' ? '#3E5D45' : 
-                                           application.status === 'rejected' ? '#F25C5C' : '#F39C12' 
-                          }}>
-                            {application.status}
-                          </span>
+                          <span className="games-type-badge">{capitalizeBadge(game.gameType)}</span>
+                          <span className="games-type-badge">{capitalizeBadge(game.skillLevel)}</span>
                         </div>
                       </div>
-                      <button className="games-join-btn">View Application</button>
+                      <div className="games-button-group">
+                        <button 
+                          className={`games-status-btn ${application.status}`}
+                          disabled={application.status !== 'pending'}
+                        >
+                          {application.status === 'pending' && (
+                            <>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12,6 12,12 16,14"/>
+                              </svg>
+                              Pending
+                            </>
+                          )}
+                          {application.status === 'accepted' && (
+                            <>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="20,6 9,17 4,12"/>
+                              </svg>
+                              Accepted
+                            </>
+                          )}
+                          {application.status === 'rejected' && (
+                            <>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                              </svg>
+                              Rejected
+                            </>
+                          )}
+                        </button>
+                        
+                        {application.status === 'pending' && (
+                          <button 
+                            className="games-withdraw-btn"
+                            onClick={async () => {
+                              if (window.confirm('Are you sure you want to withdraw this application?')) {
+                                try {
+                                  console.log('Games: Withdrawing application', { 
+                                    applicationId: application.id,
+                                    gameId: application.gameId 
+                                  });
+                                  
+                                  const result = await withdrawApplication(application.id);
+                                  
+                                  if (result.success) {
+                                    setNotification({
+                                      message: 'Application withdrawn successfully!',
+                                      name: '',
+                                      emoji: '✅'
+                                    });
+                                  } else {
+                                    setNotification({
+                                      message: result.message || 'Failed to withdraw application',
+                                      name: 'Error',
+                                      emoji: '❌'
+                                    });
+                                  }
+                                } catch (error) {
+                                  console.error('Games: Error withdrawing application', error);
+                                  setNotification({
+                                    message: 'Failed to withdraw application',
+                                    name: 'Error',
+                                    emoji: '❌'
+                                  });
+                                }
+                              }
+                            }}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <circle cx="12" cy="12" r="10"/>
+                              <line x1="15" y1="9" x2="9" y2="15"/>
+                              <line x1="9" y1="9" x2="15" y2="15"/>
+                            </svg>
+                            Withdraw Request
+                          </button>
+                        )}
+                        
+                        {application.status === 'accepted' && (
+                          <button 
+                            className="games-message-btn"
+                            onClick={() => {
+                              // TODO: Implement messaging functionality
+                              console.log('Message host clicked', { 
+                                gameId: application.gameId, 
+                                hostName: game.createdBy 
+                              });
+                            }}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/>
+                            </svg>
+                            Message Host
+                          </button>
+                        )}
+                      </div>
                     </article>
                   );
                 })
@@ -500,10 +885,10 @@ const Games = memo(({ addAppNotification }) => {
               <div className="games-request-game-info">
                 <h3 className="games-request-game-title">{selectedGame.location}</h3>
                 <div className="games-request-game-details">
-                  <div className="games-datetime">{selectedGame.date} • {selectedGame.time}</div>
+                  <div className="games-datetime">{formatDate(selectedGame.date)} • {formatTime(selectedGame.time)}</div>
                   <div className="games-request-badges">
-                    <span className="games-type-badge">{selectedGame.gameType || 'Doubles'}</span>
-                    <span className="games-type-badge">{selectedGame.skillLevel}</span>
+                    <span className="games-type-badge">{capitalizeBadge(selectedGame.gameType || 'Doubles')}</span>
+                    <span className="games-type-badge">{capitalizeBadge(selectedGame.skillLevel)}</span>
                   </div>
                   <div className="games-request-host">Hosted by {selectedGame.createdBy}</div>
                 </div>
@@ -551,6 +936,156 @@ const Games = memo(({ addAppNotification }) => {
                 >
                   Send Request
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manage Game Modal */}
+      {showManageModal && selectedGame && (
+        <div className="games-modal-overlay" onClick={() => setShowManageModal(false)}>
+          <div className="games-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="games-modal-header">
+              <h2>Manage Game</h2>
+              <button 
+                className="games-close-btn" 
+                onClick={() => setShowManageModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="games-modal-content">
+              {/* Game Details Section */}
+              <div className="manage-game-section">
+                <div className="game-info">
+                  <h4>{selectedGame.location}</h4>
+                  <p>{formatDate(selectedGame.date)} • {formatTime(selectedGame.time)}</p>
+                  <p>{selectedGame.totalSpots - selectedGame.openSpots} / {selectedGame.totalSpots} players</p>
+                  <div className="game-badges">
+                    <span className="games-type-badge">{capitalizeBadge(selectedGame.gameType)}</span>
+                    <span className="games-type-badge">{capitalizeBadge(selectedGame.skillLevel)}</span>
+                    {selectedGame.price && <span className="games-type-badge">${selectedGame.price}</span>}
+                  </div>
+                  {selectedGame.description && (
+                    <p className="game-description">{selectedGame.description}</p>
+                  )}
+                </div>
+                
+                <div className="manage-actions">
+                  <button 
+                    className="manage-btn edit-btn"
+                    onClick={() => {
+                      // TODO: Implement edit functionality
+                      console.log('Edit game clicked');
+                    }}
+                  >
+                    Edit Details
+                  </button>
+                  <button 
+                    className="manage-btn remove-btn"
+                    onClick={async () => {
+                      if (window.confirm('Are you sure you want to remove this game? This action cannot be undone.')) {
+                        try {
+                          const result = await removeGame(selectedGame.id);
+                          if (result.success) {
+                            setNotification({
+                              message: 'Game removed successfully!',
+                              name: '',
+                              emoji: '✅'
+                            });
+                            setShowManageModal(false);
+                          } else {
+                            alert(result.message || 'Failed to remove game');
+                          }
+                        } catch (error) {
+                          console.error('Error removing game:', error);
+                          alert('Failed to remove game');
+                        }
+                      }
+                    }}
+                  >
+                    Remove Listing
+                  </button>
+                </div>
+              </div>
+
+              {/* Applicants Section */}
+              <div className="manage-game-section">
+                <h3>Applicants ({getGameApplications(selectedGame.id)?.length || 0})</h3>
+                <div className="applicants-list">
+                  {getGameApplications(selectedGame.id)?.length > 0 ? (
+                    getGameApplications(selectedGame.id).map((application) => (
+                      <div key={application.id} className="applicant-item">
+                        <div className="applicant-info">
+                          <div className="applicant-avatar">
+                            {application.applicantName?.charAt(0)?.toUpperCase()}
+                          </div>
+                          <div className="applicant-details">
+                            <span className="applicant-name">{application.applicantName}</span>
+                            {application.message && (
+                              <span className="applicant-message">"{application.message}"</span>
+                            )}
+                            <span className="applicant-meta">
+                              {application.playerCount} player{application.playerCount > 1 ? 's' : ''}
+                            </span>
+                          </div>
+                          <div className="applicant-status">
+                            <span className={`status-badge ${application.status}`}>
+                              {application.status}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {application.status === 'pending' && (
+                          <div className="applicant-actions">
+                            <button 
+                              className="action-btn reject-btn"
+                              onClick={async () => {
+                                try {
+                                  await updateApplicationStatus(application.id, 'rejected');
+                                  setNotification({
+                                    message: 'Application rejected',
+                                    name: '',
+                                    emoji: '❌'
+                                  });
+                                } catch (error) {
+                                  console.error('Error rejecting application:', error);
+                                  alert('Failed to reject application');
+                                }
+                              }}
+                            >
+                              Reject
+                            </button>
+                            <button 
+                              className="action-btn accept-btn"
+                              onClick={async () => {
+                                try {
+                                  await updateApplicationStatus(application.id, 'accepted');
+                                  setNotification({
+                                    message: 'Application accepted!',
+                                    name: '',
+                                    emoji: '✅'
+                                  });
+                                } catch (error) {
+                                  console.error('Error accepting application:', error);
+                                  alert('Failed to accept application');
+                                }
+                              }}
+                            >
+                              Accept
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="no-applicants">
+                      <p>No applications yet</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

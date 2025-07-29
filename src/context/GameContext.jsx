@@ -348,20 +348,22 @@ export const GameProvider = ({ children }) => {
             setGames(gamesData);
           }, user?.location);
           
-          // Set up real-time listeners for user applications if user is authenticated
+          // Set up real-time listeners for user applications (including anonymous users)
           let unsubscribeApplications = null;
           let unsubscribeHostApplications = null;
+          const userId = user?.uid || "anonymous-user";
+          
+          // Listen for user's own applications
+          unsubscribeApplications = applicationService.setupUserApplicationsListener(
+            userId, 
+            (applicationsData) => {
+              console.log('GameContext: User applications updated', { userId, applicationsData });
+              setApplications(applicationsData);
+            }
+          );
+          
+          // Listen for applications to games hosted by user (only for authenticated users)
           if (user && user.uid) {
-            // Listen for user's own applications
-            unsubscribeApplications = applicationService.setupUserApplicationsListener(
-              user.uid, 
-              (applicationsData) => {
-                console.log('GameContext: User applications updated', applicationsData);
-                setApplications(applicationsData);
-              }
-            );
-            
-            // Listen for applications to games hosted by user
             unsubscribeHostApplications = applicationService.setupGameHostApplicationsListener(
               user.uid,
               (hostApplicationsData) => {
@@ -616,9 +618,22 @@ export const GameProvider = ({ children }) => {
     }
   };
 
-  const withdrawApplication = (applicationId) => {
-    setApplications(prev => prev.filter(app => app.id !== applicationId));
-    return { success: true, message: "Application withdrawn successfully!" };
+  const withdrawApplication = async (applicationId) => {
+    try {
+      console.log('GameContext: Withdrawing application', { applicationId });
+      const result = await applicationService.deleteApplication(applicationId);
+      
+      if (result.success) {
+        console.log('GameContext: Application withdrawn successfully');
+        return { success: true, message: "Application withdrawn successfully!" };
+      } else {
+        console.error('GameContext: Failed to withdraw application', result);
+        return { success: false, message: result.error || "Failed to withdraw application" };
+      }
+    } catch (error) {
+      console.error('GameContext: Error withdrawing application', error);
+      return { success: false, message: "Failed to withdraw application" };
+    }
   };
 
   const createOrUpdateChatRoom = (gameId, newPlayerId) => {
