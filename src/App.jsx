@@ -10,6 +10,7 @@ import Onboarding from './screens/Onboarding';
 import Welcome from './screens/Welcome';
 import Discover from './screens/Discover';
 import Games from './screens/Games';
+import Applicants from './screens/Applicants';
 import Chat from './screens/Chat';
 import Matches from './screens/Matches';
 import Profile from './screens/Profile';
@@ -303,6 +304,22 @@ function AppContent() {
               <main className="main-content">
                 <ErrorBoundary showDetails={true}>
                   <Games addAppNotification={addAppNotification} />
+                </ErrorBoundary>
+              </main>
+            </div>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/applicants/:gameId" element={
+          <ProtectedRoute>
+            <div className="app-with-nav">
+              <Navigation 
+                unreadNotificationCount={unreadNotificationCount}
+                unreadChatCount={unreadChatCount}
+              />
+              <main className="main-content">
+                <ErrorBoundary>
+                  <Applicants />
                 </ErrorBoundary>
               </main>
             </div>

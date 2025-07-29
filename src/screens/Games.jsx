@@ -1,4 +1,5 @@
 import React, { useState, memo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGameContext } from '../context/GameContext';
 import DatePicker from '../components/DatePicker';
 import TimePicker from '../components/TimePicker';
@@ -6,6 +7,7 @@ import Notification from '../components/Notification';
 import './Games.css';
 
 const Games = memo(({ addAppNotification }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('find');
   
   // Get data from GameContext
@@ -45,9 +47,18 @@ const Games = memo(({ addAppNotification }) => {
   // Use context games if initialized, otherwise show loading
   const displayGames = isInitialized ? games : [];
   
-  // Filter games for "Find" tab (exclude user's own games and applied games)
+  // Helper function to check if a game is in the past
+  const isGameInPast = (game) => {
+    const gameDateTime = new Date(`${game.date}T${game.time}`);
+    const now = new Date();
+    return gameDateTime < now;
+  };
+
+  // Filter games for "Find" tab (exclude user's own games, applied games, and past games)
   const findGames = displayGames.filter(game => 
-    game.createdBy !== currentUserName && !hasUserApplied(game.id)
+    game.createdBy !== currentUserName && 
+    !hasUserApplied(game.id) && 
+    !isGameInPast(game)
   );
   
   // Get user's own games
@@ -256,7 +267,12 @@ const Games = memo(({ addAppNotification }) => {
                         <span className="games-type-badge">{game.skillLevel}</span>
                       </div>
                     </div>
-                    <button className="games-join-btn">Manage Game</button>
+                    <button 
+                      className="games-join-btn"
+                      onClick={() => navigate(`/applicants/${game.id}`)}
+                    >
+                      Manage Game
+                    </button>
                   </article>
                 ))
               ) : (

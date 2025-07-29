@@ -138,6 +138,15 @@
 
 .detail-icon {
   font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  color: #6b7280;
+}
+
+.detail-icon svg {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 .game-description {
@@ -194,6 +203,14 @@
 .no-games-icon {
   font-size: 4rem;
   margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+  color: #9ca3af;
+}
+
+.no-games-icon svg {
+  width: 64px;
+  height: 64px;
 }
 
 .no-games h3 {

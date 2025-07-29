@@ -305,6 +305,53 @@ export const applicationService = {
       console.error('Error in applications listener:', error);
       callback([]);
     });
+  },
+
+  // Set up real-time listener for applications to games hosted by user
+  setupGameHostApplicationsListener(userId, callback) {
+    // First get all games created by this user
+    const gamesRef = collection(db, 'games');
+    const gamesQuery = query(gamesRef, where('createdById', '==', userId));
+    
+    return onSnapshot(gamesQuery, async (gamesSnapshot) => {
+      const gameIds = [];
+      gamesSnapshot.forEach(doc => {
+        gameIds.push(doc.id);
+      });
+      
+      if (gameIds.length === 0) {
+        callback([]);
+        return;
+      }
+      
+      // Then get all applications for those games
+      const applicationsRef = collection(db, 'applications');
+      const applicationsQuery = query(applicationsRef, where('gameId', 'in', gameIds));
+      
+      const unsubscribe = onSnapshot(applicationsQuery, (snapshot) => {
+        const applications = [];
+        snapshot.forEach(doc => {
+          applications.push({ id: doc.id, ...doc.data() });
+        });
+        
+        // Sort by appliedAt on the client side
+        applications.sort((a, b) => {
+          const aTime = a.appliedAt?.toDate?.() || new Date(0);
+          const bTime = b.appliedAt?.toDate?.() || new Date(0);
+          return bTime - aTime;
+        });
+        
+        callback(applications);
+      }, (error) => {
+        console.error('Error in game host applications listener:', error);
+        callback([]);
+      });
+      
+      return unsubscribe;
+    }, (error) => {
+      console.error('Error in games listener:', error);
+      callback([]);
+    });
   }
 };
 

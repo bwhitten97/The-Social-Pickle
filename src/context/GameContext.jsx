@@ -316,6 +316,7 @@ export const GameProvider = ({ children }) => {
   // Initialize state with empty arrays first, then populate
   const [games, setGames] = useState([]);
   const [applications, setApplications] = useState([]);
+  const [hostApplications, setHostApplications] = useState([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [chatRooms, setChatRooms] = useState([]);
   const [matchedPlayers, setMatchedPlayers] = useState([]);
@@ -349,11 +350,23 @@ export const GameProvider = ({ children }) => {
           
           // Set up real-time listeners for user applications if user is authenticated
           let unsubscribeApplications = null;
+          let unsubscribeHostApplications = null;
           if (user && user.uid) {
+            // Listen for user's own applications
             unsubscribeApplications = applicationService.setupUserApplicationsListener(
               user.uid, 
               (applicationsData) => {
+                console.log('GameContext: User applications updated', applicationsData);
                 setApplications(applicationsData);
+              }
+            );
+            
+            // Listen for applications to games hosted by user
+            unsubscribeHostApplications = applicationService.setupGameHostApplicationsListener(
+              user.uid,
+              (hostApplicationsData) => {
+                console.log('GameContext: Host applications updated', hostApplicationsData);
+                setHostApplications(hostApplicationsData);
               }
             );
           }
@@ -371,6 +384,9 @@ export const GameProvider = ({ children }) => {
             unsubscribeGames();
             if (unsubscribeApplications) {
               unsubscribeApplications();
+            }
+            if (unsubscribeHostApplications) {
+              unsubscribeHostApplications();
             }
           };
           
@@ -506,19 +522,24 @@ export const GameProvider = ({ children }) => {
 
   const requestToJoinGame = async (gameId, message = "", playerCount = 1) => {
     try {
+      console.log('GameContext: requestToJoinGame called', { gameId, currentUserId, currentUserName });
+      
       // Check if user already applied
       const hasApplied = await hasUserAppliedToGame(currentUserId, gameId);
       if (hasApplied) {
+        console.log('GameContext: User has already applied to this game');
         return { success: false, message: "You have already applied to this game." };
       }
 
       // Check if game exists and has open spots
       const game = games.find(g => g.id === gameId);
       if (!game) {
+        console.log('GameContext: Game not found', { gameId, availableGames: games.map(g => g.id) });
         return { success: false, message: "Game not found." };
       }
       
       if (game.openSpots <= 0) {
+        console.log('GameContext: Game is full', { gameId, openSpots: game.openSpots });
         return { success: false, message: "This game is full." };
       }
 
@@ -532,11 +553,15 @@ export const GameProvider = ({ children }) => {
         message
       };
 
+      console.log('GameContext: Creating application', applicationData);
       const result = await applicationService.createApplication(applicationData);
+      
       if (result.success) {
+        console.log('GameContext: Application created successfully', result);
         // Application will be added to state via real-time listener
         return { success: true, message: "Application submitted successfully!" };
       } else {
+        console.log('GameContext: Application creation failed', result);
         return { success: false, message: result.error };
       }
     } catch (error) {
@@ -545,28 +570,49 @@ export const GameProvider = ({ children }) => {
     }
   };
 
-  const updateApplicationStatus = (applicationId, status) => {
-    setApplications(prev =>
-      prev.map(app =>
-        app.id === applicationId ? { ...app, status } : app
-      )
-    );
-
-    // If accepted, reduce the game's open spots and create/update chat room
-    if (status === 'accepted') {
-      const application = applications.find(app => app.id === applicationId);
-      if (application) {
-        setGames(prev =>
-          prev.map(game =>
-            game.id === application.gameId
-              ? { ...game, openSpots: Math.max(0, game.openSpots - (application.playerCount || 1)) }
-              : game
+  const updateApplicationStatus = async (applicationId, status) => {
+    try {
+      // First update in Firebase
+      const result = await applicationService.updateApplicationStatus(applicationId, status);
+      
+      if (result.success) {
+        // Update local state - the real-time listener will handle this, but we update optimistically
+        setApplications(prev =>
+          prev.map(app =>
+            app.id === applicationId ? { ...app, status } : app
           )
         );
         
-        // Create or update chat room for this game
-        createOrUpdateChatRoom(application.gameId, application.playerId);
+        setHostApplications(prev =>
+          prev.map(app =>
+            app.id === applicationId ? { ...app, status } : app
+          )
+        );
+
+        // If accepted, reduce the game's open spots
+        if (status === 'accepted') {
+          const application = [...applications, ...hostApplications].find(app => app.id === applicationId);
+          if (application) {
+            // Update game's open spots in Firebase
+            const game = games.find(g => g.id === application.gameId);
+            if (game) {
+              await gameService.updateGame(application.gameId, {
+                openSpots: Math.max(0, game.openSpots - (application.playerCount || 1))
+              });
+            }
+            
+            // Create or update chat room for this game
+            createOrUpdateChatRoom(application.gameId, application.playerId);
+          }
+        }
+        
+        return { success: true, message: `Application ${status}!` };
+      } else {
+        return { success: false, message: result.error };
       }
+    } catch (error) {
+      console.error('Error updating application status:', error);
+      return { success: false, message: "Failed to update application status" };
     }
   };
 
@@ -611,14 +657,12 @@ export const GameProvider = ({ children }) => {
 
   const getGameApplications = React.useCallback((gameId) => {
     if (gameId) {
-      // Get applications for a specific game
-      return applications.filter(app => app.gameId === gameId && app.status === 'pending');
+      // Get applications for a specific game from hostApplications
+      return hostApplications.filter(app => app.gameId === gameId && app.status === 'pending');
     }
-    // Get applications for all games created by current user
-    const userGames = games.filter(game => game.createdBy === currentUserName);
-    const userGameIds = userGames.map(game => game.id);
-    return applications.filter(app => userGameIds.includes(app.gameId));
-  }, [applications, games, currentUserName]);
+    // Get all pending applications for games created by current user
+    return hostApplications.filter(app => app.status === 'pending');
+  }, [hostApplications]);
 
   const hasUserApplied = React.useCallback((gameId) => {
     return applications.some(
