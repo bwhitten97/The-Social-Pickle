@@ -186,6 +186,7 @@ export const applicationService = {
   // Create a new application
   async createApplication(applicationData) {
     try {
+      console.log('applicationService: createApplication called', applicationData);
       const applicationsRef = collection(db, 'applications');
       const newApplication = {
         ...applicationData,
@@ -193,7 +194,9 @@ export const applicationService = {
         appliedAt: serverTimestamp()
       };
       
+      console.log('applicationService: About to add to Firestore', newApplication);
       const docRef = await addDoc(applicationsRef, newApplication);
+      console.log('applicationService: Successfully added to Firestore', { id: docRef.id });
       return { success: true, id: docRef.id };
     } catch (error) {
       console.error('Error creating application:', error);

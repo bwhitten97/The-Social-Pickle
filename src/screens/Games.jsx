@@ -1,4 +1,4 @@
-import React, { useState, memo } from 'react';
+import React, { useState, memo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameContext } from '../context/GameContext';
 import DatePicker from '../components/DatePicker';
@@ -47,11 +47,31 @@ const Games = memo(({ addAppNotification }) => {
   // Use context games if initialized, otherwise show loading
   const displayGames = isInitialized ? games : [];
   
+  // Debug: Log games structure
+  useEffect(() => {
+    if (games.length > 0) {
+      console.log('Games: Current games structure', games);
+    }
+  }, [games]);
+  
   // Helper function to check if a game is in the past
   const isGameInPast = (game) => {
-    const gameDateTime = new Date(`${game.date}T${game.time}`);
-    const now = new Date();
-    return gameDateTime < now;
+    try {
+      const gameDateTime = new Date(`${game.date}T${game.time}`);
+      const now = new Date();
+      const isPast = gameDateTime < now;
+      console.log('Games: isGameInPast check', { 
+        gameDate: game.date, 
+        gameTime: game.time, 
+        gameDateTime: gameDateTime.toISOString(), 
+        now: now.toISOString(), 
+        isPast 
+      });
+      return isPast;
+    } catch (error) {
+      console.error('Games: Error checking if game is past', { game, error });
+      return false; // If error, don't filter out the game
+    }
   };
 
   // Filter games for "Find" tab (exclude user's own games, applied games, and past games)
@@ -125,16 +145,24 @@ const Games = memo(({ addAppNotification }) => {
   };
 
   const handleRequestToJoin = (game) => {
+    console.log('Games: handleRequestToJoin called', { gameId: game.id, game });
     setSelectedGame(game);
     setShowRequestModal(true);
   };
 
   const submitJoinRequest = async () => {
-    if (!selectedGame) return;
+    console.log('Games: submitJoinRequest called', { selectedGame });
+    if (!selectedGame) {
+      console.log('Games: No selected game');
+      return;
+    }
     
     try {
       const message = requestData.message || `I'd like to join this game with ${requestData.playerCount} player${requestData.playerCount > 1 ? 's' : ''}!`;
+      console.log('Games: About to call requestToJoinGame', { gameId: selectedGame.id, message, playerCount: requestData.playerCount });
+      
       const result = await requestToJoinGame(selectedGame.id, message, requestData.playerCount);
+      console.log('Games: requestToJoinGame result', result);
       
       if (result.success) {
         setNotification({
@@ -269,7 +297,10 @@ const Games = memo(({ addAppNotification }) => {
                     </div>
                     <button 
                       className="games-join-btn"
-                      onClick={() => navigate(`/applicants/${game.id}`)}
+                      onClick={() => {
+                        console.log('Games: Manage Game clicked', { gameId: game.id, game });
+                        navigate(`/applicants/${game.id}`);
+                      }}
                     >
                       Manage Game
                     </button>
