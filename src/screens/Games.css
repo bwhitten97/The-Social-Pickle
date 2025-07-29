@@ -1459,3 +1459,85 @@
   color: #3E5D45 !important;
   background-color: #F5EEDC !important;
 }
+
+/* Mobile modal fixes */
+@media (max-width: 768px) {
+  .games-modal-overlay {
+    padding: 0.25rem;
+    align-items: flex-start;
+    padding-top: 0.5rem;
+  }
+  
+  .games-modal {
+    max-height: 85vh;
+    margin: 0.25rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
+  .games-modal-header {
+    padding: 0.75rem 0.75rem 0 0.75rem;
+    margin-bottom: 0.75rem;
+    flex-shrink: 0;
+  }
+  
+  .games-modal-header h2 {
+    font-size: 1.125rem;
+  }
+  
+  .games-form {
+    padding: 0 0.75rem 0.75rem 0.75rem;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .games-form-group {
+    margin-bottom: 0.625rem;
+  }
+  
+  .games-form-group:last-of-type {
+    margin-bottom: 0.5rem;
+  }
+  
+  .games-form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  
+  .games-form-group label {
+    margin-bottom: 0.25rem;
+    font-size: 0.825rem;
+  }
+  
+  .games-form-group input,
+  .games-form-group select,
+  .games-form-group textarea,
+  .games-form-input,
+  .games-form-select,
+  .games-form-textarea {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  .games-form-group textarea {
+    min-height: 50px;
+    rows: 2;
+  }
+  
+  .games-form-actions {
+    margin-top: 1rem;
+    margin-bottom: 0.25rem;
+    flex-shrink: 0;
+    gap: 0.5rem;
+  }
+  
+  .games-cancel-btn,
+  .games-submit-btn {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.875rem;
+  }
+}

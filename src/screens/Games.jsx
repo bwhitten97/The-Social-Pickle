@@ -38,7 +38,8 @@ const Games = memo(({ addAppNotification }) => {
     duprRating: 'unrated',
     gameType: 'doubles',
     openSpots: 4,
-    description: ''
+    description: '',
+    price: ''
   });
   
   // Use context games if initialized, otherwise show loading
@@ -83,7 +84,8 @@ const Games = memo(({ addAppNotification }) => {
           duprRating: 'unrated',
           gameType: 'doubles',
           openSpots: 4,
-          description: ''
+          description: '',
+          price: ''
         });
         
         // Switch to "My Games" tab to show the newly created game
@@ -394,6 +396,17 @@ const Games = memo(({ addAppNotification }) => {
                   <option value={5}>5 Players</option>
                   <option value={6}>6 Players</option>
                 </select>
+              </div>
+              
+              <div className="games-form-group">
+                <label>Price (Optional)</label>
+                <input
+                  type="text"
+                  value={newGame.price}
+                  onChange={(e) => setNewGame({...newGame, price: e.target.value})}
+                  placeholder="e.g., Free, $5, $10 per person"
+                  className="games-form-input"
+                />
               </div>
               
               <div className="games-form-group">

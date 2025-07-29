@@ -77,10 +77,23 @@
   border-radius: 0.25rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  padding: 0;
+}
+
+.date-picker-nav svg {
+  width: 16px;
+  height: 16px;
+  stroke: white;
+  stroke-width: 2;
+  flex-shrink: 0;
 }
 
 .date-picker-nav:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.date-picker-nav:hover svg {
+  stroke: #F5EEDC;
 }
 
 .date-picker-month {

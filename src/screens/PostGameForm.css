@@ -101,15 +101,35 @@
 
 @media (max-width: 768px) {
   .post-game-form {
-    padding: 16px;
+    padding: 12px;
+    min-height: 100vh;
+    padding-bottom: 80px; /* Extra space for button */
+  }
+  
+  .form-header {
+    margin-bottom: 20px;
+    padding: 12px 0;
   }
   
   .form-header h1 {
-    font-size: 2rem;
+    font-size: 1.8rem;
+  }
+  
+  .form-header p {
+    font-size: 0.95rem;
   }
   
   .game-form {
-    padding: 24px;
+    padding: 20px 16px;
+  }
+  
+  .form-group {
+    margin-bottom: 16px;
+  }
+  
+  .form-group label {
+    margin-bottom: 6px;
+    font-size: 0.9rem;
   }
   
   .form-row {
@@ -120,11 +140,17 @@
   .form-group input,
   .form-group select,
   .form-group textarea {
-    padding: 10px 14px;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+  }
+  
+  .form-group textarea {
+    min-height: 60px;
   }
   
   .submit-btn {
     padding: 14px 20px;
     font-size: 1rem;
+    margin-top: 8px;
   }
 }

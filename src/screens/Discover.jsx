@@ -22,7 +22,8 @@ const Discover = memo(({
   onLike, 
   onPass, 
   onFilterChange, 
-  currentFilter = 'All' 
+  currentFilter = 'All',
+  isLoading = false
 }) => {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({
@@ -261,10 +262,15 @@ const Discover = memo(({
 
         {/* Card */}
         <div className="discover-card-container">
-          {players.length === 0 ? (
+          {isLoading ? (
             <div className="discover-loading">
               <div className="loading-spinner"></div>
               <p>Loading players...</p>
+            </div>
+          ) : players.length === 0 ? (
+            <div className="discover-no-players">
+              <h3>No players found</h3>
+              <p>Try adjusting your filters or check back later!</p>
             </div>
           ) : currentProfile ? (
             <DiscoverCard 
@@ -274,8 +280,8 @@ const Discover = memo(({
             />
           ) : (
             <div className="discover-no-players">
-              <h3>No players found</h3>
-              <p>Try adjusting your filters or check back later!</p>
+              <h3>No more players</h3>
+              <p>You've seen all available players. Check back later for new matches!</p>
             </div>
           )}
         </div>

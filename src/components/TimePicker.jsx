@@ -165,7 +165,10 @@ const TimePicker = ({ value, onChange, className = '' }) => {
             <button 
               type="button"
               className="time-picker-done"
-              onClick={() => setIsOpen(false)}
+              onClick={() => {
+                handleTimeChange(selectedHour, selectedMinute, selectedPeriod);
+                setIsOpen(false);
+              }}
             >
               Done
             </button>

@@ -10,7 +10,8 @@ const PostGameForm = () => {
     time: '',
     skillLevel: 'intermediate',
     openSpots: 4,
-    description: ''
+    description: '',
+    price: ''
   });
 
   const handleInputChange = (e) => {
@@ -32,7 +33,8 @@ const PostGameForm = () => {
       time: '',
       skillLevel: 'intermediate',
       openSpots: 4,
-      description: ''
+      description: '',
+      price: ''
     });
     
     alert('Game posted successfully!');
@@ -117,6 +119,18 @@ const PostGameForm = () => {
               <option value={5}>5+ Players</option>
             </select>
           </div>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="price">Price (Optional)</label>
+          <input
+            type="text"
+            id="price"
+            name="price"
+            value={formData.price}
+            onChange={handleInputChange}
+            placeholder="e.g., Free, $5, $10 per person"
+          />
         </div>
 
         <div className="form-group">

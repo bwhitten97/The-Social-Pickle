@@ -345,7 +345,7 @@ export const GameProvider = ({ children }) => {
           // Set up real-time listeners for games
           const unsubscribeGames = gameService.setupGamesListener((gamesData) => {
             setGames(gamesData);
-          });
+          }, user?.location);
           
           // Set up real-time listeners for user applications if user is authenticated
           let unsubscribeApplications = null;

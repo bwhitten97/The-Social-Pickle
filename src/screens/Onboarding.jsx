@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Notification from '../components/Notification';
+import { config, validateZipCode } from '../config/app';
 import './Onboarding.css';
 
 const Onboarding = () => {
@@ -23,7 +24,8 @@ const Onboarding = () => {
     profilePictureUrl: '',
     bio: '',
     email: '', // For email signups
-    password: '' // For email signups
+    password: '', // For email signups
+    location: config.DEFAULT_LOCATION // Default location
   });
 
   const steps = [
@@ -54,9 +56,9 @@ const Onboarding = () => {
     {
       id: 'gender',
       title: "What's your gender?",
-      subtitle: "This information helps personalize your experience",
+      subtitle: "This information helps personalize your experience (optional)",
       field: 'gender',
-      type: 'select',
+      type: 'optional-select',
       options: [
         { value: 'male', label: 'Male' },
         { value: 'female', label: 'Female' },
@@ -86,6 +88,14 @@ const Onboarding = () => {
         { value: 'flexible', label: 'Flexible', icon: '⚡' }
       ]
     },
+    ...(config.MULTI_CITY_ENABLED ? [{
+      id: 'location',
+      title: "Where do you play?",
+      subtitle: "This helps us find games and players near you",
+      field: 'location',
+      type: 'location',
+      placeholder: 'Enter your ZIP code'
+    }] : []),
     {
       id: 'photo',
       title: "Complete your profile",
@@ -148,6 +158,16 @@ const Onboarding = () => {
           });
           return false;
         }
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(userData.email)) {
+          setNotification({
+            message: "Please enter a valid email address",
+            name: "",
+            emoji: "⚠️"
+          });
+          return false;
+        }
         if (userData.password.length < 6) {
           setNotification({
             message: "Password must be at least 6 characters",
@@ -158,12 +178,54 @@ const Onboarding = () => {
         }
         return true;
       case 'text':
-      case 'number':
       case 'select':
       case 'skill-select':
         if (!value || value === '') {
           setNotification({
             message: "This field is required",
+            name: "",
+            emoji: "⚠️"
+          });
+          return false;
+        }
+        return true;
+      case 'optional-select':
+        // Optional field, always valid
+        return true;
+      case 'number':
+        if (!value || value === '') {
+          setNotification({
+            message: "This field is required",
+            name: "",
+            emoji: "⚠️"
+          });
+          return false;
+        }
+        // Age validation for age field
+        if (step.field === 'age') {
+          const age = parseInt(value);
+          if (age < 13 || age > 100) {
+            setNotification({
+              message: "Please enter an age between 13 and 100",
+              name: "",
+              emoji: "⚠️"
+            });
+            return false;
+          }
+        }
+        return true;
+      case 'location':
+        if (!userData.location?.zip) {
+          setNotification({
+            message: "Please enter your ZIP code",
+            name: "",
+            emoji: "⚠️"
+          });
+          return false;
+        }
+        if (!validateZipCode(userData.location.zip)) {
+          setNotification({
+            message: "Please enter a valid 5-digit ZIP code",
             name: "",
             emoji: "⚠️"
           });
@@ -366,10 +428,57 @@ const Onboarding = () => {
           </div>
         );
 
+      case 'location':
+        return (
+          <div className="step-content">
+            <input
+              type="text"
+              placeholder={step.placeholder}
+              value={userData.location?.zip || ''}
+              onChange={(e) => {
+                const zip = e.target.value.replace(/\D/g, '').slice(0, 5);
+                updateUserData('location', { 
+                  ...userData.location,
+                  zip: zip
+                });
+              }}
+              className="onboarding-input large"
+              maxLength="5"
+              autoFocus
+            />
+            {userData.location?.zip && !validateZipCode(userData.location.zip) && (
+              <p className="input-helper error">Please enter a valid 5-digit ZIP code</p>
+            )}
+          </div>
+        );
+
       case 'select':
         return (
           <div className="step-content">
             <div className="option-grid">
+              {step.options.map((option) => (
+                <button
+                  key={option.value}
+                  className={`option-btn ${userData[step.field] === option.value ? 'selected' : ''}`}
+                  onClick={() => updateUserData(step.field, option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'optional-select':
+        return (
+          <div className="step-content">
+            <div className="option-grid">
+              <button
+                className={`option-btn ${!userData[step.field] || userData[step.field] === '' ? 'selected' : ''}`}
+                onClick={() => updateUserData(step.field, '')}
+              >
+                Skip
+              </button>
               {step.options.map((option) => (
                 <button
                   key={option.value}

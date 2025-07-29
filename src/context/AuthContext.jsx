@@ -10,6 +10,7 @@ import {
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, db, storage, googleProvider, appleProvider } from '../config/firebase';
+import { config } from '../config/app';
 import { logUserSignUp, logUserLogin } from '../utils/analytics';
 
 const AuthContext = createContext();
@@ -186,6 +187,7 @@ export const AuthProvider = ({ children }) => {
         availability: additionalDataWithoutFile.availability || [],
         profilePicture: profilePictureUrl || additionalDataWithoutFile.profilePictureUrl || '',
         bio: additionalDataWithoutFile.bio || '',
+        location: additionalDataWithoutFile.location || config.DEFAULT_LOCATION,
         profileComplete: true,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -279,6 +281,7 @@ export const AuthProvider = ({ children }) => {
           email: firebaseUser.email || '',
           profilePicture: firebaseUser.photoURL || '',
           provider: 'google',
+          location: config.DEFAULT_LOCATION,
           profileComplete: false,
           createdAt: new Date(),
           updatedAt: new Date()
@@ -325,6 +328,7 @@ export const AuthProvider = ({ children }) => {
           email: firebaseUser.email || '',
           profilePicture: firebaseUser.photoURL || '',
           provider: 'apple',
+          location: config.DEFAULT_LOCATION,
           profileComplete: false,
           createdAt: new Date(),
           updatedAt: new Date()

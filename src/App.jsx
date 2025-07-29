@@ -17,6 +17,7 @@ import Notification from './components/Notification';
 import { GameProvider, useGameContext } from './context/GameContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { logPlayerLiked, logPlayerPassed, logMatchCreated, logPageView } from './utils/analytics';
+import { config } from './config/app';
 import './App.css';
 import './screens/Profile.css';
 import './components/ProtectedRoute.css';
@@ -89,6 +90,14 @@ function AppContent() {
           return;
         }
         
+        // Location filtering when multi-city is enabled
+        if (config.MULTI_CITY_ENABLED && user.location && userData.location) {
+          // Only show users in the same location
+          if (user.location.zip !== userData.location.zip) {
+            return;
+          }
+        }
+        
         // Only include users with at least basic profile info
         if (userData.name) {
           fetchedUsers.push({
@@ -101,7 +110,7 @@ function AppContent() {
             availability: userData.availability || ['weekends'],
             gender: userData.gender || 'prefer-not-to-say',
             bio: userData.bio || 'New to The Social Pickle!',
-            location: userData.location || 'Location not specified',
+            location: userData.location || config.DEFAULT_LOCATION,
             distance: '-- miles away',
             avatar: userData.avatar || '🥒',
             playingExperience: userData.experience || '1+ years',
@@ -276,6 +285,7 @@ function AppContent() {
                       setCurrentIndex(0);
                     }}
                     currentFilter={filter}
+                    isLoading={isLoadingPlayers}
                   />
                 </ErrorBoundary>
               </main>

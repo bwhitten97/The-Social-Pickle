@@ -5,6 +5,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import ImageUpload from '../components/ImageUpload';
 import Notification from '../components/Notification';
+import { config, validateZipCode } from '../config/app';
 import './Profile.css';
 
 const AvailabilitySelector = memo(({ selected, onChange }) => {
@@ -45,7 +46,7 @@ AvailabilitySelector.displayName = 'AvailabilitySelector';
 
 const Profile = memo(() => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, updateUserProfile } = useAuth();
   const [notification, setNotification] = useState(null);
   
   const [profile, setProfile] = useState({
@@ -57,6 +58,7 @@ const Profile = memo(() => {
     age: '',
     bio: '',
     availability: [],
+    location: config.DEFAULT_LOCATION,
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -82,6 +84,7 @@ const Profile = memo(() => {
         age: user.age || '',
         bio: user.bio || '',
         availability: user.availability || [],
+        location: user.location || config.DEFAULT_LOCATION,
       });
       
       // Also update profile picture if available
@@ -152,15 +155,62 @@ const Profile = memo(() => {
     setProfileImagePreview(previewUrl);
   }, []);
 
-  const handleSave = useCallback(() => {
-    setIsEditing(false);
-    // In a real app, this would save to a backend
-    setNotification({
-      message: "Profile updated",
-      name: "successfully",
-      emoji: "✅"
-    });
-  }, []);
+  const handleSave = useCallback(async () => {
+    try {
+      // Validate age
+      const age = parseInt(profile.age);
+      if (age < 13 || age > 100) {
+        setNotification({
+          message: "Please enter an age between 13 and 100",
+          name: "",
+          emoji: "⚠️"
+        });
+        return;
+      }
+
+      // Validate ZIP code if multi-city is enabled
+      if (config.MULTI_CITY_ENABLED && profile.location?.zip && !validateZipCode(profile.location.zip)) {
+        setNotification({
+          message: "Please enter a valid 5-digit ZIP code",
+          name: "",
+          emoji: "⚠️"
+        });
+        return;
+      }
+
+      // Save to backend
+      if (updateUserProfile) {
+        const result = await updateUserProfile(profile, profileImage);
+        if (result.success) {
+          setIsEditing(false);
+          setNotification({
+            message: "Profile updated",
+            name: "successfully",
+            emoji: "✅"
+          });
+        } else {
+          setNotification({
+            message: result.error || "Update failed",
+            name: "Please try again",
+            emoji: "❌"
+          });
+        }
+      } else {
+        setIsEditing(false);
+        setNotification({
+          message: "Profile updated",
+          name: "successfully",
+          emoji: "✅"
+        });
+      }
+    } catch (error) {
+      setNotification({
+        message: "Update failed",
+        name: "Please try again",
+        emoji: "❌"
+      });
+    }
+  }, [profile, profileImage, updateUserProfile]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -368,7 +418,7 @@ const Profile = memo(() => {
                       value={profile.age}
                       onChange={handleInputChange}
                       className="field-input"
-                      min="18"
+                      min="13"
                       max="100"
                     />
                   ) : (
@@ -395,6 +445,45 @@ const Profile = memo(() => {
                 </div>
               </div>
             </div>
+
+            {config.MULTI_CITY_ENABLED && (
+              <div className="form-section-modern">
+                <h3 className="section-title">
+                  <svg className="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  Location
+                </h3>
+                <div className="form-field">
+                  <label className="field-label">ZIP Code</label>
+                  {isEditing ? (
+                    <div>
+                      <input
+                        type="text"
+                        name="location"
+                        value={profile.location?.zip || ''}
+                        onChange={(e) => {
+                          const zip = e.target.value.replace(/\D/g, '').slice(0, 5);
+                          setProfile(prev => ({
+                            ...prev,
+                            location: { ...prev.location, zip }
+                          }));
+                        }}
+                        className="field-input"
+                        placeholder="Enter ZIP code"
+                        maxLength="5"
+                      />
+                      {profile.location?.zip && !validateZipCode(profile.location.zip) && (
+                        <div className="field-error">Please enter a valid 5-digit ZIP code</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="field-value">{profile.location?.zip || 'Not set'}</div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="form-section-modern">
               <h3 className="section-title">

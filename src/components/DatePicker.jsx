@@ -63,6 +63,10 @@ const DatePicker = ({ value, onChange, className = '' }) => {
   };
 
   const handleDateClick = (date) => {
+    // Prevent selecting past dates
+    if (isPastDate(date)) {
+      return;
+    }
     const formattedDate = formatDate(date);
     onChange(formattedDate);
     setIsOpen(false);
@@ -199,8 +203,8 @@ const DatePicker = ({ value, onChange, className = '' }) => {
                 } ${
                   date && isPastDate(date) ? 'past' : ''
                 }`}
-                onClick={() => date && handleDateClick(date)}
-                disabled={!date}
+                onClick={() => date && !isPastDate(date) && handleDateClick(date)}
+                disabled={!date || isPastDate(date)}
               >
                 {date ? date.getDate() : ''}
               </button>

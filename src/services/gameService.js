@@ -14,6 +14,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { config } from '../config/app';
 
 // Games service functions
 export const gameService = {
@@ -140,7 +141,7 @@ export const gameService = {
   },
 
   // Set up real-time listener for games
-  setupGamesListener(callback) {
+  setupGamesListener(callback, userLocation = null) {
     const gamesRef = collection(db, 'games');
     // Get all games, filter status on client side to avoid indexes
     
@@ -148,10 +149,21 @@ export const gameService = {
       const games = [];
       snapshot.forEach(doc => {
         const gameData = { id: doc.id, ...doc.data() };
+        
         // Filter active games on client side
-        if (gameData.status === 'active') {
-          games.push(gameData);
+        if (gameData.status !== 'active') {
+          return;
         }
+        
+        // Location filtering when multi-city is enabled
+        if (config.MULTI_CITY_ENABLED && userLocation && gameData.location) {
+          // Only show games in the same location
+          if (userLocation.zip !== gameData.location?.zip) {
+            return;
+          }
+        }
+        
+        games.push(gameData);
       });
       
       // Sort by createdAt on the client side
