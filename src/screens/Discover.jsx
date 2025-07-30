@@ -11,9 +11,6 @@ const DEFAULT_DUPR_MIN = 2.0;
 const DEFAULT_DUPR_MAX = 6.0;
 const DEFAULT_AGE_MIN = 18;
 const DEFAULT_AGE_MAX = 100;
-const QUICK_MATCH_DUPR_MIN = 3.0;
-const QUICK_MATCH_DUPR_MAX = 5.0;
-const QUICK_MATCH_AGE_MAX = 65;
 
 const Discover = memo(({ 
   players = [], 
@@ -34,7 +31,7 @@ const Discover = memo(({
     availability: []
   });
   
-  const filters = ['All', 'Quick Match'];
+  const filters = ['All'];
   
   // Get current player from the real data
   const currentProfile = useMemo(() => {
@@ -70,17 +67,6 @@ const Discover = memo(({
   }, []);
 
   const handleFilterChange = useCallback((filter) => {
-    if (filter === 'Quick Match') {
-      // Quick Match logic: Apply smart filters based on current user preferences
-      // This filters for players with similar skill level and availability
-      setAdvancedFilters(prev => ({
-        ...prev,
-        duprRange: { min: QUICK_MATCH_DUPR_MIN, max: QUICK_MATCH_DUPR_MAX }, // Mid-range players for better matches
-        playStyle: 'any',
-        ageRange: { min: DEFAULT_AGE_MIN, max: QUICK_MATCH_AGE_MAX }, // Reasonable age range
-        availability: ['flexible', 'weekends'] // Most common availability times
-      }));
-    }
     if (onFilterChange) onFilterChange(filter);
   }, [onFilterChange]);
 
