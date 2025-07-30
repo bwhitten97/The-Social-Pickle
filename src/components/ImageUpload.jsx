@@ -8,19 +8,21 @@ const ImageUpload = ({ currentImage, onImageChange, className = '' }) => {
   const [preview, setPreview] = useState(currentImage || null);
   const fileInputRef = useRef(null);
 
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-  const ACCEPTED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  const MAX_ORIGINAL_FILE_SIZE = 50 * 1024 * 1024; // 50MB - very generous for original files
+  const MAX_COMPRESSED_FILE_SIZE = 1 * 1024 * 1024; // 1MB - final compressed size
+  const ACCEPTED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
 
-  const validateFile = (file) => {
+  const validateOriginalFile = (file) => {
     if (!file) return false;
     
-    if (file.size > MAX_FILE_SIZE) {
-      setError('File size must be less than 5MB');
+    // Allow very large original files since we'll compress them
+    if (file.size > MAX_ORIGINAL_FILE_SIZE) {
+      setError('File is too large to process (max 50MB)');
       return false;
     }
     
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      setError('Please upload a JPG, PNG, or WebP image');
+      setError('Please upload a JPG, PNG, WebP, or HEIC image');
       return false;
     }
     
@@ -28,17 +30,38 @@ const ImageUpload = ({ currentImage, onImageChange, className = '' }) => {
     return true;
   };
 
+  const validateCompressedFile = (file) => {
+    if (file.size > MAX_COMPRESSED_FILE_SIZE) {
+      setError('Unable to compress image small enough. Please try a different photo.');
+      return false;
+    }
+    return true;
+  };
+
   const compressImage = (file) => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const img = new Image();
       
       img.onload = () => {
-        // Calculate new dimensions (max 400x400)
-        const maxSize = 400;
+        // More aggressive sizing for large files
+        const originalSize = file.size;
+        let maxSize = 800; // Start larger for better quality
+        let quality = 0.9; // Start with high quality
+        
+        // Adjust compression based on original file size
+        if (originalSize > 10 * 1024 * 1024) { // > 10MB
+          maxSize = 600;
+          quality = 0.7;
+        } else if (originalSize > 5 * 1024 * 1024) { // > 5MB
+          maxSize = 700;
+          quality = 0.8;
+        }
+        
         let { width, height } = img;
         
+        // Calculate new dimensions maintaining aspect ratio
         if (width > height) {
           if (width > maxSize) {
             height = (height * maxSize) / width;
@@ -54,21 +77,42 @@ const ImageUpload = ({ currentImage, onImageChange, className = '' }) => {
         canvas.width = width;
         canvas.height = height;
         
-        // Draw and compress
+        // Draw with high quality
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, width, height);
         
-        canvas.toBlob(
-          (blob) => {
-            // Convert blob to File object with proper name and type
-            const file = new File([blob], `profile-${Date.now()}.jpg`, {
-              type: 'image/jpeg',
-              lastModified: Date.now()
-            });
-            resolve(file);
-          },
-          'image/jpeg',
-          0.85 // Quality
-        );
+        // Try compression with adaptive quality
+        const tryCompress = (currentQuality) => {
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error('Failed to compress image'));
+                return;
+              }
+              
+              const file = new File([blob], `profile-${Date.now()}.jpg`, {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+              });
+              
+              // If still too large and quality can be reduced, try again
+              if (file.size > MAX_COMPRESSED_FILE_SIZE && currentQuality > 0.3) {
+                tryCompress(currentQuality - 0.1);
+              } else {
+                resolve(file);
+              }
+            },
+            'image/jpeg',
+            currentQuality
+          );
+        };
+        
+        tryCompress(quality);
+      };
+      
+      img.onerror = () => {
+        reject(new Error('Failed to load image'));
       };
       
       img.src = URL.createObjectURL(file);
@@ -76,14 +120,20 @@ const ImageUpload = ({ currentImage, onImageChange, className = '' }) => {
   };
 
   const handleFile = async (file) => {
-    if (!validateFile(file)) return;
+    // First validate the original file (very permissive)
+    if (!validateOriginalFile(file)) return;
     
     setIsUploading(true);
     setError('');
     
     try {
-      // Compress image
+      // Compress image first
       const compressedFile = await compressImage(file);
+      
+      // Then validate the compressed result
+      if (!validateCompressedFile(compressedFile)) {
+        return;
+      }
       
       // Create preview
       const previewUrl = URL.createObjectURL(compressedFile);
@@ -91,8 +141,11 @@ const ImageUpload = ({ currentImage, onImageChange, className = '' }) => {
       
       // Call parent callback
       onImageChange(compressedFile, previewUrl);
+      
+      console.log(`Image compressed: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
     } catch (err) {
-      setError('Failed to process image. Please try again.');
+      console.error('Image compression error:', err);
+      setError('Failed to process image. Please try a different photo.');
     } finally {
       setIsUploading(false);
     }
@@ -196,7 +249,7 @@ const ImageUpload = ({ currentImage, onImageChange, className = '' }) => {
                 </div>
                 <div className="upload-text">
                   <p className="upload-primary">Click to upload or drag and drop</p>
-                  <p className="upload-secondary">JPG, PNG, or WebP (max 5MB)</p>
+                  <p className="upload-secondary">Any photo from your camera roll - we'll optimize it automatically</p>
                 </div>
               </>
             )}
@@ -207,7 +260,7 @@ const ImageUpload = ({ currentImage, onImageChange, className = '' }) => {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/jpg,image/png,image/webp"
+        accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
         onChange={handleFileSelect}
         className="file-input"
         disabled={isUploading}
