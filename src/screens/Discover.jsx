@@ -70,12 +70,14 @@ const Discover = memo(({
     if (filter === 'Advanced Matching') {
       // Show advanced filters panel when Advanced Matching is selected
       setShowAdvancedFilters(true);
+      // Don't apply filters yet - wait for user to click Apply
     } else {
       // Hide advanced filters panel for other filters
       setShowAdvancedFilters(false);
+      // Apply the basic filter immediately
+      if (onFilterChange) onFilterChange(filter, null);
     }
-    if (onFilterChange) onFilterChange(filter, advancedFilters);
-  }, [onFilterChange, advancedFilters]);
+  }, [onFilterChange]);
 
   const handleAdvancedFilterChange = useCallback((filterType, value) => {
     setAdvancedFilters(prev => ({
@@ -126,13 +128,22 @@ const Discover = memo(({
         </div>
 
         {/* Advanced Filters Panel */}
-        {currentFilter === 'Advanced Matching' && (
+        {currentFilter === 'Advanced Matching' && showAdvancedFilters && (
           <div className="discover-advanced-filters">
             <div className="advanced-filter-header">
               <h3>Advanced Filters</h3>
-              <button className="clear-filters-btn" onClick={clearAdvancedFilters}>
-                Clear All
-              </button>
+              <div className="advanced-filter-header-actions">
+                <button className="clear-filters-btn" onClick={clearAdvancedFilters}>
+                  Clear All
+                </button>
+                <button 
+                  className="close-filters-btn"
+                  onClick={() => setShowAdvancedFilters(false)}
+                  aria-label="Close filters"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
             
             <div className="advanced-filter-grid">
@@ -262,6 +273,7 @@ const Discover = memo(({
                 className="discover-apply-btn"
                 onClick={() => {
                   if (onFilterChange) onFilterChange('Advanced Matching', advancedFilters);
+                  setShowAdvancedFilters(false); // Close the form after applying
                 }}
               >
                 Apply Filters

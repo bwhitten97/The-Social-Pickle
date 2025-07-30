@@ -238,6 +238,12 @@
   margin-bottom: 1.5rem;
 }
 
+.advanced-filter-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .advanced-filter-header h3 {
   margin: 0;
   font-size: 1.125rem;
@@ -258,6 +264,24 @@
 
 .clear-filters-btn:hover {
   color: #2C4A33;
+}
+
+.close-filters-btn {
+  background: none;
+  border: none;
+  color: rgba(44, 62, 80, 0.6);
+  font-size: 1.25rem;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+  transition: color 0.2s ease;
+  border-radius: 4px;
+}
+
+.close-filters-btn:hover {
+  color: #2C3E50;
+  background: rgba(44, 62, 80, 0.1);
 }
 
 .advanced-filter-grid {
