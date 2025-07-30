@@ -233,6 +233,38 @@ const Discover = memo(({
                 </div>
               </div>
 
+              {/* Availability */}
+              <div className="filter-group">
+                <label className="filter-label">Availability</label>
+                <div className="availability-checkboxes">
+                  {[
+                    { value: 'mornings', label: 'Mornings', icon: '🌅' },
+                    { value: 'afternoons', label: 'Afternoons', icon: '☀️' },
+                    { value: 'evenings', label: 'Evenings', icon: '🌆' },
+                    { value: 'weekdays', label: 'Weekdays', icon: '📅' },
+                    { value: 'weekends', label: 'Weekends', icon: '🎉' },
+                    { value: 'flexible', label: 'Flexible', icon: '⚡' }
+                  ].map((option) => (
+                    <label key={option.value} className="availability-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={advancedFilters.availability.includes(option.value)}
+                        onChange={(e) => {
+                          const newAvailability = e.target.checked
+                            ? [...advancedFilters.availability, option.value]
+                            : advancedFilters.availability.filter(a => a !== option.value);
+                          handleAdvancedFilterChange('availability', newAvailability);
+                        }}
+                      />
+                      <span className="checkbox-content">
+                        <span className="availability-icon">{option.icon}</span>
+                        {option.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
             </div>
             
             <div className="discover-filter-apply">

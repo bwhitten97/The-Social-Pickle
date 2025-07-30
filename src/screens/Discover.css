@@ -315,6 +315,55 @@
   flex: 1;
 }
 
+/* Availability Checkboxes */
+.availability-checkboxes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+}
+
+.availability-checkbox {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.availability-checkbox input[type="checkbox"] {
+  display: none;
+}
+
+.checkbox-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(44, 62, 80, 0.2);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #2C3E50;
+  background: white;
+  transition: all 0.2s ease;
+  width: 100%;
+  justify-content: center;
+}
+
+.availability-checkbox:hover .checkbox-content {
+  border-color: rgba(62, 93, 69, 0.3);
+  background: rgba(62, 93, 69, 0.05);
+}
+
+.availability-checkbox input[type="checkbox"]:checked + .checkbox-content {
+  background: #3E5D45;
+  border-color: #3E5D45;
+  color: white;
+}
+
+.availability-icon {
+  font-size: 1rem;
+}
+
 /* Distance Slider */
 .distance-slider-container {
   display: flex;
