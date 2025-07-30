@@ -397,22 +397,6 @@ const Games = memo(({ addAppNotification }) => {
     <div className="games-container">
       <main className="games-main">
         <div className="games-content-wrapper">
-          {/* Temporary Debug Panel */}
-          <div style={{ 
-            background: '#f0f0f0', 
-            padding: '10px', 
-            margin: '10px 0', 
-            border: '1px solid #ccc',
-            fontSize: '12px',
-            fontFamily: 'monospace'
-          }}>
-            <strong>Debug Info:</strong><br/>
-            User ID: {currentUserId}<br/>
-            User Name: {currentUserName}<br/>
-            Is Initialized: {isInitialized ? 'Yes' : 'No'}<br/>
-            Games Count: {games.length}<br/>
-            Applications Count: {applications.length}<br/>
-          </div>
           
           <section className="games-header-section">
             <h1 className="games-title">
@@ -425,6 +409,7 @@ const Games = memo(({ addAppNotification }) => {
               Games
             </h1>
             <div className="games-actions">
+              {/* Navigation Tabs - Top Row */}
               <div className="games-nav-section">
                 <button 
                   className={`games-nav-btn ${activeTab === 'find' ? 'active' : ''}`}
@@ -445,32 +430,32 @@ const Games = memo(({ addAppNotification }) => {
                 >
                   My Requests ({myApplications.length})
                 </button>
-                
-                {/* Action Buttons - moved inline with nav tabs */}
-                {activeTab === 'find' && (
-                  <>
-                    <button 
-                      className="games-post-btn"
-                      onClick={() => setShowPostForm(true)}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                      </svg>
-                      Post a Game
-                    </button>
-                    <button 
-                      className="games-filter-toggle"
-                      onClick={() => setShowFilter(!showFilter)}
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
-                      </svg>
-                      Filters
-                    </button>
-                  </>
-                )}
               </div>
+              
+              {/* Action Buttons - Separate Rows Below Navigation */}
+              {activeTab === 'find' && (
+                <div className="games-action-buttons-vertical">
+                  <button 
+                    className="games-post-btn"
+                    onClick={() => setShowPostForm(true)}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Post a Game
+                  </button>
+                  <button 
+                    className="games-filter-toggle"
+                    onClick={() => setShowFilter(!showFilter)}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
+                    </svg>
+                    Filters
+                  </button>
+                </div>
+              )}
             </div>
           </section>
 
@@ -587,26 +572,6 @@ const Games = memo(({ addAppNotification }) => {
             </div>
           )}
 
-          {/* Debug Panel - Remove this in production */}
-          <div style={{
-            background: '#f0f0f0', 
-            padding: '1rem', 
-            margin: '1rem 0', 
-            borderRadius: '8px',
-            fontSize: '0.8rem',
-            border: '1px solid #ccc'
-          }}>
-            <strong>🐛 DEBUG INFO:</strong><br/>
-            Current User ID: {currentUserId || 'null'}<br/>
-            Current User Name: {currentUserName || 'null'}<br/>
-            Is Initialized: {isInitialized ? 'true' : 'false'}<br/>
-            Total Games: {games.length}<br/>
-            Find Games: {findGames.length}<br/>
-            My Games: {myGames.length}<br/>
-            My Applications: {myApplications.length}<br/>
-            requestToJoinGame Type: {typeof requestToJoinGame}<br/>
-            Past Games in Find: {findGames.filter(g => isGameInPast(g)).length}
-          </div>
 
           <h2 className="games-section-title">
             {activeTab === 'find' && `Available Games (${findGames.length})`}
