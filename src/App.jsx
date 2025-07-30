@@ -156,7 +156,11 @@ function AppContent() {
     }
     
     // Handle Advanced Matching filter
-    if (filter === 'Advanced Matching' && advancedFilters) {
+    if (filter === 'Advanced Matching') {
+      // If no advanced filters are set yet, show all players
+      if (!advancedFilters) {
+        return true;
+      }
       // DUPR Rating filter
       if (advancedFilters.duprRange) {
         const playerDupr = parseFloat(player.duprRating) || 0;

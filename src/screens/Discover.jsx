@@ -70,7 +70,8 @@ const Discover = memo(({
     if (filter === 'Advanced Matching') {
       // Show advanced filters panel when Advanced Matching is selected
       setShowAdvancedFilters(true);
-      // Don't apply filters yet - wait for user to click Apply
+      // Notify parent that Advanced Matching is selected, but don't apply filters yet
+      if (onFilterChange) onFilterChange(filter, null);
     } else {
       // Hide advanced filters panel for other filters
       setShowAdvancedFilters(false);
