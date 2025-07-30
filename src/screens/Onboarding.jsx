@@ -323,7 +323,89 @@ const Onboarding = () => {
     }
   };
 
-  const handleFileUpload = (event) => {
+  const compressImage = (file) => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        // More aggressive sizing for large files
+        const originalSize = file.size;
+        let maxSize = 800; // Start larger for better quality
+        let quality = 0.9; // Start with high quality
+        
+        // Adjust compression based on original file size
+        if (originalSize > 10 * 1024 * 1024) { // > 10MB
+          maxSize = 600;
+          quality = 0.7;
+        } else if (originalSize > 5 * 1024 * 1024) { // > 5MB
+          maxSize = 700;
+          quality = 0.8;
+        }
+        
+        let { width, height } = img;
+        
+        // Calculate new dimensions maintaining aspect ratio
+        if (width > height) {
+          if (width > maxSize) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width = (width * maxSize) / height;
+            height = maxSize;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Draw with high quality
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Try compression with adaptive quality
+        const tryCompress = (currentQuality) => {
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error('Failed to compress image'));
+                return;
+              }
+              
+              const file = new File([blob], `profile-${Date.now()}.jpg`, {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+              });
+              
+              // If still too large and quality can be reduced, try again
+              const maxCompressedSize = 1 * 1024 * 1024; // 1MB
+              if (file.size > maxCompressedSize && currentQuality > 0.3) {
+                tryCompress(currentQuality - 0.1);
+              } else {
+                resolve(file);
+              }
+            },
+            'image/jpeg',
+            currentQuality
+          );
+        };
+        
+        tryCompress(quality);
+      };
+      
+      img.onerror = () => {
+        reject(new Error('Failed to load image'));
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
       console.log('Onboarding: File selected:', {
@@ -332,7 +414,7 @@ const Onboarding = () => {
         type: file.type
       });
       
-      // Validate file type
+      // Validate file type (very permissive for original files)
       if (!file.type.startsWith('image/')) {
         setNotification({
           message: "Please select an image file",
@@ -342,26 +424,41 @@ const Onboarding = () => {
         return;
       }
       
-      // Validate file size (5MB max)
-      if (file.size > 5 * 1024 * 1024) {
+      // Allow very large original files (up to 50MB)
+      if (file.size > 50 * 1024 * 1024) {
         setNotification({
-          message: "Image must be under 5MB",
+          message: "File is too large to process (max 50MB)",
           name: "",
           emoji: "⚠️"
         });
         return;
       }
       
-      updateUserData('profilePicture', file);
-      console.log('Onboarding: File stored in userData');
-      
-      // Create preview URL
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        updateUserData('profilePictureUrl', e.target.result);
-        console.log('Onboarding: Preview URL created');
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Compress the image
+        const compressedFile = await compressImage(file);
+        console.log(`Onboarding: Image compressed: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
+        
+        // Store compressed file
+        updateUserData('profilePicture', compressedFile);
+        console.log('Onboarding: Compressed file stored in userData');
+        
+        // Create preview URL from compressed file
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          updateUserData('profilePictureUrl', e.target.result);
+          console.log('Onboarding: Preview URL created from compressed image');
+        };
+        reader.readAsDataURL(compressedFile);
+        
+      } catch (error) {
+        console.error('Onboarding: Image compression failed:', error);
+        setNotification({
+          message: "Failed to process image. Please try a different photo.",
+          name: "",
+          emoji: "⚠️"
+        });
+      }
     }
   };
 
