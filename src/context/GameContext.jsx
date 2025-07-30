@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import { useAuth } from './AuthContext';
 import { gameService, applicationService, hasUserAppliedToGame } from '../services/gameService';
 import { initializeFirestoreCollections, checkFirestoreSetup } from '../utils/firestoreSetup';
+import { db } from '../config/firebase';
 
 const GameContext = createContext(null);
 
@@ -524,9 +525,23 @@ export const GameProvider = ({ children }) => {
 
   const requestToJoinGame = async (gameId, message = "", playerCount = 1) => {
     try {
-      console.log('GameContext: requestToJoinGame called', { gameId, currentUserId, currentUserName });
+      console.log('GameContext: requestToJoinGame called', { 
+        gameId, 
+        currentUserId, 
+        currentUserName,
+        isInitialized,
+        gamesCount: games.length,
+        db: !!db
+      });
+      
+      // Check if Firestore is available
+      if (!db) {
+        console.error('GameContext: Firestore not initialized');
+        return { success: false, message: "Database connection not available" };
+      }
       
       // Check if user already applied
+      console.log('GameContext: Checking if user already applied...');
       const hasApplied = await hasUserAppliedToGame(currentUserId, gameId);
       if (hasApplied) {
         console.log('GameContext: User has already applied to this game');
@@ -536,7 +551,10 @@ export const GameProvider = ({ children }) => {
       // Check if game exists and has open spots
       const game = games.find(g => g.id === gameId);
       if (!game) {
-        console.log('GameContext: Game not found', { gameId, availableGames: games.map(g => g.id) });
+        console.log('GameContext: Game not found', { 
+          gameId, 
+          availableGames: games.map(g => ({ id: g.id, location: g.location })) 
+        });
         return { success: false, message: "Game not found." };
       }
       
@@ -555,20 +573,31 @@ export const GameProvider = ({ children }) => {
         message
       };
 
-      console.log('GameContext: Creating application', applicationData);
+      console.log('GameContext: Creating application with data:', applicationData);
+      
+      // Check if applicationService exists
+      if (!applicationService || !applicationService.createApplication) {
+        console.error('GameContext: applicationService.createApplication not available');
+        return { success: false, message: "Application service not available" };
+      }
+      
       const result = await applicationService.createApplication(applicationData);
       
-      if (result.success) {
+      if (result && result.success) {
         console.log('GameContext: Application created successfully', result);
         // Application will be added to state via real-time listener
         return { success: true, message: "Application submitted successfully!" };
       } else {
         console.log('GameContext: Application creation failed', result);
-        return { success: false, message: result.error };
+        return { success: false, message: result?.error || "Failed to create application" };
       }
     } catch (error) {
-      console.error('Error submitting application:', error);
-      return { success: false, message: "Failed to submit application" };
+      console.error('GameContext: Error submitting application:', { 
+        error, 
+        message: error.message,
+        stack: error.stack 
+      });
+      return { success: false, message: error.message || "Failed to submit application" };
     }
   };
 

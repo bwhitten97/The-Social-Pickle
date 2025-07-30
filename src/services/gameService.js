@@ -16,6 +16,29 @@ import {
 import { db } from '../config/firebase';
 import { config } from '../config/app';
 
+// Test Firebase connection
+export const testFirebaseConnection = async () => {
+  try {
+    console.log('Testing Firebase connection...', { dbExists: !!db });
+    if (!db) {
+      return { success: false, error: 'Firestore not initialized' };
+    }
+    
+    // Try to read from a collection
+    const testRef = collection(db, 'applications');
+    const snapshot = await getDocs(query(testRef, where('test', '==', 'test')));
+    console.log('Firebase connection test successful');
+    return { success: true };
+  } catch (error) {
+    console.error('Firebase connection test failed:', {
+      error,
+      code: error.code,
+      message: error.message
+    });
+    return { success: false, error: error.message, code: error.code };
+  }
+};
+
 // Games service functions
 export const gameService = {
   // Create a new game
@@ -187,6 +210,13 @@ export const applicationService = {
   async createApplication(applicationData) {
     try {
       console.log('applicationService: createApplication called', applicationData);
+      
+      // Check if db is initialized
+      if (!db) {
+        console.error('applicationService: Firestore db not initialized');
+        return { success: false, error: 'Database not initialized' };
+      }
+      
       const applicationsRef = collection(db, 'applications');
       const newApplication = {
         ...applicationData,
@@ -194,13 +224,35 @@ export const applicationService = {
         appliedAt: serverTimestamp()
       };
       
-      console.log('applicationService: About to add to Firestore', newApplication);
+      console.log('applicationService: About to add to Firestore', {
+        applicationData: newApplication,
+        dbExists: !!db,
+        collectionPath: 'applications'
+      });
+      
       const docRef = await addDoc(applicationsRef, newApplication);
-      console.log('applicationService: Successfully added to Firestore', { id: docRef.id });
+      console.log('applicationService: Successfully added to Firestore', { 
+        id: docRef.id,
+        path: docRef.path,
+        applicationData: newApplication
+      });
       return { success: true, id: docRef.id };
     } catch (error) {
-      console.error('Error creating application:', error);
-      return { success: false, error: error.message };
+      console.error('applicationService: Error creating application:', {
+        error,
+        errorCode: error.code,
+        errorMessage: error.message,
+        errorStack: error.stack
+      });
+      
+      // Provide more specific error messages
+      if (error.code === 'permission-denied') {
+        return { success: false, error: 'Permission denied. Please ensure you are logged in.' };
+      } else if (error.code === 'unavailable') {
+        return { success: false, error: 'Service unavailable. Please check your internet connection.' };
+      }
+      
+      return { success: false, error: error.message || 'Failed to create application' };
     }
   },
 
@@ -291,9 +343,22 @@ export const applicationService = {
     const q = query(applicationsRef, where('playerId', '==', userId));
     
     return onSnapshot(q, (snapshot) => {
+      console.log('applicationService: setupUserApplicationsListener snapshot received', {
+        userId,
+        snapshotSize: snapshot.size,
+        snapshotEmpty: snapshot.empty
+      });
+      
       const applications = [];
       snapshot.forEach(doc => {
-        applications.push({ id: doc.id, ...doc.data() });
+        const appData = { id: doc.id, ...doc.data() };
+        console.log('applicationService: Found application for user', {
+          applicationId: doc.id,
+          playerId: appData.playerId,
+          gameId: appData.gameId,
+          status: appData.status
+        });
+        applications.push(appData);
       });
       
       // Sort by appliedAt on the client side
@@ -303,6 +368,10 @@ export const applicationService = {
         return bTime - aTime;
       });
       
+      console.log('applicationService: Calling callback with applications', {
+        userId,
+        applicationsCount: applications.length
+      });
       callback(applications);
     }, (error) => {
       console.error('Error in applications listener:', error);
@@ -312,29 +381,35 @@ export const applicationService = {
 
   // Set up real-time listener for applications to games hosted by user
   setupGameHostApplicationsListener(userId, callback) {
-    // First get all games created by this user
-    const gamesRef = collection(db, 'games');
-    const gamesQuery = query(gamesRef, where('createdById', '==', userId));
-    
-    return onSnapshot(gamesQuery, async (gamesSnapshot) => {
-      const gameIds = [];
-      gamesSnapshot.forEach(doc => {
-        gameIds.push(doc.id);
-      });
-      
-      if (gameIds.length === 0) {
-        callback([]);
-        return;
-      }
-      
-      // Then get all applications for those games
+    try {
+      // Get all applications and filter on client side
       const applicationsRef = collection(db, 'applications');
-      const applicationsQuery = query(applicationsRef, where('gameId', 'in', gameIds));
       
-      const unsubscribe = onSnapshot(applicationsQuery, (snapshot) => {
+      return onSnapshot(applicationsRef, async (snapshot) => {
+        // First get all games created by this user
+        const gamesRef = collection(db, 'games');
+        const gamesSnapshot = await getDocs(gamesRef);
+        
+        const userGameIds = new Set();
+        gamesSnapshot.forEach(doc => {
+          const gameData = doc.data();
+          if (gameData.createdById === userId) {
+            userGameIds.add(doc.id);
+          }
+        });
+        
+        if (userGameIds.size === 0) {
+          callback([]);
+          return;
+        }
+        
+        // Filter applications for user's games
         const applications = [];
         snapshot.forEach(doc => {
-          applications.push({ id: doc.id, ...doc.data() });
+          const appData = { id: doc.id, ...doc.data() };
+          if (userGameIds.has(appData.gameId)) {
+            applications.push(appData);
+          }
         });
         
         // Sort by appliedAt on the client side
@@ -349,29 +424,46 @@ export const applicationService = {
         console.error('Error in game host applications listener:', error);
         callback([]);
       });
-      
-      return unsubscribe;
-    }, (error) => {
-      console.error('Error in games listener:', error);
+    } catch (error) {
+      console.error('Error setting up game host applications listener:', error);
       callback([]);
-    });
+      return () => {}; // Return empty cleanup function
+    }
   }
 };
 
 // Helper function to check if user has already applied to a game
 export const hasUserAppliedToGame = async (userId, gameId) => {
   try {
+    console.log('hasUserAppliedToGame: Checking', { userId, gameId });
     const applicationsRef = collection(db, 'applications');
-    const q = query(
-      applicationsRef,
-      where('playerId', '==', userId),
-      where('gameId', '==', gameId)
-    );
     
-    const snapshot = await getDocs(q);
-    return snapshot.size > 0;
+    // Use a simpler query that doesn't require composite index
+    // First get all applications for the user
+    const userQuery = query(applicationsRef, where('playerId', '==', userId));
+    const snapshot = await getDocs(userQuery);
+    
+    // Then filter by gameId on the client side
+    let hasApplied = false;
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.gameId === gameId) {
+        hasApplied = true;
+      }
+    });
+    
+    console.log('hasUserAppliedToGame: Result', { 
+      hasApplied, 
+      totalUserApplications: snapshot.size 
+    });
+    return hasApplied;
   } catch (error) {
-    console.error('Error checking user application:', error);
+    console.error('hasUserAppliedToGame: Error checking user application:', {
+      error,
+      code: error.code,
+      message: error.message
+    });
+    // Return false on error to allow application to proceed
     return false;
   }
 };

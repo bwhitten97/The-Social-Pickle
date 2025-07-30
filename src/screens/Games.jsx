@@ -4,6 +4,7 @@ import { useGameContext } from '../context/GameContext';
 import DatePicker from '../components/DatePicker';
 import TimePicker from '../components/TimePicker';
 import Notification from '../components/Notification';
+import { testFirebaseConnection } from '../services/gameService';
 import './Games.css';
 
 const Games = memo(({ addAppNotification }) => {
@@ -106,7 +107,18 @@ const Games = memo(({ addAppNotification }) => {
     try {
       const gameDateTime = new Date(`${game.date}T${game.time}`);
       const now = new Date();
-      return gameDateTime < now;
+      const isPast = gameDateTime < now;
+      
+      console.log('Games: isGameInPast check', {
+        gameLocation: game.location,
+        gameDate: game.date,
+        gameTime: game.time,
+        gameDateTime: gameDateTime.toISOString(),
+        now: now.toISOString(),
+        isPast
+      });
+      
+      return isPast;
     } catch (error) {
       console.error('Games: Error checking if game is past', { game, error });
       return false; // If error, don't filter out the game
@@ -131,7 +143,14 @@ const Games = memo(({ addAppNotification }) => {
     // Basic filters
     if (game.createdBy === currentUserName) return false;
     if (hasUserApplied(game.id)) return false;
-    if (isGameInPast(game)) return false;
+    if (isGameInPast(game)) {
+      console.log('Games: Filtering out past game', { 
+        location: game.location, 
+        date: game.date, 
+        time: game.time 
+      });
+      return false;
+    }
     
     // Apply additional filters
     if (filters.date && game.date !== filters.date) {
@@ -255,20 +274,66 @@ const Games = memo(({ addAppNotification }) => {
   };
 
   const submitJoinRequest = async () => {
-    console.log('Games: submitJoinRequest called', { selectedGame });
+    console.log('Games: submitJoinRequest called', { 
+      selectedGame,
+      requestData,
+      currentUserId,
+      currentUserName,
+      isInitialized,
+      applicationsCount: applications.length,
+      hasUserAppliedFunction: typeof hasUserApplied,
+      requestToJoinGameFunction: typeof requestToJoinGame
+    });
+    
     if (!selectedGame) {
       console.log('Games: No selected game');
+      setNotification({
+        message: 'No game selected',
+        name: 'Error',
+        emoji: '❌'
+      });
+      return;
+    }
+    
+    if (!isInitialized) {
+      console.log('Games: Context not initialized');
+      setNotification({
+        message: 'Please wait for the game data to load',
+        name: 'Error',
+        emoji: '❌'
+      });
       return;
     }
     
     try {
       const message = requestData.message || `I'd like to join this game with ${requestData.playerCount} player${requestData.playerCount > 1 ? 's' : ''}!`;
-      console.log('Games: About to call requestToJoinGame', { gameId: selectedGame.id, message, playerCount: requestData.playerCount });
+      console.log('Games: About to call requestToJoinGame', { 
+        gameId: selectedGame.id, 
+        message, 
+        playerCount: requestData.playerCount,
+        requestToJoinGame: typeof requestToJoinGame
+      });
+      
+      // Add a check to see if requestToJoinGame exists
+      if (!requestToJoinGame || typeof requestToJoinGame !== 'function') {
+        console.error('Games: requestToJoinGame is not a function', requestToJoinGame);
+        setNotification({
+          message: 'Application service not available',
+          name: 'Error',
+          emoji: '❌'
+        });
+        return;
+      }
       
       const result = await requestToJoinGame(selectedGame.id, message, requestData.playerCount);
       console.log('Games: requestToJoinGame result', result);
       
-      if (result.success) {
+      if (result && result.success) {
+        console.log('Games: Application submitted successfully, checking applications state...', {
+          applicationsCount: applications.length,
+          myApplicationsCount: getUserApplications ? getUserApplications().length : 'getUserApplications not available'
+        });
+        
         setNotification({
           message: 'Application submitted successfully!',
           name: selectedGame.createdBy || 'Game Host',
@@ -277,17 +342,35 @@ const Games = memo(({ addAppNotification }) => {
         setShowRequestModal(false);
         setRequestData({ playerCount: 1, message: '' });
         setSelectedGame(null);
+        
+        // Switch to My Requests tab to show the new application
+        setActiveTab('requests');
+        
+        // Debug: Check applications again after a short delay
+        setTimeout(() => {
+          console.log('Games: Applications check after 2 seconds:', {
+            applicationsCount: applications.length,
+            myApplicationsCount: getUserApplications ? getUserApplications().length : 'getUserApplications not available',
+            applications: applications
+          });
+        }, 2000);
       } else {
+        const errorMessage = result?.message || 'Failed to submit application';
+        console.error('Games: Application failed', { result, errorMessage });
         setNotification({
-          message: result.message,
+          message: errorMessage,
           name: 'Error',
           emoji: '❌'
         });
       }
     } catch (error) {
-      console.error('Error submitting join request:', error);
+      console.error('Games: Error submitting join request', { 
+        error, 
+        errorMessage: error.message,
+        errorStack: error.stack 
+      });
       setNotification({
-        message: 'Failed to submit application',
+        message: error.message || 'Failed to submit application',
         name: 'Error',
         emoji: '❌'
       });
@@ -300,10 +383,37 @@ const Games = memo(({ addAppNotification }) => {
     setSelectedGame(null);
   };
 
+  // Test Firebase connection on component mount (temporary debug)
+  useEffect(() => {
+    const runTest = async () => {
+      console.log('Running Firebase connection test...');
+      const result = await testFirebaseConnection();
+      console.log('Firebase connection test result:', result);
+    };
+    runTest();
+  }, []);
+
   return (
     <div className="games-container">
       <main className="games-main">
         <div className="games-content-wrapper">
+          {/* Temporary Debug Panel */}
+          <div style={{ 
+            background: '#f0f0f0', 
+            padding: '10px', 
+            margin: '10px 0', 
+            border: '1px solid #ccc',
+            fontSize: '12px',
+            fontFamily: 'monospace'
+          }}>
+            <strong>Debug Info:</strong><br/>
+            User ID: {currentUserId}<br/>
+            User Name: {currentUserName}<br/>
+            Is Initialized: {isInitialized ? 'Yes' : 'No'}<br/>
+            Games Count: {games.length}<br/>
+            Applications Count: {applications.length}<br/>
+          </div>
+          
           <section className="games-header-section">
             <h1 className="games-title">
               <svg className="games-title-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -335,34 +445,35 @@ const Games = memo(({ addAppNotification }) => {
                 >
                   My Requests ({myApplications.length})
                 </button>
+                
+                {/* Action Buttons - moved inline with nav tabs */}
+                {activeTab === 'find' && (
+                  <>
+                    <button 
+                      className="games-post-btn"
+                      onClick={() => setShowPostForm(true)}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                      </svg>
+                      Post a Game
+                    </button>
+                    <button 
+                      className="games-filter-toggle"
+                      onClick={() => setShowFilter(!showFilter)}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
+                      </svg>
+                      Filters
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </section>
 
-          {/* Action Buttons */}
-          {activeTab === 'find' && (
-            <div className="games-action-buttons">
-              <button 
-                className="games-post-btn"
-                onClick={() => setShowPostForm(true)}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                Post a Game
-              </button>
-              <button 
-                className="games-filter-toggle"
-                onClick={() => setShowFilter(!showFilter)}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
-                </svg>
-                Filters
-              </button>
-            </div>
-          )}
 
           {/* Filter Panel */}
           {showFilter && activeTab === 'find' && (
@@ -475,6 +586,27 @@ const Games = memo(({ addAppNotification }) => {
               </div>
             </div>
           )}
+
+          {/* Debug Panel - Remove this in production */}
+          <div style={{
+            background: '#f0f0f0', 
+            padding: '1rem', 
+            margin: '1rem 0', 
+            borderRadius: '8px',
+            fontSize: '0.8rem',
+            border: '1px solid #ccc'
+          }}>
+            <strong>🐛 DEBUG INFO:</strong><br/>
+            Current User ID: {currentUserId || 'null'}<br/>
+            Current User Name: {currentUserName || 'null'}<br/>
+            Is Initialized: {isInitialized ? 'true' : 'false'}<br/>
+            Total Games: {games.length}<br/>
+            Find Games: {findGames.length}<br/>
+            My Games: {myGames.length}<br/>
+            My Applications: {myApplications.length}<br/>
+            requestToJoinGame Type: {typeof requestToJoinGame}<br/>
+            Past Games in Find: {findGames.filter(g => isGameInPast(g)).length}
+          </div>
 
           <h2 className="games-section-title">
             {activeTab === 'find' && `Available Games (${findGames.length})`}
