@@ -49,6 +49,7 @@ function AppContent() {
   const [isLoadingPlayers, setIsLoadingPlayers] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [filter, setFilter] = useState('All');
+  const [advancedFilters, setAdvancedFilters] = useState(null);
   const [connections, setConnections] = useState([]);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(INITIAL_UNREAD_NOTIFICATIONS);
   const [unreadChatCount, setUnreadChatCount] = useState(INITIAL_UNREAD_CHATS);
@@ -148,9 +149,55 @@ function AppContent() {
     }
   }, [location.pathname, user]);
 
-  const filteredPlayers = players.filter(player => 
-    filter === 'All' || player.skillLevel === filter.toLowerCase()
-  );
+  const filteredPlayers = players.filter(player => {
+    // Handle basic 'All' filter
+    if (filter === 'All') {
+      return true;
+    }
+    
+    // Handle Advanced Matching filter
+    if (filter === 'Advanced Matching' && advancedFilters) {
+      // DUPR Rating filter
+      if (advancedFilters.duprRange) {
+        const playerDupr = parseFloat(player.duprRating) || 0;
+        if (playerDupr < advancedFilters.duprRange.min || playerDupr > advancedFilters.duprRange.max) {
+          return false;
+        }
+      }
+      
+      // Gender filter
+      if (advancedFilters.gender && advancedFilters.gender !== 'any') {
+        if (player.gender !== advancedFilters.gender) {
+          return false;
+        }
+      }
+      
+      // Age Range filter
+      if (advancedFilters.ageRange) {
+        const playerAge = parseInt(player.age) || 0;
+        if (playerAge < advancedFilters.ageRange.min || playerAge > advancedFilters.ageRange.max) {
+          return false;
+        }
+      }
+      
+      // Availability filter
+      if (advancedFilters.availability && advancedFilters.availability.length > 0) {
+        const playerAvailability = player.availability || [];
+        // Check if player has at least one matching availability
+        const hasMatchingAvailability = advancedFilters.availability.some(filterAvail => 
+          playerAvailability.includes(filterAvail)
+        );
+        if (!hasMatchingAvailability) {
+          return false;
+        }
+      }
+      
+      return true;
+    }
+    
+    // Handle other filters (skill level based)
+    return player.skillLevel === filter.toLowerCase();
+  });
 
   const currentPlayer = filteredPlayers[currentIndex];
 
@@ -281,8 +328,9 @@ function AppContent() {
                     connections={connections}
                     onLike={handleConnect}
                     onPass={handlePass}
-                    onFilterChange={(newFilter) => {
+                    onFilterChange={(newFilter, filters) => {
                       setFilter(newFilter);
+                      setAdvancedFilters(filters);
                       setCurrentIndex(0);
                     }}
                     currentFilter={filter}

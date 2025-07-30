@@ -31,7 +31,7 @@ const Discover = memo(({
     availability: []
   });
   
-  const filters = ['All'];
+  const filters = ['All', 'Advanced Matching'];
   
   // Get current player from the real data
   const currentProfile = useMemo(() => {
@@ -67,8 +67,15 @@ const Discover = memo(({
   }, []);
 
   const handleFilterChange = useCallback((filter) => {
-    if (onFilterChange) onFilterChange(filter);
-  }, [onFilterChange]);
+    if (filter === 'Advanced Matching') {
+      // Show advanced filters panel when Advanced Matching is selected
+      setShowAdvancedFilters(true);
+    } else {
+      // Hide advanced filters panel for other filters
+      setShowAdvancedFilters(false);
+    }
+    if (onFilterChange) onFilterChange(filter, advancedFilters);
+  }, [onFilterChange, advancedFilters]);
 
   const handleAdvancedFilterChange = useCallback((filterType, value) => {
     setAdvancedFilters(prev => ({
@@ -116,27 +123,10 @@ const Discover = memo(({
               {filter}
             </button>
           ))}
-          <button
-            className="discover-advanced-filter-toggle"
-            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="4" y1="21" x2="4" y2="14"></line>
-              <line x1="4" y1="10" x2="4" y2="3"></line>
-              <line x1="12" y1="21" x2="12" y2="12"></line>
-              <line x1="12" y1="8" x2="12" y2="3"></line>
-              <line x1="20" y1="21" x2="20" y2="16"></line>
-              <line x1="20" y1="12" x2="20" y2="3"></line>
-              <line x1="1" y1="14" x2="7" y2="14"></line>
-              <line x1="9" y1="8" x2="15" y2="8"></line>
-              <line x1="17" y1="16" x2="23" y2="16"></line>
-            </svg>
-            Advanced Matching
-          </button>
         </div>
 
         {/* Advanced Filters Panel */}
-        {showAdvancedFilters && (
+        {currentFilter === 'Advanced Matching' && (
           <div className="discover-advanced-filters">
             <div className="advanced-filter-header">
               <h3>Advanced Filters</h3>
@@ -270,7 +260,9 @@ const Discover = memo(({
             <div className="discover-filter-apply">
               <button 
                 className="discover-apply-btn"
-                onClick={() => setShowAdvancedFilters(false)}
+                onClick={() => {
+                  if (onFilterChange) onFilterChange('Advanced Matching', advancedFilters);
+                }}
               >
                 Apply Filters
               </button>
