@@ -312,7 +312,7 @@ const mockApplications = [
 
 export const GameProvider = ({ children }) => {
   // Get auth context
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   
   // Initialize state with empty arrays first, then populate
   const [games, setGames] = useState([]);
@@ -324,10 +324,20 @@ export const GameProvider = ({ children }) => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Use real user data or fallback values
-  const currentUserId = user?.uid || "anonymous-user";
-  const currentUserName = user?.displayName || user?.name || "Anonymous User";
+  // Use real user data or fallback values for development
+  const currentUserId = user?.id || user?.uid || "dev-user"; // Fallback for development
+  const currentUserName = user?.displayName || user?.name || "Alex Thompson"; // Fallback for development
   const currentUserSkill = user?.skillLevel || "Intermediate";
+  
+  // Log authentication status for debugging
+  console.log('GameContext: User authentication status', {
+    isAuthenticated,
+    hasUser: !!user,
+    currentUserId,
+    currentUserName,
+    userObject: user
+  });
+
 
   // Initialize Firestore data and set up real-time listeners
   useEffect(() => {
@@ -346,32 +356,60 @@ export const GameProvider = ({ children }) => {
           
           // Set up real-time listeners for games
           const unsubscribeGames = gameService.setupGamesListener((gamesData) => {
+            const targetGameIds = ['77fHWTlEfTh713J5Pkt2', 'AmT64CdEVVJnGKYJEi23'];
+            const foundTargetGames = gamesData.filter(g => targetGameIds.includes(g.id));
+            
+            console.log('GameContext: Games loaded', {
+              count: gamesData.length,
+              userLocation: user?.location,
+              targetGamesFound: foundTargetGames.length,
+              targetGames: foundTargetGames,
+              allGameIds: gamesData.map(g => g.id)
+            });
             setGames(gamesData);
-          }, user?.location);
+          }, null); // Remove location filter to load all games
           
-          // Set up real-time listeners for user applications (including anonymous users)
+          // Set up real-time listeners for user applications
           let unsubscribeApplications = null;
           let unsubscribeHostApplications = null;
-          const userId = user?.uid || "anonymous-user";
+          const userId = currentUserId; // Use the computed current user ID
           
-          // Listen for user's own applications
-          unsubscribeApplications = applicationService.setupUserApplicationsListener(
-            userId, 
-            (applicationsData) => {
-              console.log('GameContext: User applications updated', { userId, applicationsData });
-              setApplications(applicationsData);
-            }
-          );
-          
-          // Listen for applications to games hosted by user (only for authenticated users)
-          if (user && user.uid) {
+          // Set up listeners for valid user IDs (including development fallback)
+          if (userId && userId !== "anonymous-user") {
+            console.log('GameContext: Setting up application listeners for user:', userId);
+            
+            // Listen for user's own applications
+            unsubscribeApplications = applicationService.setupUserApplicationsListener(
+              userId, 
+              (applicationsData) => {
+                console.log('GameContext: Received applications update:', {
+                  userId,
+                  count: applicationsData.length,
+                  applications: applicationsData
+                });
+                setApplications(applicationsData);
+                console.log('GameContext: Applications state updated, new length:', applicationsData.length);
+              }
+            );
+            
+            console.log('GameContext: Applications listener set up, current applications:', applications.length);
+            
+            // Listen for applications to games hosted by user
             unsubscribeHostApplications = applicationService.setupGameHostApplicationsListener(
-              user.uid,
+              userId,
               (hostApplicationsData) => {
-                console.log('GameContext: Host applications updated', hostApplicationsData);
+                console.log('GameContext: Received host applications update:', {
+                  userId,
+                  count: hostApplicationsData.length
+                });
                 setHostApplications(hostApplicationsData);
               }
             );
+          } else {
+            console.log('GameContext: No userId or anonymous user, clearing applications');
+            // Clear applications for unauthenticated users
+            setApplications([]);
+            setHostApplications([]);
           }
           
           // Initialize other data (keeping some mock data for now)
@@ -540,6 +578,16 @@ export const GameProvider = ({ children }) => {
         return { success: false, message: "Database connection not available" };
       }
       
+      // CRITICAL: Prevent anonymous users from creating applications
+      if (!currentUserId || !user?.id) {
+        console.error('GameContext: User not properly authenticated', { 
+          currentUserId, 
+          userId: user?.id,
+          userExists: !!user 
+        });
+        return { success: false, message: "Please sign in to request to join games" };
+      }
+      
       // Check if user already applied
       console.log('GameContext: Checking if user already applied...');
       const hasApplied = await hasUserAppliedToGame(currentUserId, gameId);
@@ -572,8 +620,7 @@ export const GameProvider = ({ children }) => {
         playerCount,
         message
       };
-
-      console.log('GameContext: Creating application with data:', applicationData);
+      
       
       // Check if applicationService exists
       if (!applicationService || !applicationService.createApplication) {
@@ -696,16 +743,23 @@ export const GameProvider = ({ children }) => {
 
 
   const getUserApplications = React.useCallback(() => {
-    return applications.filter(app => app.playerId === currentUserId);
+    const userApplications = applications.filter(app => app.playerId === currentUserId);
+    console.log('GameContext: getUserApplications called', {
+      currentUserId,
+      totalApplications: applications.length,
+      userApplications: userApplications.length,
+      applications: applications
+    });
+    return userApplications;
   }, [applications, currentUserId]);
 
   const getGameApplications = React.useCallback((gameId) => {
     if (gameId) {
-      // Get applications for a specific game from hostApplications
-      return hostApplications.filter(app => app.gameId === gameId && app.status === 'pending');
+      // Get all applications for a specific game from hostApplications (all statuses)
+      return hostApplications.filter(app => app.gameId === gameId);
     }
-    // Get all pending applications for games created by current user
-    return hostApplications.filter(app => app.status === 'pending');
+    // Get all applications for games created by current user
+    return hostApplications;
   }, [hostApplications]);
 
   const hasUserApplied = React.useCallback((gameId) => {
@@ -804,6 +858,7 @@ export const GameProvider = ({ children }) => {
   const value = useMemo(() => ({
     games,
     applications,
+    hostApplications,
     chatRooms,
     matchedPlayers,
     messages,
@@ -831,6 +886,7 @@ export const GameProvider = ({ children }) => {
   }), [
     games, 
     applications, 
+    hostApplications,
     chatRooms, 
     matchedPlayers, 
     messages, 
@@ -847,6 +903,17 @@ export const GameProvider = ({ children }) => {
     getMessages,
     getConversation
   ]);
+  
+  // Debug: Log what's being provided to components
+  React.useEffect(() => {
+    console.log('GameContext: Provider value updated:', {
+      applicationsCount: applications.length,
+      gamesCount: games.length,
+      currentUserId,
+      isInitialized,
+      applicationsArray: applications
+    });
+  }, [applications, games, currentUserId, isInitialized]);
 
   return (
     <GameContext.Provider value={value}>

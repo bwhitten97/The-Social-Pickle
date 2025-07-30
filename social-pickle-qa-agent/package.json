@@ -1,0 +1,26 @@
+{
+  "name": "social-pickle-qa-agent",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "mcp-server.js",
+  "bin": {
+    "social-pickle-qa": "./mcp-server.js"
+  },
+  "scripts": {
+    "start": "node mcp-server.js",
+    "test": "node qa-agent.js",
+    "test:critical": "node -e \"import('./qa-agent.js').then(m => { const qa = new m.SocialPickleQAAgent(); qa.init().then(() => qa.testCriticalUserFlow()).then(() => qa.cleanup()); })\"",
+    "dev": "node --inspect qa-agent.js"
+  },
+  "keywords": ["qa", "testing", "social-pickle", "playwright", "mcp"],
+  "author": "Blake Whitten",
+  "license": "ISC",
+  "description": "Automated QA testing agent for Social Pickle app using MCP (Model Context Protocol)",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.0",
+    "@playwright/test": "^1.54.1",
+    "axios": "^1.11.0",
+    "fs-extra": "^11.3.0",
+    "playwright": "^1.54.1"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "metadata": {
+    "timestamp": "2025-07-30T03:19:36.937Z",
+    "duration": 33652,
+    "url": "https://thesocialpickle.web.app",
+    "authenticated": false,
+    "testAccount": "claude-qa-test@example.com"
+  },
+  "summary": {
+    "total": 2,
+    "critical": 1,
+    "medium": 1,
+    "authenticated": false
+  },
+  "issues": [
+    {
+      "type": "Network Failure",
+      "description": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-WCJS8GDG0N&gtm=45je57s1v9224623140za200zd9224623140&_p=1753845546612&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~104684208~104684211~104948813~105103161~105103163~105124543~105124545&_fid=e2-R0pRNAeUciBNbVFyeg7&cid=1451468949.1753845547&ul=en-us&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B139.0.7258.5%7CNot%253BA%253DBrand%3B99.0.0.0&uamb=0&uam=&uap=macOS&uapv=15.5.0&uaw=0&are=1&frm=0&pscdl=noapi&_s=1&sid=1753845546&sct=1&seg=0&dl=https%3A%2F%2Fthesocialpickle.web.app%2F&dt=The%20Social%20Pickle%20-%20Connect%2C%20Play%20%26%20Share%20Pickleball&en=page_view&_fv=1&_nsi=1&_ss=1&_ee=1&ep.origin=firebase&tfd=658 - net::ERR_ABORTED",
+      "severity": "medium",
+      "timestamp": "2025-07-30T03:19:06.858Z",
+      "url": "https://thesocialpickle.web.app/",
+      "authenticated": false,
+      "context": {}
+    },
+    {
+      "type": "Authentication Failed",
+      "description": "page.waitForLoadState: Timeout 30000ms exceeded.",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:19:36.935Z",
+      "url": "https://thesocialpickle.web.app/",
+      "authenticated": false,
+      "context": {}
+    }
+  ]
+}

@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cleanup:bad-applications": "node cleanup-bad-applications.js"
   },
   "dependencies": {
     "firebase": "^11.10.0",

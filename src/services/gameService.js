@@ -170,21 +170,33 @@ export const gameService = {
     
     return onSnapshot(gamesRef, (snapshot) => {
       const games = [];
+      const targetGameIds = ['77fHWTlEfTh713J5Pkt2', 'AmT64CdEVVJnGKYJEi23'];
+      let filteredOutGames = [];
+      
       snapshot.forEach(doc => {
         const gameData = { id: doc.id, ...doc.data() };
         
-        // Filter active games on client side
-        if (gameData.status !== 'active') {
-          return;
+        // Debug target games
+        if (targetGameIds.includes(doc.id)) {
+          console.log('gameService: FIXED VERSION - Found target game in snapshot', {
+            id: doc.id,
+            status: gameData.status,
+            location: gameData.location,
+            userLocation,
+            multiCityEnabled: config.MULTI_CITY_ENABLED,
+            locationFilteringDisabled: true
+          });
         }
         
-        // Location filtering when multi-city is enabled
-        if (config.MULTI_CITY_ENABLED && userLocation && gameData.location) {
-          // Only show games in the same location
-          if (userLocation.zip !== gameData.location?.zip) {
-            return;
-          }
-        }
+        // TEMPORARILY REMOVE ALL FILTERING - load everything
+        // if (gameData.status !== 'active') {
+        //   if (targetGameIds.includes(doc.id)) {
+        //     console.log('gameService: Target game filtered out - not active', doc.id, gameData.status);
+        //   }
+        //   return;
+        // }
+        
+        // Location filtering COMPLETELY REMOVED
         
         games.push(gameData);
       });
@@ -339,6 +351,7 @@ export const applicationService = {
 
   // Set up real-time listener for user applications
   setupUserApplicationsListener(userId, callback) {
+    console.log('applicationService: Setting up listener for userId:', userId);
     const applicationsRef = collection(db, 'applications');
     const q = query(applicationsRef, where('playerId', '==', userId));
     
@@ -374,7 +387,7 @@ export const applicationService = {
       });
       callback(applications);
     }, (error) => {
-      console.error('Error in applications listener:', error);
+      console.error('applicationService: Error in applications listener for user', userId, error);
       callback([]);
     });
   },

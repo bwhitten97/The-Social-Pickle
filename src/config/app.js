@@ -1,7 +1,7 @@
 // App configuration settings
 export const config = {
   // Feature flags
-  MULTI_CITY_ENABLED: import.meta.env.VITE_MULTI_CITY_ENABLED === 'true' || false,
+  MULTI_CITY_ENABLED: false, // Explicitly disabled - location filtering off
   
   // Default location for single-city mode
   DEFAULT_LOCATION: {

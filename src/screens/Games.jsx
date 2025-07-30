@@ -105,18 +105,35 @@ const Games = memo(({ addAppNotification }) => {
   // Helper function to check if a game is in the past
   const isGameInPast = (game) => {
     try {
-      const gameDateTime = new Date(`${game.date}T${game.time}`);
-      const now = new Date();
-      const isPast = gameDateTime < now;
+      // Validate game has required date/time fields
+      if (!game.date || !game.time) {
+        console.warn('Games: Game missing date/time fields', { gameId: game.id, date: game.date, time: game.time });
+        return false; // Don't filter games with missing data
+      }
       
-      console.log('Games: isGameInPast check', {
-        gameLocation: game.location,
-        gameDate: game.date,
-        gameTime: game.time,
-        gameDateTime: gameDateTime.toISOString(),
-        now: now.toISOString(),
-        isPast
-      });
+      const gameDateTime = new Date(`${game.date}T${game.time}`);
+      
+      // Validate that the date was parsed correctly
+      if (isNaN(gameDateTime.getTime())) {
+        console.warn('Games: Invalid game date/time', { gameId: game.id, date: game.date, time: game.time });
+        return false; // Don't filter games with invalid dates
+      }
+      
+      const now = new Date();
+      // Add a 30-minute grace period after game start time
+      const gameEndTime = new Date(gameDateTime.getTime() + (30 * 60 * 1000));
+      const isPast = now > gameEndTime;
+      
+      if (isPast) {
+        console.log('Games: Game is past (with 30min grace period)', {
+          gameLocation: game.location,
+          gameDate: game.date,
+          gameTime: game.time,
+          gameDateTime: gameDateTime.toISOString(),
+          gameEndTime: gameEndTime.toISOString(),
+          now: now.toISOString()
+        });
+      }
       
       return isPast;
     } catch (error) {
@@ -202,12 +219,21 @@ const Games = memo(({ addAppNotification }) => {
     !isGameExpired(game)
   );
   
-  // Get user's applications (exclude applications for games expired by more than 1 hour)
-  const myApplications = getUserApplications ? 
-    getUserApplications().filter(application => {
-      const game = games.find(g => g.id === application.gameId);
-      return game && !isGameExpired(game);
-    }) : [];
+  // Get user's applications - SIMPLIFIED
+  console.log('Games: About to get applications', {
+    getUserApplicationsExists: !!getUserApplications,
+    currentUserId,
+    applicationsFromContext: applications,
+    applicationsCount: applications.length
+  });
+  
+  const myApplications = applications.filter(app => app.userId === currentUserId || app.playerId === currentUserId);
+  
+  console.log('Games: myApplications computed DIRECTLY', {
+    myApplicationsCount: myApplications.length,
+    myApplications,
+    currentUserId
+  });
   
 
   // Handler functions
@@ -295,10 +321,37 @@ const Games = memo(({ addAppNotification }) => {
       return;
     }
     
+    // Check if game is in the past
+    if (isGameInPast(selectedGame)) {
+      console.log('Games: Cannot apply to past game', { 
+        gameId: selectedGame.id, 
+        date: selectedGame.date, 
+        time: selectedGame.time 
+      });
+      setNotification({
+        message: 'Cannot apply to past games',
+        name: 'Error',
+        emoji: '⏰'
+      });
+      setShowRequestModal(false);
+      return;
+    }
+    
     if (!isInitialized) {
       console.log('Games: Context not initialized');
       setNotification({
         message: 'Please wait for the game data to load',
+        name: 'Error',
+        emoji: '❌'
+      });
+      return;
+    }
+    
+    // Check if user is properly authenticated
+    if (!currentUserId) {
+      console.log('Games: User not authenticated');
+      setNotification({
+        message: 'Please sign in to request to join games',
         name: 'Error',
         emoji: '❌'
       });
@@ -620,10 +673,21 @@ const Games = memo(({ addAppNotification }) => {
                   </div>
                 </div>
                 <button 
-                  className="games-join-btn"
-                  onClick={() => handleRequestToJoin(game)}
+                  className={`games-join-btn ${isGameInPast(game) ? 'games-join-btn-disabled' : ''}`}
+                  onClick={() => {
+                    if (isGameInPast(game)) {
+                      setNotification({
+                        message: 'Cannot join past games',
+                        name: '',
+                        emoji: '⏰'
+                      });
+                      return;
+                    }
+                    handleRequestToJoin(game);
+                  }}
+                  disabled={isGameInPast(game)}
                 >
-                  Request to Join
+                  {isGameInPast(game) ? 'Game Passed' : 'Request to Join'}
                 </button>
               </article>
             ))}
@@ -686,150 +750,90 @@ const Games = memo(({ addAppNotification }) => {
             
             {/* My Requests Tab */}
             {isInitialized && activeTab === 'requests' && (
-              myApplications.length > 0 ? (
-                myApplications.map((application) => {
-                  const game = games.find(g => g.id === application.gameId);
-                  if (!game) return null;
-                  
-                  return (
-                    <article key={application.id} className="games-card">
-                      <h3 className="games-card-title">
-                        <svg className="games-location-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                          <circle cx="12" cy="10" r="3"/>
-                        </svg>
-                        {game.location}
-                      </h3>
-                      <div className="games-card-content">
-                        <div className="games-datetime">
-                          <svg className="games-datetime-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                            <line x1="16" y1="2" x2="16" y2="6"/>
-                            <line x1="8" y1="2" x2="8" y2="6"/>
-                            <line x1="3" y1="10" x2="21" y2="10"/>
-                          </svg>
-                          {formatDate(game.date)} • {formatTime(game.time)}
+              <div className="my-requests-section">
+                {myApplications.length > 0 ? 
+                  myApplications.map((application) => {
+                    console.log('Games: Rendering application', application);
+                    
+                    // Find the associated game for this application
+                    const game = displayGames.find(g => g.id === application.gameId);
+                    
+                    return (
+                      <div key={application.id} className="request-card">
+                        <div className="request-header">
+                          <div className="request-game-info">
+                            <h4 className="request-location">{game?.location || 'Unknown Location'}</h4>
+                            <div className="request-details">
+                              <span className="request-datetime">
+                                {formatDate(game?.date || '')} • {formatTime(game?.time || '')}
+                              </span>
+                              <span className="request-host">
+                                Hosted by {game?.createdBy || 'Unknown Host'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="request-status">
+                            <span className={`status-badge ${application.status}`}>
+                              {application.status === 'pending' && '⏳'}
+                              {application.status === 'accepted' && '✅'}
+                              {application.status === 'rejected' && '❌'}
+                              {' '}
+                              {application.status}
+                            </span>
+                          </div>
                         </div>
-                        <div className="games-players">
-                          <svg className="games-players-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                            <circle cx="9" cy="7" r="4"/>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                          </svg>
-                          {game.totalSpots - game.openSpots} / {game.totalSpots} players
+                        
+                        {application.message && (
+                          <div className="request-message">
+                            <p>"{application.message}"</p>
+                          </div>
+                        )}
+                        
+                        <div className="request-meta">
+                          <span>{application.playerCount} player{application.playerCount > 1 ? 's' : ''}</span>
+                          {application.appliedAt && (
+                            <span>Applied on {new Date(application.appliedAt.toDate ? application.appliedAt.toDate() : application.appliedAt).toLocaleDateString()}</span>
+                          )}
                         </div>
-                        <div className="games-details-row">
-                          <span className="games-type-badge">{capitalizeBadge(game.gameType)}</span>
-                          <span className="games-type-badge">{capitalizeBadge(game.skillLevel)}</span>
-                        </div>
-                      </div>
-                      <div className="games-button-group">
-                        <button 
-                          className={`games-status-btn ${application.status}`}
-                          disabled={application.status !== 'pending'}
-                        >
-                          {application.status === 'pending' && (
-                            <>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <circle cx="12" cy="12" r="10"/>
-                                <polyline points="12,6 12,12 16,14"/>
-                              </svg>
-                              Pending
-                            </>
-                          )}
-                          {application.status === 'accepted' && (
-                            <>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <polyline points="20,6 9,17 4,12"/>
-                              </svg>
-                              Accepted
-                            </>
-                          )}
-                          {application.status === 'rejected' && (
-                            <>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <line x1="18" y1="6" x2="6" y2="18"/>
-                                <line x1="6" y1="6" x2="18" y2="18"/>
-                              </svg>
-                              Rejected
-                            </>
-                          )}
-                        </button>
                         
                         {application.status === 'pending' && (
-                          <button 
-                            className="games-withdraw-btn"
-                            onClick={async () => {
-                              if (window.confirm('Are you sure you want to withdraw this application?')) {
-                                try {
-                                  console.log('Games: Withdrawing application', { 
-                                    applicationId: application.id,
-                                    gameId: application.gameId 
-                                  });
-                                  
-                                  const result = await withdrawApplication(application.id);
-                                  
-                                  if (result.success) {
+                          <div className="request-actions">
+                            <button 
+                              className="withdraw-btn"
+                              onClick={async () => {
+                                if (window.confirm('Are you sure you want to withdraw this application?')) {
+                                  try {
+                                    await withdrawApplication(application.id);
                                     setNotification({
-                                      message: 'Application withdrawn successfully!',
+                                      message: 'Application withdrawn',
                                       name: '',
                                       emoji: '✅'
                                     });
-                                  } else {
+                                  } catch (error) {
+                                    console.error('Error withdrawing application:', error);
                                     setNotification({
-                                      message: result.message || 'Failed to withdraw application',
-                                      name: 'Error',
+                                      message: 'Failed to withdraw application',
+                                      name: '',
                                       emoji: '❌'
                                     });
                                   }
-                                } catch (error) {
-                                  console.error('Games: Error withdrawing application', error);
-                                  setNotification({
-                                    message: 'Failed to withdraw application',
-                                    name: 'Error',
-                                    emoji: '❌'
-                                  });
                                 }
-                              }
-                            }}
-                          >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <circle cx="12" cy="12" r="10"/>
-                              <line x1="15" y1="9" x2="9" y2="15"/>
-                              <line x1="9" y1="9" x2="15" y2="15"/>
-                            </svg>
-                            Withdraw Request
-                          </button>
-                        )}
-                        
-                        {application.status === 'accepted' && (
-                          <button 
-                            className="games-message-btn"
-                            onClick={() => {
-                              // TODO: Implement messaging functionality
-                              console.log('Message host clicked', { 
-                                gameId: application.gameId, 
-                                hostName: game.createdBy 
-                              });
-                            }}
-                          >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/>
-                            </svg>
-                            Message Host
-                          </button>
+                              }}
+                            >
+                              Withdraw
+                            </button>
+                          </div>
                         )}
                       </div>
-                    </article>
-                  );
-                })
-              ) : (
-                <div className="games-empty-state">
-                  <h3>No requests yet</h3>
-                  <p>Apply to games to see your requests here!</p>
-                </div>
-              )
+                    );
+                  })
+                 : 
+                  <div className="games-empty-state">
+                    <h3>No requests yet</h3>
+                    <p>Apply to games to see your requests here!</p>
+                  </div>
+                }
+              </div>
             )}
           </section>
         </div>
@@ -1117,10 +1121,10 @@ const Games = memo(({ addAppNotification }) => {
                       <div key={application.id} className="applicant-item">
                         <div className="applicant-info">
                           <div className="applicant-avatar">
-                            {application.applicantName?.charAt(0)?.toUpperCase()}
+                            {(application.playerName || application.applicantName)?.charAt(0)?.toUpperCase()}
                           </div>
                           <div className="applicant-details">
-                            <span className="applicant-name">{application.applicantName}</span>
+                            <span className="applicant-name">{application.playerName || application.applicantName}</span>
                             {application.message && (
                               <span className="applicant-message">"{application.message}"</span>
                             )}
@@ -1141,15 +1145,24 @@ const Games = memo(({ addAppNotification }) => {
                               className="action-btn reject-btn"
                               onClick={async () => {
                                 try {
-                                  await updateApplicationStatus(application.id, 'rejected');
+                                  console.log('Games: Rejecting application', { applicationId: application.id, playerName: application.playerName });
+                                  const result = await updateApplicationStatus(application.id, 'rejected');
+                                  if (result.success) {
+                                    setNotification({
+                                      message: 'Application rejected',
+                                      name: application.playerName || application.applicantName || '',
+                                      emoji: '❌'
+                                    });
+                                  } else {
+                                    throw new Error(result.message || 'Failed to reject application');
+                                  }
+                                } catch (error) {
+                                  console.error('Error rejecting application:', error);
                                   setNotification({
-                                    message: 'Application rejected',
+                                    message: error.message || 'Failed to reject application',
                                     name: '',
                                     emoji: '❌'
                                   });
-                                } catch (error) {
-                                  console.error('Error rejecting application:', error);
-                                  alert('Failed to reject application');
                                 }
                               }}
                             >
@@ -1159,15 +1172,24 @@ const Games = memo(({ addAppNotification }) => {
                               className="action-btn accept-btn"
                               onClick={async () => {
                                 try {
-                                  await updateApplicationStatus(application.id, 'accepted');
-                                  setNotification({
-                                    message: 'Application accepted!',
-                                    name: '',
-                                    emoji: '✅'
-                                  });
+                                  console.log('Games: Accepting application', { applicationId: application.id, playerName: application.playerName });
+                                  const result = await updateApplicationStatus(application.id, 'accepted');
+                                  if (result.success) {
+                                    setNotification({
+                                      message: 'Application accepted!',
+                                      name: application.playerName || application.applicantName || '',
+                                      emoji: '✅'
+                                    });
+                                  } else {
+                                    throw new Error(result.message || 'Failed to accept application');
+                                  }
                                 } catch (error) {
                                   console.error('Error accepting application:', error);
-                                  alert('Failed to accept application');
+                                  setNotification({
+                                    message: error.message || 'Failed to accept application',
+                                    name: '',
+                                    emoji: '❌'
+                                  });
                                 }
                               }}
                             >

@@ -1,0 +1,324 @@
+{
+  "metadata": {
+    "timestamp": "2025-07-30T03:12:09.272Z",
+    "duration": 117000,
+    "url": "https://thesocialpickle.web.app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+  },
+  "summary": {
+    "total": 37,
+    "critical": 27,
+    "medium": 10,
+    "low": 0
+  },
+  "issues": [
+    {
+      "type": "Network Failure",
+      "description": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-WCJS8GDG0N&gtm=45je57s1h1v9224623140za200zd9224623140&_p=1753845022014&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~104684208~104684211~104948813~105103161~105103163~105124543~105124545&_fid=c1ub-vSV3P7nsmd9DDjNSr&cid=824781079.1753845022&ul=en-us&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B139.0.7258.5%7CNot%253BA%253DBrand%3B99.0.0.0&uamb=0&uam=&uap=macOS&uapv=15.5.0&uaw=0&are=1&frm=0&pscdl=noapi&_s=1&sid=1753845022&sct=1&seg=0&dl=https%3A%2F%2Fthesocialpickle.web.app%2F&dt=The%20Social%20Pickle%20-%20Connect%2C%20Play%20%26%20Share%20Pickleball&en=page_view&_fv=1&_nsi=1&_ss=1&_ee=1&ep.origin=firebase&tfd=1008 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:10:22.298Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Page Load Failed",
+      "description": "page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"https://thesocialpickle.web.app/\", waiting until \"networkidle\"\u001b[22m\n",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:10:51.580Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-WCJS8GDG0N&gtm=45je57s1h1v9224623140za200zd9224623140&_p=1753845022014&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~104684208~104684211~104948813~105103161~105103163~105124543~105124545&_fid=c1ub-vSV3P7nsmd9DDjNSr&cid=824781079.1753845022&ul=en-us&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B139.0.7258.5%7CNot%253BA%253DBrand%3B99.0.0.0&uamb=0&uam=&uap=macOS&uapv=15.5.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AAAAAAQ&_s=2&sid=1753845022&sct=1&seg=1&dl=https%3A%2F%2Fthesocialpickle.web.app%2F&dt=The%20Social%20Pickle%20-%20Connect%2C%20Play%20%26%20Share%20Pickleball&en=user_engagement&ep.origin=firebase&_et=29598&tfd=30615 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:10:51.842Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "GET https://firestore.googleapis.com/google.firestore.v1.Firestore/Listen/channel?gsessionid=GPYH5jxJ6Fo3yXYphPeyq9P1EQIev8NMK848-yU4pDc&VER=8&database=projects%2Fthe-social-pickle-6be90%2Fdatabases%2F(default)&RID=rpc&SID=wxWKasDJraWJgA77L8DfXQ&AID=0&CI=0&TYPE=xmlhttp&zx=4g3dey6vviht&t=1 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:10:51.844Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-WCJS8GDG0N&gtm=45je57s1h1v9224623140za200zd9224623140&_p=1753845051896&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~104684208~104684211~104948813~105103161~105103163~105124543~105124545&_fid=c1ub-vSV3P7nsmd9DDjNSr&cid=824781079.1753845022&ul=en-us&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B139.0.7258.5%7CNot%253BA%253DBrand%3B99.0.0.0&uamb=0&uam=&uap=macOS&uapv=15.5.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AAAAAAQ&_s=1&sid=1753845022&sct=1&seg=1&dl=https%3A%2F%2Fthesocialpickle.web.app%2F&dt=The%20Social%20Pickle%20-%20Connect%2C%20Play%20%26%20Share%20Pickleball&en=page_view&_ee=1&ep.origin=firebase&tfd=5129 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:10:56.958Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Page Load",
+      "description": "Page did not fully load within 10000ms",
+      "severity": "medium",
+      "timestamp": "2025-07-30T03:11:02.400Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "GET https://firestore.googleapis.com/google.firestore.v1.Firestore/Listen/channel?gsessionid=4Rk0yKIkCNW9SSeGF1bEKCTMhQmN-SYQv0N6zAJ_RCM&VER=8&database=projects%2Fthe-social-pickle-6be90%2Fdatabases%2F(default)&RID=rpc&SID=Z0FvpKJE5lNMBoBKtJTDXQ&AID=0&CI=0&TYPE=xmlhttp&zx=mrvcozoer90y&t=1 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:05.319Z",
+      "url": "https://thesocialpickle.web.app/onboarding",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-WCJS8GDG0N&gtm=45je57s1h1v9224623140za200zd9224623140&_p=1753845051896&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~104684208~104684211~104948813~105103161~105103163~105124543~105124545&_fid=c1ub-vSV3P7nsmd9DDjNSr&cid=824781079.1753845022&ul=en-us&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B139.0.7258.5%7CNot%253BA%253DBrand%3B99.0.0.0&uamb=0&uam=&uap=macOS&uapv=15.5.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AAAAAAQ&_s=2&sid=1753845022&sct=1&seg=1&dl=https%3A%2F%2Fthesocialpickle.web.app%2Fonboarding&dt=The%20Social%20Pickle%20-%20Connect%2C%20Play%20%26%20Share%20Pickleball&en=user_engagement&ep.origin=firebase&_et=13383&tfd=13518 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:05.320Z",
+      "url": "https://thesocialpickle.web.app/onboarding",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-WCJS8GDG0N&gtm=45je57s1h1v9224623140za200zd9224623140&_p=1753845065452&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~104684208~104684211~104898016~104948813~105103161~105103163~105124543~105124545&_fid=c1ub-vSV3P7nsmd9DDjNSr&cid=824781079.1753845022&ul=en-us&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B139.0.7258.5%7CNot%253BA%253DBrand%3B99.0.0.0&uamb=0&uam=&uap=macOS&uapv=15.5.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AAAAAAQ&_s=1&sid=1753845022&sct=1&seg=1&dl=https%3A%2F%2Fthesocialpickle.web.app%2F&dt=The%20Social%20Pickle%20-%20Connect%2C%20Play%20%26%20Share%20Pickleball&en=page_view&_ee=1&ep.origin=firebase&_et=1&tfd=5167 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:10.496Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Page Load",
+      "description": "Page did not fully load within 10000ms",
+      "severity": "medium",
+      "timestamp": "2025-07-30T03:11:15.839Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Authentication",
+      "description": "Login button not found or not visible",
+      "severity": "medium",
+      "timestamp": "2025-07-30T03:11:15.862Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "GET https://firestore.googleapis.com/google.firestore.v1.Firestore/Listen/channel?gsessionid=mcqKmrbk8vrz6sRK9MJsROs4JOU-sNaxxjrbZryl7h0&VER=8&database=projects%2Fthe-social-pickle-6be90%2Fdatabases%2F(default)&RID=rpc&SID=XMSjKKJQaWjTdZ7MqPEOpg&AID=0&CI=0&TYPE=xmlhttp&zx=suc1kpek98kt&t=1 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:16.051Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-WCJS8GDG0N&gtm=45je57s1h1v9224623140za200zd9224623140&_p=1753845065452&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~104684208~104684211~104898016~104948813~105103161~105103163~105124543~105124545&_fid=c1ub-vSV3P7nsmd9DDjNSr&cid=824781079.1753845022&ul=en-us&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B139.0.7258.5%7CNot%253BA%253DBrand%3B99.0.0.0&uamb=0&uam=&uap=macOS&uapv=15.5.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AAAAAAQ&_s=2&sid=1753845022&sct=1&seg=1&dl=https%3A%2F%2Fthesocialpickle.web.app%2F&dt=The%20Social%20Pickle%20-%20Connect%2C%20Play%20%26%20Share%20Pickleball&en=user_engagement&ep.origin=firebase&_et=10568&tfd=10739 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:16.051Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-WCJS8GDG0N&gtm=45je57s1h1v9224623140za200zd9224623140&_p=1753845076094&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~104684208~104684211~104948813~105103161~105103163~105124543~105124545&_fid=c1ub-vSV3P7nsmd9DDjNSr&cid=824781079.1753845022&ul=en-us&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B139.0.7258.5%7CNot%253BA%253DBrand%3B99.0.0.0&uamb=0&uam=&uap=macOS&uapv=15.5.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AAAAAAQ&_s=1&sid=1753845022&sct=1&seg=1&dl=https%3A%2F%2Fthesocialpickle.web.app%2F&dt=The%20Social%20Pickle%20-%20Connect%2C%20Play%20%26%20Share%20Pickleball&en=page_view&_ee=1&ep.origin=firebase&tfd=5151 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:21.138Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Page Load",
+      "description": "Page did not fully load within 10000ms",
+      "severity": "medium",
+      "timestamp": "2025-07-30T03:11:26.573Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Game Creation",
+      "description": "Post a Game button not found or not visible",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:26.596Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "GET https://firestore.googleapis.com/google.firestore.v1.Firestore/Listen/channel?gsessionid=s05K-B1fJ3KHw1QKYYVKPIoedIJutSmHHjI-2JhBCxY&VER=8&database=projects%2Fthe-social-pickle-6be90%2Fdatabases%2F(default)&RID=rpc&SID=SPa0V3hIAsQfOOv6vZKmDQ&AID=0&CI=0&TYPE=xmlhttp&zx=3ug3ohownmvt&t=1 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:26.710Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-WCJS8GDG0N&gtm=45je57s1h1v9224623140za200zd9224623140&_p=1753845076094&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~104684208~104684211~104948813~105103161~105103163~105124543~105124545&_fid=c1ub-vSV3P7nsmd9DDjNSr&cid=824781079.1753845022&ul=en-us&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B139.0.7258.5%7CNot%253BA%253DBrand%3B99.0.0.0&uamb=0&uam=&uap=macOS&uapv=15.5.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AAAAAAQ&_s=2&sid=1753845022&sct=1&seg=1&dl=https%3A%2F%2Fthesocialpickle.web.app%2F&dt=The%20Social%20Pickle%20-%20Connect%2C%20Play%20%26%20Share%20Pickleball&en=user_engagement&ep.origin=firebase&_et=10592&tfd=10744 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:26.711Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-WCJS8GDG0N&gtm=45je57s1h1v9224623140za200zd9224623140&_p=1753845086743&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~104684208~104684211~104948813~105103161~105103163~105124543~105124545&_fid=c1ub-vSV3P7nsmd9DDjNSr&cid=824781079.1753845022&ul=en-us&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B139.0.7258.5%7CNot%253BA%253DBrand%3B99.0.0.0&uamb=0&uam=&uap=macOS&uapv=15.5.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AAAAAAQ&_s=1&sid=1753845022&sct=1&seg=1&dl=https%3A%2F%2Fthesocialpickle.web.app%2F&dt=The%20Social%20Pickle%20-%20Connect%2C%20Play%20%26%20Share%20Pickleball&en=page_view&_ee=1&ep.origin=firebase&tfd=5062 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:31.783Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Page Load",
+      "description": "Page did not fully load within 10000ms",
+      "severity": "medium",
+      "timestamp": "2025-07-30T03:11:37.228Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Game Application",
+      "description": "No \"Request to Join\" buttons found on games page",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:37.245Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-WCJS8GDG0N&gtm=45je57s1h1v9224623140za200zd9224623140&_p=1753845086743&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~104684208~104684211~104948813~105103161~105103163~105124543~105124545&_fid=c1ub-vSV3P7nsmd9DDjNSr&cid=824781079.1753845022&ul=en-us&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B139.0.7258.5%7CNot%253BA%253DBrand%3B99.0.0.0&uamb=0&uam=&uap=macOS&uapv=15.5.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AAAAAAQ&_s=2&sid=1753845022&sct=1&seg=1&dl=https%3A%2F%2Fthesocialpickle.web.app%2F&dt=The%20Social%20Pickle%20-%20Connect%2C%20Play%20%26%20Share%20Pickleball&en=user_engagement&ep.origin=firebase&_et=10591&tfd=10657 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:37.360Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "GET https://firestore.googleapis.com/google.firestore.v1.Firestore/Listen/channel?gsessionid=j-q8bcmAs8YdvVHr-4i7d1D6H13LGyccDFdAfF6WNjk&VER=8&database=projects%2Fthe-social-pickle-6be90%2Fdatabases%2F(default)&RID=rpc&SID=Rr0XUYLNSPLuneYBaUShvA&AID=0&CI=0&TYPE=xmlhttp&zx=a5mlvgkqlbu8&t=1 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:37.360Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-WCJS8GDG0N&gtm=45je57s1h1v9224623140za200zd9224623140&_p=1753845097389&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~104684208~104684211~104948813~105103161~105103163~105124543~105124545&_fid=c1ub-vSV3P7nsmd9DDjNSr&cid=824781079.1753845022&ul=en-us&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B139.0.7258.5%7CNot%253BA%253DBrand%3B99.0.0.0&uamb=0&uam=&uap=macOS&uapv=15.5.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AAAAAAQ&_s=1&sid=1753845022&sct=1&seg=1&dl=https%3A%2F%2Fthesocialpickle.web.app%2F&dt=The%20Social%20Pickle%20-%20Connect%2C%20Play%20%26%20Share%20Pickleball&en=page_view&_ee=1&ep.origin=firebase&tfd=5064 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:42.428Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Page Load",
+      "description": "Page did not fully load within 10000ms",
+      "severity": "medium",
+      "timestamp": "2025-07-30T03:11:47.879Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "My Requests",
+      "description": "My Requests tab not found or not visible",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:47.893Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-WCJS8GDG0N&gtm=45je57s1h1v9224623140za200zd9224623140&_p=1753845097389&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~104684208~104684211~104948813~105103161~105103163~105124543~105124545&_fid=c1ub-vSV3P7nsmd9DDjNSr&cid=824781079.1753845022&ul=en-us&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B139.0.7258.5%7CNot%253BA%253DBrand%3B99.0.0.0&uamb=0&uam=&uap=macOS&uapv=15.5.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AAAAAAQ&_s=2&sid=1753845022&sct=1&seg=1&dl=https%3A%2F%2Fthesocialpickle.web.app%2F&dt=The%20Social%20Pickle%20-%20Connect%2C%20Play%20%26%20Share%20Pickleball&en=user_engagement&ep.origin=firebase&_et=10657&tfd=10725 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:48.073Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "GET https://firestore.googleapis.com/google.firestore.v1.Firestore/Listen/channel?gsessionid=HwQ-7E65Jx_ro7Ih76aANevv6Ia5k3AE8fObN4zdrwA&VER=8&database=projects%2Fthe-social-pickle-6be90%2Fdatabases%2F(default)&RID=rpc&SID=cNS4N97Pl-h8Ibh_BD8bJw&AID=0&CI=0&TYPE=xmlhttp&zx=o0tn4tldsnr3&t=1 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:48.073Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-WCJS8GDG0N&gtm=45je57s1h1v9224623140za200zd9224623140&_p=1753845108111&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~104684208~104684211~104948813~105103161~105103163~105124543~105124545&_fid=c1ub-vSV3P7nsmd9DDjNSr&cid=824781079.1753845022&ul=en-us&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B139.0.7258.5%7CNot%253BA%253DBrand%3B99.0.0.0&uamb=0&uam=&uap=macOS&uapv=15.5.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AAAAAAQ&_s=1&sid=1753845022&sct=1&seg=1&dl=https%3A%2F%2Fthesocialpickle.web.app%2F&dt=The%20Social%20Pickle%20-%20Connect%2C%20Play%20%26%20Share%20Pickleball&en=page_view&_ee=1&ep.origin=firebase&tfd=5141 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:53.158Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Page Load",
+      "description": "Page did not fully load within 10000ms",
+      "severity": "medium",
+      "timestamp": "2025-07-30T03:11:58.593Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Discover Page",
+      "description": "Advanced Matching button not found",
+      "severity": "medium",
+      "timestamp": "2025-07-30T03:11:58.611Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Discover Page",
+      "description": "No player cards found on Discover page",
+      "severity": "medium",
+      "timestamp": "2025-07-30T03:11:58.622Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "GET https://firestore.googleapis.com/google.firestore.v1.Firestore/Listen/channel?gsessionid=Fa4sXH41-bM6W8w20gtprrFj9Ehlk1SXdNtaUNq_GcE&VER=8&database=projects%2Fthe-social-pickle-6be90%2Fdatabases%2F(default)&RID=rpc&SID=T9hoHx99sipcctibIpSUag&AID=0&CI=0&TYPE=xmlhttp&zx=ye0lr7ndd4j5&t=1 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:58.731Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-WCJS8GDG0N&gtm=45je57s1h1v9224623140za200zd9224623140&_p=1753845108111&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~104684208~104684211~104948813~105103161~105103163~105124543~105124545&_fid=c1ub-vSV3P7nsmd9DDjNSr&cid=824781079.1753845022&ul=en-us&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B139.0.7258.5%7CNot%253BA%253DBrand%3B99.0.0.0&uamb=0&uam=&uap=macOS&uapv=15.5.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AAAAAAQ&_s=2&sid=1753845022&sct=1&seg=1&dl=https%3A%2F%2Fthesocialpickle.web.app%2F&dt=The%20Social%20Pickle%20-%20Connect%2C%20Play%20%26%20Share%20Pickleball&en=user_engagement&ep.origin=firebase&_et=10593&tfd=10738 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:11:58.732Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Network Failure",
+      "description": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-WCJS8GDG0N&gtm=45je57s1h1v9224623140za200zd9224623140&_p=1753845118770&gcd=13l3l3l3l1l1&npa=0&dma=0&tag_exp=101509157~103116026~103200004~103233427~104684208~104684211~104948813~105103161~105103163~105124543~105124545&_fid=c1ub-vSV3P7nsmd9DDjNSr&cid=824781079.1753845022&ul=en-us&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B139.0.7258.5%7CNot%253BA%253DBrand%3B99.0.0.0&uamb=0&uam=&uap=macOS&uapv=15.5.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AAAAAAQ&_s=1&sid=1753845022&sct=1&seg=1&dl=https%3A%2F%2Fthesocialpickle.web.app%2F&dt=The%20Social%20Pickle%20-%20Connect%2C%20Play%20%26%20Share%20Pickleball&en=page_view&_ee=1&ep.origin=firebase&tfd=5069 - net::ERR_ABORTED",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:12:03.809Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Page Load",
+      "description": "Page did not fully load within 10000ms",
+      "severity": "medium",
+      "timestamp": "2025-07-30T03:12:09.250Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    },
+    {
+      "type": "Critical Bug",
+      "description": "No Request to Join buttons found",
+      "severity": "high",
+      "timestamp": "2025-07-30T03:12:09.271Z",
+      "url": "https://thesocialpickle.web.app/",
+      "context": {}
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "high",
+      "issue": "Game application flow broken",
+      "recommendation": "Check GameContext.jsx requestToJoinGame function and getUserApplications filtering logic. Verify Firestore listeners are properly set up for user applications."
+    },
+    {
+      "priority": "high",
+      "issue": "Network requests failing",
+      "recommendation": "Check Firebase configuration and network connectivity. Verify API endpoints are working correctly."
+    }
+  ]
+}
