@@ -952,7 +952,7 @@ const Games = memo(({ addAppNotification }) => {
                               navigate('/messages', {
                                 state: {
                                   openChatWithUser: {
-                                    id: game.createdBy,
+                                    id: game.createdById,
                                     name: game.hostName || game.createdBy
                                   }
                                 }
