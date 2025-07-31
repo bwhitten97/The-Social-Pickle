@@ -6,6 +6,7 @@ import TimePicker from '../components/TimePicker';
 import Notification from '../components/Notification';
 import { testFirebaseConnection } from '../services/gameService';
 import { createApplicationNotification } from '../services/notificationService';
+import { userService } from '../services/userService';
 import './Games.css';
 
 const Games = memo(({ addAppNotification }) => {
@@ -41,6 +42,9 @@ const Games = memo(({ addAppNotification }) => {
   const [selectedGame, setSelectedGame] = useState(null);
   const [editingGame, setEditingGame] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [showHostProfileModal, setShowHostProfileModal] = useState(false);
+  const [hostProfile, setHostProfile] = useState(null);
+  const [loadingHostProfile, setLoadingHostProfile] = useState(false);
   const [requestData, setRequestData] = useState({
     playerCount: 1,
     message: ''
@@ -106,6 +110,74 @@ const Games = memo(({ addAppNotification }) => {
   const capitalizeBadge = (text) => {
     if (!text) return text;
     return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+  };
+
+  // Handler for viewing host profile
+  const handleViewHostProfile = async (game) => {
+    if (!game.createdBy) {
+      setNotification({
+        message: 'Host information not available',
+        name: '',
+        emoji: '❌'
+      });
+      return;
+    }
+
+    setLoadingHostProfile(true);
+    setShowHostProfileModal(true);
+
+    try {
+      // Search for user by name since we don't have hostId
+      const searchResult = await userService.searchUsersByName(game.createdBy, 1);
+      
+      if (searchResult.success && searchResult.users.length > 0) {
+        const hostUser = searchResult.users[0];
+        
+        // Get full profile data
+        const profileResult = await userService.getChatUserProfile(hostUser.id);
+        
+        if (profileResult.success && profileResult.user) {
+          setHostProfile(profileResult.user);
+        } else {
+          // Fallback to basic host info from the game
+          setHostProfile({
+            id: null,
+            name: game.createdBy,
+            avatar: userService.generateUserInitials(game.createdBy),
+            skillLevel: null,
+            duprRating: null,
+            availability: [],
+            bio: 'Profile information not available'
+          });
+        }
+      } else {
+        // Fallback to basic host info from the game
+        setHostProfile({
+          id: null,
+          name: game.createdBy,
+          avatar: userService.generateUserInitials(game.createdBy),
+          skillLevel: null,
+          duprRating: null,
+          availability: [],
+          bio: 'Profile information not available'
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching host profile:', error);
+      
+      // Fallback to basic host info
+      setHostProfile({
+        id: null,
+        name: game.createdBy,
+        avatar: userService.generateUserInitials(game.createdBy),
+        skillLevel: null,
+        duprRating: null,
+        availability: [],
+        bio: 'Unable to load profile information'
+      });
+    } finally {
+      setLoadingHostProfile(false);
+    }
   };
 
   
@@ -702,6 +774,12 @@ const Games = memo(({ addAppNotification }) => {
                   </div>
                 </div>
                 <button 
+                  className="games-host-profile-btn"
+                  onClick={() => handleViewHostProfile(game)}
+                >
+                  View Host Profile
+                </button>
+                <button 
                   className={`games-join-btn ${isGameInPast(game) ? 'games-join-btn-disabled' : ''}`}
                   onClick={() => {
                     if (isGameInPast(game)) {
@@ -866,6 +944,27 @@ const Games = memo(({ addAppNotification }) => {
                           {application.status === 'accepted' && '✅ Accepted'}
                           {application.status === 'rejected' && '❌ Rejected'}
                         </span>
+                        
+                        {application.status === 'accepted' && (
+                          <button 
+                            className="games-message-host-btn"
+                            onClick={() => {
+                              navigate('/messages', {
+                                state: {
+                                  openChatWithUser: {
+                                    id: game.createdBy,
+                                    name: game.hostName || game.createdBy
+                                  }
+                                }
+                              });
+                            }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                            Message Host
+                          </button>
+                        )}
                         
                         {application.status === 'pending' && (
                           <button 
@@ -1564,6 +1663,88 @@ const Games = memo(({ addAppNotification }) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Host Profile Modal */}
+      {showHostProfileModal && hostProfile && (
+        <div className="profile-modal-overlay" onClick={() => setShowHostProfileModal(false)}>
+          <div className="profile-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="profile-popup-card">
+              {/* Close button */}
+              <button 
+                className="profile-modal-close" 
+                onClick={() => setShowHostProfileModal(false)}
+                title="Close profile"
+              >
+                ✕
+              </button>
+              
+              {/* Profile Image Section */}
+              <div className="profile-popup-image-section">
+                <div className="profile-popup-image-placeholder">
+                  {hostProfile.profilePicture ? (
+                    <img 
+                      src={hostProfile.profilePicture} 
+                      alt={`${hostProfile.name}'s profile`}
+                      className="profile-popup-image"
+                      onError={(e) => {
+                        // Fallback to initials if image fails to load
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div 
+                    className="profile-popup-initials"
+                    style={{ display: hostProfile.profilePicture ? 'none' : 'flex' }}
+                  >
+                    {hostProfile.avatar}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Profile Details Section */}
+              <div className="profile-popup-details">
+                {loadingHostProfile ? (
+                  <div className="profile-loading">
+                    <p>Loading profile...</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="profile-popup-header">
+                      <h2 className="profile-popup-name">{hostProfile.name}</h2>
+                      {hostProfile.age && <span className="profile-popup-age">Age {hostProfile.age}</span>}
+                      {hostProfile.gender && <span className="profile-popup-gender">{capitalizeBadge(hostProfile.gender)}</span>}
+                    </div>
+                    
+                    {(hostProfile.skillLevel || hostProfile.duprRating) && (
+                      <div className="profile-popup-badges">
+                        {hostProfile.skillLevel && <span className="profile-popup-skill-badge">{capitalizeBadge(hostProfile.skillLevel)}</span>}
+                        {hostProfile.duprRating && hostProfile.duprRating !== 'unrated' && (
+                          <span className="profile-popup-dupr-badge">DUPR {hostProfile.duprRating}</span>
+                        )}
+                      </div>
+                    )}
+                    
+                    {hostProfile.availability && hostProfile.availability.length > 0 && (
+                      <div className="profile-popup-availability">
+                        {hostProfile.availability.map((time, index) => (
+                          <span key={index} className="profile-popup-availability-tag">{capitalizeBadge(time)}</span>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {hostProfile.bio && hostProfile.bio.trim() && (
+                      <div className="profile-popup-bio">
+                        <p>{hostProfile.bio}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
