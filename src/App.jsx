@@ -19,6 +19,7 @@ import { GameProvider, useGameContext } from './context/GameContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { logPlayerLiked, logPlayerPassed, logMatchCreated, logPageView } from './utils/analytics';
 import { config } from './config/app';
+import { notificationService } from './services/notificationService';
 import './App.css';
 import './screens/Profile.css';
 import './components/ProtectedRoute.css';
@@ -55,6 +56,7 @@ function AppContent() {
   const [unreadChatCount, setUnreadChatCount] = useState(INITIAL_UNREAD_CHATS);
   const [notification, setNotification] = useState(null);
   const [appNotifications, setAppNotifications] = useState([]);
+  const [firebaseNotifications, setFirebaseNotifications] = useState([]);
   // Track players who have already swiped right on the current user
   const [playersWhoLikedUser, setPlayersWhoLikedUser] = useState(INITIAL_LIKED_PLAYERS);
   const [userProfile, setUserProfile] = useState({
@@ -288,6 +290,35 @@ function AppContent() {
     showNotification("Feed reset!", "", "🔄", "system");
   };
 
+  // Set up Firebase notifications listener
+  useEffect(() => {
+    if (!user?.id) return;
+
+    console.log('Setting up Firebase notifications listener for user:', user.id);
+    const unsubscribe = notificationService.setupNotificationsListener(
+      user.id,
+      (firebaseNotifs) => {
+        console.log('Firebase notifications received:', firebaseNotifs);
+        // Convert Firebase notifications to app notification format
+        const convertedNotifs = firebaseNotifs.map(notif => ({
+          id: notif.id,
+          message: notif.message,
+          timestamp: notif.createdAt?.toDate?.()?.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: true 
+          }) || 'Now',
+          isRead: notif.read || false,
+          type: notif.type || 'notification',
+          targetUser: user.id // This notification is for the current user
+        }));
+        setFirebaseNotifications(convertedNotifs);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user?.id]);
+
   return (
     <div className="App">
       <Routes>
@@ -404,7 +435,7 @@ function AppContent() {
               <main className="main-content">
                 <ErrorBoundary>
                   <Chat 
-                    appNotifications={appNotifications}
+                    appNotifications={[...firebaseNotifications, ...appNotifications]}
                     onUnreadCountsChange={(chatCount, notificationCount) => {
                       setUnreadChatCount(chatCount);
                       setUnreadNotificationCount(notificationCount);

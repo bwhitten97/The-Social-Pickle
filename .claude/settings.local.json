@@ -20,7 +20,8 @@
       "Bash(python3:*)",
       "Bash(grep:*)",
       "Bash(rg:*)",
-      "Bash(firebase deploy:*)"
+      "Bash(firebase deploy:*)",
+      "Bash(./deploy.sh)"
     ],
     "deny": []
   }

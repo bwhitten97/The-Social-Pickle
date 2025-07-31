@@ -329,6 +329,65 @@ export const GameProvider = ({ children }) => {
   const currentUserName = user?.displayName || user?.name || "Alex Thompson"; // Fallback for development
   const currentUserSkill = user?.skillLevel || "Intermediate";
   
+  // Track previous user ID to detect changes
+  const [previousUserId, setPreviousUserId] = useState(null);
+  
+  // Detect user changes and set up new listeners
+  useEffect(() => {
+    console.log('🔍 USEEFFECT DEBUG: User change effect running', {
+      currentUserId,
+      previousUserId,
+      condition1: currentUserId !== previousUserId,
+      condition2: currentUserId !== "dev-user",
+      condition3: previousUserId === "dev-user",
+      allConditions: currentUserId !== previousUserId && currentUserId !== "dev-user" && previousUserId === "dev-user"
+    });
+    
+    if (currentUserId !== previousUserId && currentUserId !== "dev-user" && previousUserId === "dev-user") {
+      console.log('🔍 USER CHANGE DETECTED: Setting up new listeners', {
+        previousUserId,
+        currentUserId,
+        isAuthenticated
+      });
+      
+      // Clear existing data
+      setApplications([]);
+      setHostApplications([]);
+      
+      // Set up new listeners for the authenticated user
+      if (currentUserId) {
+        console.log('🔍 USER CHANGE: Setting up application listeners for new user:', currentUserId);
+        
+        // Listen for user's own applications
+        const unsubscribeApplications = applicationService.setupUserApplicationsListener(
+          currentUserId, 
+          (applicationsData) => {
+            console.log('🔍 USER CHANGE: Received applications update for new user:', {
+              userId: currentUserId,
+              count: applicationsData.length,
+              applications: applicationsData
+            });
+            setApplications(applicationsData);
+          }
+        );
+        
+        // Listen for applications to games hosted by user
+        const unsubscribeHostApplications = applicationService.setupGameHostApplicationsListener(
+          currentUserId,
+          (hostApplicationsData) => {
+            console.log('🔍 USER CHANGE: Received host applications update for new user:', {
+              userId: currentUserId,
+              count: hostApplicationsData.length
+            });
+            setHostApplications(hostApplicationsData);
+          }
+        );
+      }
+    }
+    
+    setPreviousUserId(currentUserId);
+  }, [currentUserId, previousUserId, isAuthenticated]);
+  
   // Log authentication status for debugging
   console.log('GameContext: User authentication status', {
     isAuthenticated,
@@ -337,6 +396,22 @@ export const GameProvider = ({ children }) => {
     currentUserName,
     userObject: user
   });
+
+  // DIRECT FIX: Check immediately if we should refresh applications
+  if (isAuthenticated && currentUserId !== "dev-user" && isInitialized && applications.length === 0) {
+    console.log('🔧 DIRECT FIX: Conditions met, refreshing applications immediately', currentUserId);
+    
+    // Call directly without useEffect
+    applicationService.getUserApplications(currentUserId).then(result => {
+      console.log('🔧 DIRECT FIX: getUserApplications result:', result);
+      if (result && result.success && result.applications && result.applications.length > 0) {
+        console.log('🔧 DIRECT FIX: Setting applications to:', result.applications);
+        setApplications(result.applications);
+      }
+    }).catch(error => {
+      console.error('🔧 DIRECT FIX: Error getting applications:', error);
+    });
+  }
 
 
   // Initialize Firestore data and set up real-time listeners
@@ -379,13 +454,15 @@ export const GameProvider = ({ children }) => {
             console.log('GameContext: Setting up application listeners for user:', userId);
             
             // Listen for user's own applications
+            console.log('🔍 GAMECONTEXT DEBUG: About to set up applications listener for userId:', userId);
             unsubscribeApplications = applicationService.setupUserApplicationsListener(
               userId, 
               (applicationsData) => {
-                console.log('GameContext: Received applications update:', {
+                console.log('🔍 GAMECONTEXT DEBUG: Applications listener callback fired!', {
                   userId,
                   count: applicationsData.length,
-                  applications: applicationsData
+                  applications: applicationsData,
+                  rawData: applicationsData
                 });
                 setApplications(applicationsData);
                 console.log('GameContext: Applications state updated, new length:', applicationsData.length);

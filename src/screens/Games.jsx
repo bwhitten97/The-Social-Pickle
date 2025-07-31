@@ -5,6 +5,8 @@ import DatePicker from '../components/DatePicker';
 import TimePicker from '../components/TimePicker';
 import Notification from '../components/Notification';
 import { testFirebaseConnection } from '../services/gameService';
+import { createApplicationNotification } from '../services/notificationService';
+import { sendMessageBetweenUsers } from '../services/messageService';
 import './Games.css';
 
 const Games = memo(({ addAppNotification }) => {
@@ -27,7 +29,8 @@ const Games = memo(({ addAppNotification }) => {
     updateGame,
     removeGame,
     updateApplicationStatus,
-    withdrawApplication
+    withdrawApplication,
+    sendMessage
   } = useGameContext();
   
   // Component state
@@ -35,7 +38,11 @@ const Games = memo(({ addAppNotification }) => {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [showManageModal, setShowManageModal] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [showChatWindow, setShowChatWindow] = useState(false);
   const [selectedGame, setSelectedGame] = useState(null);
+  const [editingGame, setEditingGame] = useState(null);
+  const [selectedChatUser, setSelectedChatUser] = useState(null);
   const [notification, setNotification] = useState(null);
   const [requestData, setRequestData] = useState({
     playerCount: 1,
@@ -227,9 +234,31 @@ const Games = memo(({ addAppNotification }) => {
     applicationsCount: applications.length
   });
   
+  // DEBUG: Let's trace every step
+  console.log('🔍 DEBUG STEP 1: Raw data from context', {
+    applicationsArray: applications,
+    applicationsLength: applications.length,
+    currentUserId: currentUserId,
+    currentUserIdType: typeof currentUserId
+  });
+
+  // DEBUG: Let's examine each application
+  applications.forEach((app, index) => {
+    console.log(`🔍 DEBUG STEP 2: Application ${index}:`, {
+      id: app.id,
+      userId: app.userId,
+      playerId: app.playerId,
+      gameId: app.gameId,
+      status: app.status,
+      userIdMatch: app.userId === currentUserId,
+      playerIdMatch: app.playerId === currentUserId,
+      fullApp: app
+    });
+  });
+
   const myApplications = applications.filter(app => app.userId === currentUserId || app.playerId === currentUserId);
   
-  console.log('Games: myApplications computed DIRECTLY', {
+  console.log('🔍 DEBUG STEP 3: Filter result', {
     myApplicationsCount: myApplications.length,
     myApplications,
     currentUserId
@@ -359,7 +388,7 @@ const Games = memo(({ addAppNotification }) => {
     }
     
     try {
-      const message = requestData.message || `I'd like to join this game with ${requestData.playerCount} player${requestData.playerCount > 1 ? 's' : ''}!`;
+      const message = requestData.message || '';
       console.log('Games: About to call requestToJoinGame', { 
         gameId: selectedGame.id, 
         message, 
@@ -750,90 +779,132 @@ const Games = memo(({ addAppNotification }) => {
             
             {/* My Requests Tab */}
             {isInitialized && activeTab === 'requests' && (
-              <div className="my-requests-section">
-                {myApplications.length > 0 ? 
-                  myApplications.map((application) => {
-                    console.log('Games: Rendering application', application);
-                    
-                    // Find the associated game for this application
-                    const game = displayGames.find(g => g.id === application.gameId);
-                    
+              myApplications.length > 0 ? 
+                myApplications.map((application) => {
+                  console.log('Games: Rendering application', application);
+                  
+                  // Find the associated game for this application
+                  const game = displayGames.find(g => g.id === application.gameId);
+                  
+                  if (!game) {
                     return (
-                      <div key={application.id} className="request-card">
-                        <div className="request-header">
-                          <div className="request-game-info">
-                            <h4 className="request-location">{game?.location || 'Unknown Location'}</h4>
-                            <div className="request-details">
-                              <span className="request-datetime">
-                                {formatDate(game?.date || '')} • {formatTime(game?.time || '')}
-                              </span>
-                              <span className="request-host">
-                                Hosted by {game?.createdBy || 'Unknown Host'}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="request-status">
-                            <span className={`status-badge ${application.status}`}>
-                              {application.status === 'pending' && '⏳'}
-                              {application.status === 'accepted' && '✅'}
-                              {application.status === 'rejected' && '❌'}
-                              {' '}
+                      <article key={application.id} className="games-card">
+                        <h3 className="games-card-title">
+                          <svg className="games-location-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                          </svg>
+                          Game Not Found
+                        </h3>
+                        <div className="games-card-content">
+                          <div className="games-details-row">
+                            <span className="games-type-badge">Application ID: {application.id}</span>
+                            <span className={`games-status-badge ${application.status}`}>
                               {application.status}
                             </span>
                           </div>
                         </div>
-                        
-                        {application.message && (
-                          <div className="request-message">
-                            <p>"{application.message}"</p>
-                          </div>
-                        )}
-                        
-                        <div className="request-meta">
-                          <span>{application.playerCount} player{application.playerCount > 1 ? 's' : ''}</span>
-                          {application.appliedAt && (
-                            <span>Applied on {new Date(application.appliedAt.toDate ? application.appliedAt.toDate() : application.appliedAt).toLocaleDateString()}</span>
+                      </article>
+                    );
+                  }
+                  
+                  return (
+                    <article key={application.id} className="games-card">
+                      <h3 className="games-card-title">
+                        <svg className="games-location-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                          <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        {game.location}
+                      </h3>
+                      <div className="games-card-content">
+                        <div className="games-datetime">
+                          <svg className="games-datetime-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                          </svg>
+                          {formatDate(game.date)} • {formatTime(game.time)}
+                        </div>
+                        <div className="games-players">
+                          <svg className="games-players-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                          </svg>
+                          {game.totalSpots - game.openSpots} / {game.totalSpots} players
+                        </div>
+                        <div className="games-details-row">
+                          <span className="games-type-badge">{capitalizeBadge(game.gameType)}</span>
+                          <span className="games-type-badge">{capitalizeBadge(game.skillLevel)}</span>
+                          {game.duprRating && game.duprRating !== 'unrated' && (
+                            <span className="games-dupr-badge">DUPR {game.duprRating}</span>
+                          )}
+                          {game.price && (
+                            <span className="games-price-badge">${game.price}</span>
                           )}
                         </div>
                         
-                        {application.status === 'pending' && (
-                          <div className="request-actions">
-                            <button 
-                              className="withdraw-btn"
-                              onClick={async () => {
-                                if (window.confirm('Are you sure you want to withdraw this application?')) {
-                                  try {
-                                    await withdrawApplication(application.id);
-                                    setNotification({
-                                      message: 'Application withdrawn',
-                                      name: '',
-                                      emoji: '✅'
-                                    });
-                                  } catch (error) {
-                                    console.error('Error withdrawing application:', error);
-                                    setNotification({
-                                      message: 'Failed to withdraw application',
-                                      name: '',
-                                      emoji: '❌'
-                                    });
-                                  }
-                                }
-                              }}
-                            >
-                              Withdraw
-                            </button>
-                          </div>
+                        {game.description && (
+                          <p className="games-description">{game.description}</p>
                         )}
                       </div>
-                    );
-                  })
-                 : 
-                  <div className="games-empty-state">
-                    <h3>No requests yet</h3>
-                    <p>Apply to games to see your requests here!</p>
-                  </div>
-                }
-              </div>
+                      
+                      <div className="games-button-group">
+                        <span className={`games-status-badge ${application.status}`}>
+                          {application.status === 'pending' && (
+                            <>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12,6 12,12 16,14"/>
+                              </svg>
+                              Pending
+                            </>
+                          )}
+                          {application.status === 'accepted' && '✅ Accepted'}
+                          {application.status === 'rejected' && '❌ Rejected'}
+                        </span>
+                        
+                        {application.status === 'pending' && (
+                          <button 
+                            className="games-withdraw-btn"
+                            onClick={async () => {
+                              if (window.confirm('Are you sure you want to withdraw this application?')) {
+                                try {
+                                  await withdrawApplication(application.id);
+                                  setNotification({
+                                    message: 'Application withdrawn',
+                                    name: '',
+                                    emoji: '✅'
+                                  });
+                                } catch (error) {
+                                  console.error('Error withdrawing application:', error);
+                                  setNotification({
+                                    message: 'Failed to withdraw application',
+                                    name: '',
+                                    emoji: '❌'
+                                  });
+                                }
+                              }
+                            }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M16 12L8 12M12 8L8 12L12 16"/>
+                            </svg>
+                            Withdraw
+                          </button>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })
+               : 
+                <div className="games-empty-state">
+                  <h3>No requests yet</h3>
+                  <p>Apply to games to see your requests here!</p>
+                </div>
             )}
           </section>
         </div>
@@ -1078,8 +1149,9 @@ const Games = memo(({ addAppNotification }) => {
                   <button 
                     className="manage-btn edit-btn"
                     onClick={() => {
-                      // TODO: Implement edit functionality
-                      console.log('Edit game clicked');
+                      setShowManageModal(false);
+                      setShowEditForm(true);
+                      setEditingGame(selectedGame);
                     }}
                   >
                     Edit Details
@@ -1153,6 +1225,29 @@ const Games = memo(({ addAppNotification }) => {
                                       name: application.playerName || application.applicantName || '',
                                       emoji: '❌'
                                     });
+                                    
+                                    // Create Firebase notification for the applicant
+                                    try {
+                                      await createApplicationNotification(
+                                        application.playerId,
+                                        currentUserName,
+                                        {
+                                          id: selectedGame.id,
+                                          date: formatDate(selectedGame.date),
+                                          time: formatTime(selectedGame.time),
+                                          hostId: currentUserId
+                                        },
+                                        'rejected'
+                                      );
+                                    } catch (error) {
+                                      console.error('Error creating notification:', error);
+                                    }
+                                    
+                                    // Also add to local notifications for immediate feedback
+                                    if (addAppNotification) {
+                                      const notificationMessage = `${currentUserName} rejected your application for their game on ${formatDate(selectedGame.date)} at ${formatTime(selectedGame.time)}`;
+                                      addAppNotification(notificationMessage, 'application', application.playerId);
+                                    }
                                   } else {
                                     throw new Error(result.message || 'Failed to reject application');
                                   }
@@ -1172,14 +1267,60 @@ const Games = memo(({ addAppNotification }) => {
                               className="action-btn accept-btn"
                               onClick={async () => {
                                 try {
-                                  console.log('Games: Accepting application', { applicationId: application.id, playerName: application.playerName });
+                                  console.log('Games: Accepting application', { 
+                                    applicationId: application.id, 
+                                    playerName: application.playerName,
+                                    gameId: selectedGame.id,
+                                    currentApplications: getGameApplications(selectedGame.id)
+                                  });
                                   const result = await updateApplicationStatus(application.id, 'accepted');
+                                  console.log('Games: Accept result', result);
                                   if (result.success) {
                                     setNotification({
                                       message: 'Application accepted!',
                                       name: application.playerName || application.applicantName || '',
                                       emoji: '✅'
                                     });
+                                    
+                                    // Create Firebase notification for the applicant
+                                    try {
+                                      console.log('🔍 GAMES: Creating Firebase notification for accept', {
+                                        applicantId: application.playerId,
+                                        hostName: currentUserName,
+                                        gameData: {
+                                          id: selectedGame.id,
+                                          date: formatDate(selectedGame.date),
+                                          time: formatTime(selectedGame.time),
+                                          hostId: currentUserId
+                                        }
+                                      });
+                                      
+                                      const notificationResult = await createApplicationNotification(
+                                        application.playerId,
+                                        currentUserName,
+                                        {
+                                          id: selectedGame.id,
+                                          date: formatDate(selectedGame.date),
+                                          time: formatTime(selectedGame.time),
+                                          hostId: currentUserId
+                                        },
+                                        'accepted'
+                                      );
+                                      
+                                      console.log('🔍 GAMES: Firebase notification result', notificationResult);
+                                    } catch (error) {
+                                      console.error('🔍 GAMES: Error creating notification:', error);
+                                    }
+                                    
+                                    // Also add to local notifications for immediate feedback
+                                    if (addAppNotification) {
+                                      const notificationMessage = `${currentUserName} accepted you into their game on ${formatDate(selectedGame.date)} at ${formatTime(selectedGame.time)}`;
+                                      addAppNotification(notificationMessage, 'application', application.playerId);
+                                    }
+                                    
+                                    // Force refresh of applications
+                                    const updatedApps = getGameApplications(selectedGame.id);
+                                    console.log('Games: Updated applications after accept', updatedApps);
                                   } else {
                                     throw new Error(result.message || 'Failed to accept application');
                                   }
@@ -1197,6 +1338,24 @@ const Games = memo(({ addAppNotification }) => {
                             </button>
                           </div>
                         )}
+                        
+                        {application.status === 'accepted' && (
+                          <div className="applicant-actions">
+                            <button 
+                              className="action-btn message-btn"
+                              onClick={() => {
+                                setShowManageModal(false);
+                                setShowChatWindow(true);
+                                setSelectedChatUser({
+                                  id: application.playerId,
+                                  name: application.playerName || application.applicantName
+                                });
+                              }}
+                            >
+                              Message {application.playerName || application.applicantName}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))
                   ) : (
@@ -1205,6 +1364,279 @@ const Games = memo(({ addAppNotification }) => {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Game Modal */}
+      {showEditForm && editingGame && (
+        <div className="games-modal-overlay" onClick={() => setShowEditForm(false)}>
+          <div className="games-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="games-modal-header">
+              <h2>Edit Game</h2>
+              <button 
+                className="games-close-btn"
+                onClick={() => setShowEditForm(false)}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                const result = await updateGame(editingGame.id, {
+                  location: editingGame.location,
+                  date: editingGame.date,
+                  time: editingGame.time,
+                  skillLevel: editingGame.skillLevel,
+                  gameType: editingGame.gameType,
+                  openSpots: editingGame.openSpots,
+                  totalSpots: editingGame.totalSpots || 4,
+                  description: editingGame.description,
+                  price: editingGame.price
+                });
+                
+                if (result.success) {
+                  setNotification({
+                    message: 'Game updated successfully!',
+                    name: '',
+                    emoji: '✅'
+                  });
+                  setShowEditForm(false);
+                  setEditingGame(null);
+                } else {
+                  setNotification({
+                    message: result.message || 'Failed to update game',
+                    name: '',
+                    emoji: '❌'
+                  });
+                }
+              } catch (error) {
+                console.error('Error updating game:', error);
+                setNotification({
+                  message: 'Failed to update game',
+                  name: '',
+                  emoji: '❌'
+                });
+              }
+            }} className="games-form">
+              <div className="games-form-group">
+                <label>Location *</label>
+                <input
+                  type="text"
+                  value={editingGame.location}
+                  onChange={(e) => setEditingGame({...editingGame, location: e.target.value})}
+                  placeholder="e.g., Central Park Courts"
+                  required
+                />
+              </div>
+              
+              <div className="games-form-row">
+                <div className="games-form-group">
+                  <label>Date *</label>
+                  <DatePicker
+                    value={editingGame.date}
+                    onChange={(date) => setEditingGame({...editingGame, date})}
+                    className="games-form-input"
+                  />
+                </div>
+                
+                <div className="games-form-group">
+                  <label>Time *</label>
+                  <TimePicker
+                    value={editingGame.time}
+                    onChange={(time) => setEditingGame({...editingGame, time})}
+                    className="games-form-input"
+                  />
+                </div>
+              </div>
+              
+              <div className="games-form-row">
+                <div className="games-form-group">
+                  <label>Game Type</label>
+                  <select
+                    value={editingGame.gameType}
+                    onChange={(e) => setEditingGame({...editingGame, gameType: e.target.value})}
+                    className="games-form-select"
+                  >
+                    <option value="singles">Singles</option>
+                    <option value="doubles">Doubles</option>
+                    <option value="mixed-doubles">Mixed Doubles</option>
+                    <option value="round-robin">Round Robin</option>
+                  </select>
+                </div>
+                
+                <div className="games-form-group">
+                  <label>Skill Level</label>
+                  <select
+                    value={editingGame.skillLevel}
+                    onChange={(e) => setEditingGame({...editingGame, skillLevel: e.target.value})}
+                    className="games-form-select"
+                  >
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                    <option value="mixed">Mixed (All Levels)</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="games-form-group">
+                <label>Spots Available</label>
+                <select
+                  value={editingGame.openSpots}
+                  onChange={(e) => setEditingGame({...editingGame, openSpots: parseInt(e.target.value)})}
+                  className="games-form-select"
+                >
+                  <option value={1}>1 Player</option>
+                  <option value={2}>2 Players</option>
+                  <option value={3}>3 Players</option>
+                  <option value={4}>4 Players</option>
+                  <option value={5}>5 Players</option>
+                  <option value={6}>6 Players</option>
+                </select>
+              </div>
+              
+              <div className="games-form-group">
+                <label>Price (Optional)</label>
+                <input
+                  type="number"
+                  value={editingGame.price}
+                  onChange={(e) => setEditingGame({...editingGame, price: e.target.value})}
+                  placeholder="0"
+                  min="0"
+                />
+              </div>
+              
+              <div className="games-form-group">
+                <label>Description (Optional)</label>
+                <textarea
+                  value={editingGame.description}
+                  onChange={(e) => setEditingGame({...editingGame, description: e.target.value})}
+                  placeholder="Add any additional details about your game..."
+                  rows={3}
+                  className="games-form-textarea"
+                />
+              </div>
+              
+              <div className="games-modal-footer">
+                <button
+                  type="button"
+                  className="games-cancel-btn"
+                  onClick={() => setShowEditForm(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="games-submit-btn"
+                >
+                  Update Game
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Chat Window Modal */}
+      {showChatWindow && selectedChatUser && (
+        <div className="games-modal-overlay" onClick={() => setShowChatWindow(false)}>
+          <div className="games-chat-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="unified-chat">
+              {/* Header */}
+              <div className="unified-chat-header">
+                <button className="back-btn" onClick={() => setShowChatWindow(false)}>
+                  ←
+                </button>
+                <div className="chat-avatar">
+                  {selectedChatUser.name?.charAt(0)?.toUpperCase()}
+                </div>
+                <div className="chat-details">
+                  <h3>{selectedChatUser.name}</h3>
+                  <span className="status">Active now</span>
+                </div>
+              </div>
+
+              {/* Messages */}
+              <div className="unified-messages">
+                <div className="chat-start-message">
+                  <p>Start a conversation with {selectedChatUser.name}</p>
+                </div>
+              </div>
+
+              {/* Input */}
+              <div className="unified-input">
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  const input = e.target.elements.message;
+                  const messageText = input.value.trim();
+                  
+                  if (messageText) {
+                    console.log('🔍 GAMES: Attempting to send message', {
+                      fromUserId: currentUserId,
+                      fromUserName: currentUserName,
+                      toUserId: selectedChatUser.id,
+                      toUserName: selectedChatUser.name,
+                      messageText
+                    });
+                    
+                    try {
+                      const result = await sendMessageBetweenUsers(
+                        currentUserId,
+                        currentUserName,
+                        selectedChatUser.id,
+                        selectedChatUser.name,
+                        messageText
+                      );
+                      
+                      console.log('🔍 GAMES: Firebase message result', result);
+                      
+                      if (result.success) {
+                        setNotification({
+                          message: `Message sent to ${selectedChatUser.name}`,
+                          name: '',
+                          emoji: '💬'
+                        });
+                        input.value = '';
+                        
+                        // Also send to local GameContext for immediate feedback
+                        console.log('🔍 GAMES: Sending to local GameContext as well');
+                        sendMessage(selectedChatUser.name, messageText);
+                      } else {
+                        console.error('🔍 GAMES: Firebase message failed', result);
+                        setNotification({
+                          message: 'Failed to send message',
+                          name: '',
+                          emoji: '❌'
+                        });
+                      }
+                    } catch (error) {
+                      console.error('🔍 GAMES: Error sending message:', error);
+                      setNotification({
+                        message: 'Failed to send message',
+                        name: '',
+                        emoji: '❌'
+                      });
+                    }
+                  }
+                }}>
+                  <input
+                    name="message"
+                    type="text"
+                    placeholder="Type a message..."
+                    className="input-field"
+                  />
+                  <button 
+                    type="submit" 
+                    className="send-button"
+                  >
+                    →
+                  </button>
+                </form>
               </div>
             </div>
           </div>

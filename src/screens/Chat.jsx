@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { useGameContext } from '../context/GameContext';
 import ChatRoom from '../components/ChatRoom';
 import Notification from '../components/Notification';
+import { messageService, sendMessageBetweenUsers } from '../services/messageService';
+import { notificationService } from '../services/notificationService';
 import './Chat.css';
 
 // SwipeableChat component for swipe-to-delete functionality
@@ -153,14 +155,44 @@ SwipeableChatCard.displayName = 'SwipeableChatCard';
 
 const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, onShowNotification }) => {
   const { getConversation, currentUserName, deleteChat } = useGameContext();
+  const { user } = useAuth();
   const [newMessage, setNewMessage] = useState('');
+  const [firebaseMessages, setFirebaseMessages] = useState([]);
   
-  // Load actual conversation from GameContext
-  const conversationMessages = getConversation(chat.name);
+  // Set up Firebase conversation listener for Firebase chats
+  useEffect(() => {
+    if (!chat.isFirebaseChat || !user?.id || !chat.chatRoom) return;
+    
+    const otherUserId = chat.chatRoom.participants.find(id => id !== user.id);
+    if (!otherUserId) return;
+    
+    console.log('🔍 DIRECT_CHAT: Setting up conversation listener', {
+      userId1: user.id,
+      userId2: otherUserId,
+      chatId: chat.id
+    });
+    
+    const unsubscribe = messageService.setupConversationListener(
+      user.id,
+      otherUserId,
+      (messages) => {
+        console.log('🔍 DIRECT_CHAT: Received messages for conversation:', messages.length);
+        setFirebaseMessages(messages);
+      }
+    );
+    
+    return () => unsubscribe();
+  }, [chat.isFirebaseChat, chat.chatRoom, user?.id, chat.id]);
   
-  // Convert GameContext messages to display format
+  // Load conversation - use Firebase for Firebase chats, GameContext for others
+  const conversationMessages = chat.isFirebaseChat ? [] : getConversation(chat.name);
+  
+  // Convert messages to display format - use Firebase messages for Firebase chats
   const [messages, setMessages] = useState(() => {
-    if (conversationMessages.length > 0) {
+    if (chat.isFirebaseChat) {
+      // For Firebase chats, start with empty array - will be populated by useEffect
+      return [];
+    } else if (conversationMessages.length > 0) {
       return conversationMessages.map(msg => ({
         id: msg.id,
         from: msg.from,
@@ -182,6 +214,20 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
     }
   });
 
+  // Update messages when Firebase messages change
+  useEffect(() => {
+    if (chat.isFirebaseChat && firebaseMessages.length > 0) {
+      const formattedMessages = firebaseMessages.map(msg => ({
+        id: msg.id,
+        from: msg.fromUserName,
+        message: msg.message,
+        timestamp: msg.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        isCurrentUser: msg.fromUserId === user?.id
+      }));
+      setMessages(formattedMessages);
+    }
+  }, [firebaseMessages, chat.isFirebaseChat, user?.id]);
+
   // Update messages when conversation changes (new messages from matches page)
   useEffect(() => {
     const updatedConversation = getConversation(chat.name);
@@ -197,26 +243,64 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
     }
   }, [chat.name, currentUserName, getConversation]);
 
-  const handleSendMessage = useCallback((e) => {
+  const handleSendMessage = useCallback(async (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
-    const message = {
-      id: Date.now(),
-      from: currentUserName,
-      message: newMessage.trim(),
-      timestamp: new Date().toISOString(),
-      isCurrentUser: true
-    };
+    const messageText = newMessage.trim();
+    
+    if (chat.isFirebaseChat && chat.chatRoom && user?.id) {
+      // Firebase chat - send through Firebase
+      const otherUserId = chat.chatRoom.participants.find(id => id !== user.id);
+      if (otherUserId) {
+        console.log('🔍 DIRECT_CHAT: Sending Firebase message', {
+          fromUserId: user.id,
+          fromUserName: currentUserName,
+          toUserId: otherUserId,
+          toUserName: chat.name,
+          message: messageText
+        });
+        
+        try {
+          const result = await sendMessageBetweenUsers(
+            user.id,
+            currentUserName,
+            otherUserId,
+            chat.name,
+            messageText
+          );
+          
+          console.log('🔍 DIRECT_CHAT: Firebase message result:', result);
+          
+          if (result.success) {
+            // Message will be added to UI automatically via the listener
+            setNewMessage('');
+          } else {
+            console.error('🔍 DIRECT_CHAT: Failed to send message:', result.error);
+          }
+        } catch (error) {
+          console.error('🔍 DIRECT_CHAT: Error sending message:', error);
+        }
+      }
+    } else {
+      // GameContext chat - use old method
+      const message = {
+        id: Date.now(),
+        from: currentUserName,
+        message: messageText,
+        timestamp: new Date().toISOString(),
+        isCurrentUser: true
+      };
 
-    setMessages(prev => [...prev, message]);
-    setNewMessage('');
+      setMessages(prev => [...prev, message]);
+      setNewMessage('');
 
-    // If this is a real chat, also send through the context
-    if (onSendMessage && !chat.isDummy) {
-      onSendMessage(chat.name, newMessage.trim());
+      // If this is a real chat, also send through the context
+      if (onSendMessage && !chat.isDummy) {
+        onSendMessage(chat.name, messageText);
+      }
     }
-  }, [newMessage, currentUserName, chat.isDummy, chat.name, onSendMessage]);
+  }, [newMessage, currentUserName, chat, user, onSendMessage]);
 
   const formatTime = useCallback((timestamp) => {
     const date = new Date(timestamp);
@@ -317,58 +401,49 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
   const [realNotifications, setRealNotifications] = useState([]);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
   
-  // Fetch real chats from Firestore
-  const fetchChats = async () => {
-    if (!user) {
-      setIsLoadingChats(false);
-      return;
-    }
-
-    try {
-      setIsLoadingChats(true);
-      
-      // For now, just use empty array while Firebase collections are being set up
-      // TODO: Implement real Firestore queries when collections exist
-      setRealChats([]);
-      
-    } catch (error) {
-      setRealChats([]);
-    } finally {
-      setIsLoadingChats(false);
-    }
-  };
-
-  // Fetch real notifications from Firestore
-  const fetchNotifications = async () => {
-    if (!user) {
-      setIsLoadingNotifications(false);
-      return;
-    }
-
-    try {
-      setIsLoadingNotifications(true);
-      
-      // For now, just use empty array while Firebase collections are being set up
-      // TODO: Implement real Firestore queries when collections exist
-      setRealNotifications([]);
-      
-    } catch (error) {
-      setRealNotifications([]);
-    } finally {
-      setIsLoadingNotifications(false);
-    }
-  };
-
-  // Fetch data when component mounts or user changes
+  // Set up real-time listeners for chats and notifications
   useEffect(() => {
-    if (user) {
-      fetchChats();
-      fetchNotifications();
-    } else {
+    if (!user?.id) {
       setIsLoadingChats(false);
       setIsLoadingNotifications(false);
+      return;
     }
-  }, [user]);
+
+    console.log('🔍 CHAT: Setting up listeners for user:', user.id);
+    console.log('🔍 CHAT: User object:', user);
+    
+    // Reset loading states
+    setIsLoadingChats(true);
+    setIsLoadingNotifications(true);
+    
+    // Set up chat rooms listener
+    const unsubscribeChats = messageService.setupChatRoomsListener(
+      user.id,
+      (chatRooms) => {
+        console.log('🔍 CHAT: Received chat rooms callback with:', chatRooms.length, 'rooms');
+        console.log('🔍 CHAT: Chat rooms data:', chatRooms);
+        setRealChats(chatRooms);
+        setIsLoadingChats(false);
+      }
+    );
+
+    // Set up notifications listener  
+    const unsubscribeNotifications = notificationService.setupNotificationsListener(
+      user.id,
+      (notifications) => {
+        console.log('🔍 CHAT: Received notifications callback with:', notifications.length, 'notifications');
+        console.log('🔍 CHAT: Notifications data:', notifications);
+        setRealNotifications(notifications);
+        setIsLoadingNotifications(false);
+      }
+    );
+
+    return () => {
+      unsubscribeChats();
+      unsubscribeNotifications();
+    };
+  }, [user?.id]);
+
 
   // Filter appNotifications to only show ones for current user or general notifications
   const userNotifications = useMemo(() => {
@@ -436,6 +511,20 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
   
   // Combine real chats, game chats and dummy chats
   const chatsToShow = useMemo(() => {
+    // Transform realChats (from Firebase messages) to UI format
+    const firebaseChats = realChats.map(room => ({
+      id: room.id,
+      name: room.gameName || room.otherUserName,
+      lastMessage: room.lastMessage || 'Start a conversation',
+      timestamp: formatTimestamp(room.lastMessageTime),
+      avatar: getAvatarEmoji(room.gameName || room.otherUserName),
+      unread: chatUnreadCounts[room.id] || 0,
+      isDummy: false,
+      isGameChat: false,
+      isFirebaseChat: true,
+      chatRoom: room
+    }));
+
     const gameChats = userChatRooms.map(room => ({
       id: room.gameId || room.id,
       name: room.gameName,
@@ -448,7 +537,7 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
       chatRoom: room
     }));
     
-    const allChats = [...realChats, ...gameChats];
+    const allChats = [...firebaseChats, ...gameChats];
     
     // Remove duplicates based on name
     const uniqueChats = allChats.filter((chat, index, self) => 

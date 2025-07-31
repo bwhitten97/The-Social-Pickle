@@ -243,11 +243,22 @@ export const applicationService = {
       });
       
       const docRef = await addDoc(applicationsRef, newApplication);
-      console.log('applicationService: Successfully added to Firestore', { 
-        id: docRef.id,
-        path: docRef.path,
+      console.log('🔍 APPLICATION DEBUG: addDoc returned', { 
+        docRef,
+        docRefId: docRef.id,
+        docRefPath: docRef.path,
         applicationData: newApplication
       });
+      
+      // Verify the document was actually created
+      const verifyRef = doc(db, 'applications', docRef.id);
+      const verifySnap = await getDoc(verifyRef);
+      console.log('🔍 APPLICATION DEBUG: Verification check', {
+        docId: docRef.id,
+        exists: verifySnap.exists(),
+        data: verifySnap.exists() ? verifySnap.data() : null
+      });
+      
       return { success: true, id: docRef.id };
     } catch (error) {
       console.error('applicationService: Error creating application:', {
@@ -351,15 +362,18 @@ export const applicationService = {
 
   // Set up real-time listener for user applications
   setupUserApplicationsListener(userId, callback) {
-    console.log('applicationService: Setting up listener for userId:', userId);
+    console.log('🔍 LISTENER DEBUG: Setting up listener for userId:', userId);
     const applicationsRef = collection(db, 'applications');
     const q = query(applicationsRef, where('playerId', '==', userId));
     
+    console.log('🔍 LISTENER DEBUG: Query created, about to call onSnapshot');
+    
     return onSnapshot(q, (snapshot) => {
-      console.log('applicationService: setupUserApplicationsListener snapshot received', {
+      console.log('🔍 LISTENER DEBUG: onSnapshot callback fired!', {
         userId,
         snapshotSize: snapshot.size,
-        snapshotEmpty: snapshot.empty
+        snapshotEmpty: snapshot.empty,
+        docs: snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }))
       });
       
       const applications = [];
