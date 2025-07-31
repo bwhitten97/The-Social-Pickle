@@ -6,7 +6,6 @@ import TimePicker from '../components/TimePicker';
 import Notification from '../components/Notification';
 import { testFirebaseConnection } from '../services/gameService';
 import { createApplicationNotification } from '../services/notificationService';
-import { sendMessageBetweenUsers } from '../services/messageService';
 import './Games.css';
 
 const Games = memo(({ addAppNotification }) => {
@@ -39,10 +38,8 @@ const Games = memo(({ addAppNotification }) => {
   const [showManageModal, setShowManageModal] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
-  const [showChatWindow, setShowChatWindow] = useState(false);
   const [selectedGame, setSelectedGame] = useState(null);
   const [editingGame, setEditingGame] = useState(null);
-  const [selectedChatUser, setSelectedChatUser] = useState(null);
   const [notification, setNotification] = useState(null);
   const [requestData, setRequestData] = useState({
     playerCount: 1,
@@ -76,7 +73,9 @@ const Games = memo(({ addAppNotification }) => {
   // Helper function to format date
   const formatDate = (dateString) => {
     try {
-      const date = new Date(dateString);
+      // Parse the date string as local date to avoid timezone issues
+      const [year, month, day] = dateString.split('-');
+      const date = new Date(year, month - 1, day);
       const options = { 
         weekday: 'long', 
         month: 'long', 
@@ -108,6 +107,7 @@ const Games = memo(({ addAppNotification }) => {
     if (!text) return text;
     return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
   };
+
   
   // Helper function to check if a game is in the past
   const isGameInPast = (game) => {
@@ -1132,9 +1132,31 @@ const Games = memo(({ addAppNotification }) => {
               {/* Game Details Section */}
               <div className="manage-game-section">
                 <div className="game-info">
-                  <h4>{selectedGame.location}</h4>
-                  <p>{formatDate(selectedGame.date)} • {formatTime(selectedGame.time)}</p>
-                  <p>{selectedGame.totalSpots - selectedGame.openSpots} / {selectedGame.totalSpots} players</p>
+                  <h4 className="game-info-title">
+                    <svg className="games-location-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    {selectedGame.location}
+                  </h4>
+                  <div className="game-info-datetime">
+                    <svg className="games-datetime-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                      <line x1="16" y1="2" x2="16" y2="6"/>
+                      <line x1="8" y1="2" x2="8" y2="6"/>
+                      <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    {formatDate(selectedGame.date)} • {formatTime(selectedGame.time)}
+                  </div>
+                  <div className="game-info-players">
+                    <svg className="games-players-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                      <circle cx="9" cy="7" r="4"/>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    {selectedGame.totalSpots - selectedGame.openSpots} / {selectedGame.totalSpots} players
+                  </div>
                   <div className="game-badges">
                     <span className="games-type-badge">{capitalizeBadge(selectedGame.gameType)}</span>
                     <span className="games-type-badge">{capitalizeBadge(selectedGame.skillLevel)}</span>
@@ -1345,10 +1367,14 @@ const Games = memo(({ addAppNotification }) => {
                               className="action-btn message-btn"
                               onClick={() => {
                                 setShowManageModal(false);
-                                setShowChatWindow(true);
-                                setSelectedChatUser({
-                                  id: application.playerId,
-                                  name: application.playerName || application.applicantName
+                                // Navigate to Chat page and open chat with this user
+                                navigate('/messages', {
+                                  state: {
+                                    openChatWithUser: {
+                                      id: application.playerId,
+                                      name: application.playerName || application.applicantName
+                                    }
+                                  }
                                 });
                               }}
                             >
@@ -1522,7 +1548,13 @@ const Games = memo(({ addAppNotification }) => {
                 />
               </div>
               
-              <div className="games-modal-footer">
+              <div className="games-form-actions">
+                <button
+                  type="submit"
+                  className="games-submit-btn"
+                >
+                  Update Game
+                </button>
                 <button
                   type="button"
                   className="games-cancel-btn"
@@ -1530,115 +1562,8 @@ const Games = memo(({ addAppNotification }) => {
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="games-submit-btn"
-                >
-                  Update Game
-                </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Chat Window Modal */}
-      {showChatWindow && selectedChatUser && (
-        <div className="games-modal-overlay" onClick={() => setShowChatWindow(false)}>
-          <div className="games-chat-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="unified-chat">
-              {/* Header */}
-              <div className="unified-chat-header">
-                <button className="back-btn" onClick={() => setShowChatWindow(false)}>
-                  ←
-                </button>
-                <div className="chat-avatar">
-                  {selectedChatUser.name?.charAt(0)?.toUpperCase()}
-                </div>
-                <div className="chat-details">
-                  <h3>{selectedChatUser.name}</h3>
-                  <span className="status">Active now</span>
-                </div>
-              </div>
-
-              {/* Messages */}
-              <div className="unified-messages">
-                <div className="chat-start-message">
-                  <p>Start a conversation with {selectedChatUser.name}</p>
-                </div>
-              </div>
-
-              {/* Input */}
-              <div className="unified-input">
-                <form onSubmit={async (e) => {
-                  e.preventDefault();
-                  const input = e.target.elements.message;
-                  const messageText = input.value.trim();
-                  
-                  if (messageText) {
-                    console.log('🔍 GAMES: Attempting to send message', {
-                      fromUserId: currentUserId,
-                      fromUserName: currentUserName,
-                      toUserId: selectedChatUser.id,
-                      toUserName: selectedChatUser.name,
-                      messageText
-                    });
-                    
-                    try {
-                      const result = await sendMessageBetweenUsers(
-                        currentUserId,
-                        currentUserName,
-                        selectedChatUser.id,
-                        selectedChatUser.name,
-                        messageText
-                      );
-                      
-                      console.log('🔍 GAMES: Firebase message result', result);
-                      
-                      if (result.success) {
-                        setNotification({
-                          message: `Message sent to ${selectedChatUser.name}`,
-                          name: '',
-                          emoji: '💬'
-                        });
-                        input.value = '';
-                        
-                        // Also send to local GameContext for immediate feedback
-                        console.log('🔍 GAMES: Sending to local GameContext as well');
-                        sendMessage(selectedChatUser.name, messageText);
-                      } else {
-                        console.error('🔍 GAMES: Firebase message failed', result);
-                        setNotification({
-                          message: 'Failed to send message',
-                          name: '',
-                          emoji: '❌'
-                        });
-                      }
-                    } catch (error) {
-                      console.error('🔍 GAMES: Error sending message:', error);
-                      setNotification({
-                        message: 'Failed to send message',
-                        name: '',
-                        emoji: '❌'
-                      });
-                    }
-                  }
-                }}>
-                  <input
-                    name="message"
-                    type="text"
-                    placeholder="Type a message..."
-                    className="input-field"
-                  />
-                  <button 
-                    type="submit" 
-                    className="send-button"
-                  >
-                    →
-                  </button>
-                </form>
-              </div>
-            </div>
           </div>
         </div>
       )}

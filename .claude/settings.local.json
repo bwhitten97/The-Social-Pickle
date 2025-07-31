@@ -21,7 +21,9 @@
       "Bash(grep:*)",
       "Bash(rg:*)",
       "Bash(firebase deploy:*)",
-      "Bash(./deploy.sh)"
+      "Bash(./deploy.sh)",
+      "Bash(sed:*)",
+      "Bash(awk:*)"
     ],
     "deny": []
   }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { collection, query, where, getDocs, orderBy, onSnapshot, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
@@ -509,6 +510,7 @@ DirectMessageChat.displayName = 'DirectMessageChat';
 
 const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotificationsRead }) => {
   const { user } = useAuth();
+  const location = useLocation();
   const { getUserChatRooms, getConversation, sendMessage, currentUserName, deleteChat, getMessages } = useGameContext();
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [selectedChatName, setSelectedChatName] = useState(null);
@@ -566,6 +568,33 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
     };
   }, [user?.id]);
 
+  // Handle navigation state for opening chat with specific user (from Games page)
+  useEffect(() => {
+    try {
+      if (location.state?.openChatWithUser) {
+        const openChatUser = location.state.openChatWithUser;
+        console.log('🔍 CHAT: Opening chat with user from navigation:', openChatUser);
+        
+        if (openChatUser.id && openChatUser.name) {
+          // Set up the chat immediately
+          setSelectedChatId(openChatUser.id);
+          setSelectedChatName(openChatUser.name);
+          setActiveTab('chat');
+          
+          // Delay clearing the navigation state to ensure chat is set up
+          setTimeout(() => {
+            if (window.history.replaceState) {
+              window.history.replaceState({}, '', window.location.pathname);
+            }
+          }, 100);
+        } else {
+          console.warn('🔍 CHAT: Invalid openChatWithUser data:', openChatUser);
+        }
+      }
+    } catch (error) {
+      console.error('🔍 CHAT: Error handling navigation state:', error);
+    }
+  }, [location.state]);
 
   // Filter appNotifications to only show ones for current user or general notifications
   const userNotifications = useMemo(() => {
@@ -724,7 +753,21 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
     }));
     
     // Filter out deleted chats and show real chats only
-    return chatsWithCounts.filter(chat => !deletedChats.has(chat.id));
+    const filteredChats = chatsWithCounts.filter(chat => !deletedChats.has(chat.id));
+    
+    // Sort by most recent conversation first (like iMessage)
+    return filteredChats.sort((a, b) => {
+      // Extract the actual timestamp from the chatRoom object for accurate sorting
+      const aTime = a.chatRoom?.lastMessageTime || a.chatRoom?.createdAt || new Date(0);
+      const bTime = b.chatRoom?.lastMessageTime || b.chatRoom?.createdAt || new Date(0);
+      
+      // Convert Firebase Timestamps to Date objects if needed
+      const aDate = aTime.toDate ? aTime.toDate() : new Date(aTime);
+      const bDate = bTime.toDate ? bTime.toDate() : new Date(bTime);
+      
+      // Sort in descending order (most recent first)
+      return bDate.getTime() - aDate.getTime();
+    });
   }, [realChats, userChatRooms, formatTimestamp, getUserInitials, chatUnreadCounts, deletedChats]);
 
   const handleChatSelect = useCallback(async (chat) => {
@@ -953,28 +996,44 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
 
   // If a chat is selected, show the appropriate chat component
   if (selectedChatId) {
-    const selectedChat = chatsToShow.find(chat => chat.id === selectedChatId);
+    let selectedChat = chatsToShow.find(chat => chat.id === selectedChatId);
+    
+    // If chat not found in existing chats, create a new chat object for navigation
+    if (!selectedChat && selectedChatName && user?.id) {
+      selectedChat = {
+        id: selectedChatId,
+        name: selectedChatName,
+        avatar: '👤',
+        lastMessage: '',
+        timestamp: new Date(),
+        unreadCount: 0,
+        isDummy: false,
+        isFirebaseChat: true,
+        chatRoom: {
+          participants: [user.id, selectedChatId],
+          createdAt: new Date(),
+          lastMessage: '',
+          lastMessageTimestamp: new Date()
+        }
+      };
+    }
     
     if (selectedChat && selectedChat.isGameChat) {
       // Game chat - use ChatRoom component
       return (
-        <div className="chat-screen">
-          <ChatRoom gameId={selectedChatId} onClose={handleCloseChat} />
-        </div>
+        <ChatRoom gameId={selectedChatId} onClose={handleCloseChat} />
       );
-    } else {
+    } else if (selectedChat) {
       // Direct message chat - use DirectMessageChat component
-    return (
-      <div className="chat-screen">
-          <DirectMessageChat 
-            chat={selectedChat} 
-            onClose={handleCloseChat}
-            onSendMessage={sendMessage}
-            onDeleteChat={handleDeleteChat}
-            onShowNotification={setNotification}
-          />
-      </div>
-    );
+      return (
+        <DirectMessageChat 
+          chat={selectedChat} 
+          onClose={handleCloseChat}
+          onSendMessage={sendMessage}
+          onDeleteChat={handleDeleteChat}
+          onShowNotification={setNotification}
+        />
+      );
     }
   }
 
