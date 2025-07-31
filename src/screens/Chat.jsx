@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import { collection, query, where, getDocs, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, onSnapshot, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useGameContext } from '../context/GameContext';
@@ -14,7 +14,7 @@ const SWIPE_THRESHOLD = 40; // px - minimum swipe distance to trigger action
 const MAX_SWIPE_DISTANCE = 80; // px - maximum swipe distance allowed
 const UNREAD_BADGE_LIMIT = 9; // Maximum number to show in unread badge before showing "9+"
 
-const SwipeableChatCard = memo(({ chat, index, onSelect, onDelete }) => {
+const SwipeableChatCard = memo(({ chat, index, onSelect, onDelete, isEditMode, isSelected, onToggleSelection }) => {
   const [swipeX, setSwipeX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -84,14 +84,17 @@ const SwipeableChatCard = memo(({ chat, index, onSelect, onDelete }) => {
   }, [chat.name, onDelete]);
 
   const handleCardClick = useCallback(() => {
-    if (swipeX > 0) {
+    if (isEditMode) {
+      // In edit mode, toggle selection
+      onToggleSelection(chat.id);
+    } else if (swipeX > 0) {
       // If swiped, close the swipe instead of opening chat
       setSwipeX(0);
     } else {
       // If not swiped, open the chat
       onSelect(chat);
     }
-  }, [swipeX, chat, onSelect]);
+  }, [isEditMode, swipeX, chat, onSelect, onToggleSelection]);
 
   return (
     <div className="swipeable-chat-container">
@@ -114,7 +117,7 @@ const SwipeableChatCard = memo(({ chat, index, onSelect, onDelete }) => {
 
       {/* Main chat card */}
       <article 
-        className={`chat-card-modern fade-in-${(index % 4) + 1}`}
+        className={`chat-card-modern fade-in-${(index % 4) + 1} ${chat.unread > 0 ? 'has-unread' : ''}`}
         style={{ 
           transform: `translateX(${swipeX}px)`,
           transition: isDragging ? 'none' : 'transform 0.3s ease'
@@ -128,7 +131,13 @@ const SwipeableChatCard = memo(({ chat, index, onSelect, onDelete }) => {
         onMouseLeave={handleMouseUp}
         onClick={handleCardClick}
       >
-        <div className="chat-avatar-modern">
+        {/* Selection circle in edit mode */}
+        {isEditMode && (
+          <div className={`chat-selection-circle ${isSelected ? 'selected' : ''}`}>
+            {isSelected && <span className="checkmark">✓</span>}
+          </div>
+        )}
+        <div className={`chat-avatar-modern color-${chat.name.length % 10}`}>
           {chat.avatar}
         </div>
         <div className="chat-content-modern">
@@ -158,6 +167,9 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
   const { user } = useAuth();
   const [newMessage, setNewMessage] = useState('');
   const [firebaseMessages, setFirebaseMessages] = useState([]);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
   
   // Set up Firebase conversation listener for Firebase chats
   useEffect(() => {
@@ -311,6 +323,41 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
     });
   }, []);
 
+  // Function to fetch user profile data
+  const fetchUserProfile = useCallback(async (userId) => {
+    try {
+      setLoadingProfile(true);
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        setUserProfile(userData);
+        console.log('🔍 PROFILE: Fetched user profile:', userData);
+      } else {
+        console.log('🔍 PROFILE: No user document found');
+        setUserProfile(null);
+      }
+    } catch (error) {
+      console.error('🔍 PROFILE: Error fetching user profile:', error);
+      setUserProfile(null);
+    } finally {
+      setLoadingProfile(false);
+    }
+  }, []);
+
+  // Fetch profile when modal opens
+  useEffect(() => {
+    if (showProfileModal && chat.isFirebaseChat && chat.chatRoom && user?.id) {
+      const otherUserId = chat.chatRoom.participants.find(id => id !== user.id);
+      if (otherUserId) {
+        console.log('🔍 PROFILE: Fetching profile for user:', otherUserId);
+        fetchUserProfile(otherUserId);
+      }
+    } else if (!showProfileModal) {
+      // Clear profile data when modal closes
+      setUserProfile(null);
+    }
+  }, [showProfileModal, chat, user?.id, fetchUserProfile]);
+
   const handleDeleteChat = useCallback(() => {
     const result = deleteChat(chat.name);
     if (result.success) {
@@ -330,7 +377,8 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
   }, [chat.name, deleteChat, onShowNotification, onDeleteChat, onClose]);
 
   return (
-    <div className="unified-chat">
+    <>
+      <div className="unified-chat">
       {/* Header */}
       <div className="unified-chat-header">
         <button className="back-btn" onClick={onClose}>
@@ -345,8 +393,8 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
         </div>
         {chat.isDummy && <span className="demo-badge">Demo</span>}
         {!chat.isDummy && (
-          <button className="delete-chat-btn" onClick={handleDeleteChat} title="Delete conversation">
-            🗑️
+          <button className="view-profile-btn" onClick={() => setShowProfileModal(true)} title="View profile">
+            View Profile
           </button>
         )}
       </div>
@@ -383,6 +431,77 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
         </form>
       </div>
     </div>
+
+    {/* Profile Modal */}
+    {showProfileModal && (
+      <div className="profile-modal-overlay" onClick={() => setShowProfileModal(false)}>
+        <div className="profile-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="profile-popup-card">
+            {/* Close button */}
+            <button 
+              className="profile-modal-close" 
+              onClick={() => setShowProfileModal(false)}
+              title="Close profile"
+            >
+              ✕
+            </button>
+            
+            {/* Profile Image Section */}
+            <div className="profile-popup-image-section">
+              <div className="profile-popup-image-placeholder">
+                <div className="profile-popup-initials">
+                  {chat.avatar}
+                </div>
+              </div>
+            </div>
+            
+            {/* Profile Details Section */}
+            <div className="profile-popup-details">
+              {loadingProfile ? (
+                <div className="profile-loading">
+                  <p>Loading profile...</p>
+                </div>
+              ) : userProfile ? (
+                <>
+                  <div className="profile-popup-header">
+                    <h2 className="profile-popup-name">{userProfile.name || chat.name}</h2>
+                    {userProfile.age && <span className="profile-popup-age">Age {userProfile.age}</span>}
+                    {userProfile.gender && <span className="profile-popup-gender">{userProfile.gender}</span>}
+                  </div>
+                  
+                  {(userProfile.skillLevel || userProfile.duprRating) && (
+                    <div className="profile-popup-badges">
+                      {userProfile.skillLevel && <span className="profile-popup-skill-badge">{userProfile.skillLevel}</span>}
+                      {userProfile.duprRating && <span className="profile-popup-dupr-badge">DUPR {userProfile.duprRating}</span>}
+                    </div>
+                  )}
+                  
+                  {userProfile.availability && userProfile.availability.length > 0 && (
+                    <div className="profile-popup-availability">
+                      {userProfile.availability.map((time, index) => (
+                        <span key={index} className="profile-popup-availability-tag">{time}</span>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {userProfile.bio && userProfile.bio.trim() && (
+                    <div className="profile-popup-bio">
+                      <p>{userProfile.bio}</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="profile-popup-header">
+                  <h2 className="profile-popup-name">{chat.name}</h2>
+                  <p className="profile-unavailable">Profile information not available</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      )}
+    </>
   );
 });
 
@@ -400,6 +519,9 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
   const [isLoadingChats, setIsLoadingChats] = useState(true);
   const [realNotifications, setRealNotifications] = useState([]);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedChats, setSelectedChats] = useState(new Set());
+  const [deletedChats, setDeletedChats] = useState(new Set());
   
   // Set up real-time listeners for chats and notifications
   useEffect(() => {
@@ -459,27 +581,78 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
   
   const userChatRooms = getUserChatRooms();
 
-  // Helper function to format timestamps
+  // Helper function to format timestamps like iMessage
   const formatTimestamp = useCallback((timestamp) => {
     if (!timestamp) return 'Now';
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: true 
+    
+    // Handle Firebase Timestamp objects
+    let date;
+    if (timestamp && timestamp.toDate) {
+      date = timestamp.toDate();
+    } else if (timestamp && timestamp.seconds) {
+      date = new Date(timestamp.seconds * 1000);
+    } else {
+      date = new Date(timestamp);
+    }
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid timestamp:', timestamp);
+      return 'Now';
+    }
+    
+    const now = new Date();
+    const diffMs = now - date;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    // Today - show time
+    if (diffDays === 0 && date.toDateString() === now.toDateString()) {
+      return date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      });
+    }
+    
+    // Yesterday
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    }
+    
+    // Within 7 days - show day name
+    if (diffDays < 7) {
+      return date.toLocaleDateString('en-US', { weekday: 'long' });
+    }
+    
+    // Within this year - show month and day
+    if (date.getFullYear() === now.getFullYear()) {
+      return date.toLocaleDateString('en-US', { 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    }
+    
+    // Older - show full date
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
     });
   }, []);
 
-  // Helper function to get avatar emoji based on name
-  const getAvatarEmoji = useCallback((name) => {
-    const emojiMap = {
-      'Sarah Wilson': '🦁',
-      'Mike Chen': '🙂',
-      'Jessica Martinez': '👩',
-      'Priya Patel': '🌟',
-      'Maria Gonzalez': '🎯'
-    };
-    return emojiMap[name] || '👤';
+  // Helper function to get user initials based on name
+  const getUserInitials = useCallback((name) => {
+    if (!name) return '?';
+    const words = name.trim().split(' ');
+    if (words.length >= 2) {
+      // First letter of first name + first letter of last name
+      return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+    } else {
+      // Just first letter of single name
+      return name[0].toUpperCase();
+    }
   }, []);
 
   // Remove dummy chat initialization - only use real chats
@@ -517,8 +690,8 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
       name: room.gameName || room.otherUserName,
       lastMessage: room.lastMessage || 'Start a conversation',
       timestamp: formatTimestamp(room.lastMessageTime),
-      avatar: getAvatarEmoji(room.gameName || room.otherUserName),
-      unread: chatUnreadCounts[room.id] || 0,
+      avatar: getUserInitials(room.gameName || room.otherUserName),
+      unread: room.unreadCount || 0,
       isDummy: false,
       isGameChat: false,
       isFirebaseChat: true,
@@ -530,7 +703,7 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
       name: room.gameName,
       lastMessage: room.lastMessage || 'Start a conversation',
       timestamp: formatTimestamp(room.lastMessageTime),
-      avatar: getAvatarEmoji(room.gameName),
+      avatar: getUserInitials(room.gameName),
       unread: chatUnreadCounts[room.gameId || room.id] || 0,
       isDummy: false,
       isGameChat: !!room.gameId,
@@ -550,16 +723,29 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
       unread: chat.unread || chatUnreadCounts[chat.id] || 0
     }));
     
-    // No fallback to dummy data - show real chats only
-    return chatsWithCounts;
-  }, [realChats, userChatRooms, formatTimestamp, getAvatarEmoji, chatUnreadCounts]);
+    // Filter out deleted chats and show real chats only
+    return chatsWithCounts.filter(chat => !deletedChats.has(chat.id));
+  }, [realChats, userChatRooms, formatTimestamp, getUserInitials, chatUnreadCounts, deletedChats]);
 
-  const handleChatSelect = useCallback((chat) => {
+  const handleChatSelect = useCallback(async (chat) => {
     // Mark chat as read by setting unread count to 0
     setChatUnreadCounts(prev => ({
       ...prev,
       [chat.id]: 0
     }));
+
+    // For Firebase chats, mark messages as read in the database
+    if (chat.isFirebaseChat && chat.chatRoom && user?.id) {
+      const otherUserId = chat.chatRoom.participants.find(id => id !== user.id);
+      if (otherUserId) {
+        try {
+          await messageService.markMessagesAsRead(user.id, otherUserId);
+          console.log('🔍 CHAT: Marked messages as read for chat:', chat.id);
+        } catch (error) {
+          console.error('🔍 CHAT: Error marking messages as read:', error);
+        }
+      }
+    }
 
     if (chat.isDummy) {
       // For dummy chats, create a functional chat experience
@@ -577,7 +763,7 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
       setSelectedChatId(chat.id);
       setSelectedChatName(chat.name);
     }
-  }, []);
+  }, [user]);
 
   const handleCloseChat = useCallback(() => {
     setSelectedChatId(null);
@@ -666,8 +852,91 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
     }
   }, [notifications, readNotifications, onNotificationsRead]);
 
+  // Edit mode handlers
+  const handleEditMode = useCallback(() => {
+    setIsEditMode(!isEditMode);
+    setSelectedChats(new Set()); // Clear selections when toggling edit mode
+  }, [isEditMode]);
+
+  const handleChatSelection = useCallback((chatId) => {
+    setSelectedChats(prev => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(chatId)) {
+        newSelected.delete(chatId);
+      } else {
+        newSelected.add(chatId);
+      }
+      return newSelected;
+    });
+  }, []);
+
+  const handleMarkAsUnread = useCallback(() => {
+    selectedChats.forEach(chatId => {
+      setChatUnreadCounts(prev => ({
+        ...prev,
+        [chatId]: (prev[chatId] || 0) + 1
+      }));
+    });
+    setSelectedChats(new Set());
+    setIsEditMode(false);
+  }, [selectedChats]);
+
+  const handleDeleteSelected = useCallback(() => {
+    const chatIds = Array.from(selectedChats);
+    console.log('🔍 DELETE: Deleting chats:', chatIds);
+    
+    chatIds.forEach(chatId => {
+      const chatToDelete = chatsToShow.find(chat => chat.id === chatId);
+      console.log('🔍 DELETE: Found chat to delete:', chatToDelete);
+      
+      if (chatToDelete) {
+        if (chatToDelete.isFirebaseChat) {
+          // For Firebase chats, we need to handle differently
+          console.log('🔍 DELETE: Deleting Firebase chat:', chatToDelete.name);
+          // For now, just remove from local state - in a real app you'd delete from Firebase
+          setChatUnreadCounts(prev => {
+            const updated = { ...prev };
+            delete updated[chatId];
+            return updated;
+          });
+        } else {
+          // For GameContext chats, use the existing method
+          console.log('🔍 DELETE: Deleting GameContext chat:', chatToDelete.name);
+          const result = deleteChat(chatToDelete.name);
+          console.log('🔍 DELETE: Delete result:', result);
+        }
+        
+        // Also remove from local chat unread counts and mark as deleted
+        setChatUnreadCounts(prev => {
+          const updated = { ...prev };
+          delete updated[chatId];
+          return updated;
+        });
+        
+        // Track deleted chats
+        setDeletedChats(prev => new Set([...prev, chatId]));
+      }
+    });
+    
+    // Show notification for deleted chats
+    if (chatIds.length > 0) {
+      setNotification({
+        message: `Deleted ${chatIds.length} conversation${chatIds.length > 1 ? 's' : ''}`,
+        name: '',
+        emoji: '🗑️'
+      });
+    }
+    
+    setSelectedChats(new Set());
+    setIsEditMode(false);
+  }, [selectedChats, chatsToShow, deleteChat, setChatUnreadCounts, setNotification]);
+
   const unreadNotificationsCount = useMemo(() => {
-    return notifications.filter(n => !n.isRead && !readNotifications.has(n.id)).length;
+    return notifications.filter(n => {
+      // Firebase notifications use 'read' property, app notifications use 'isRead'
+      const isNotificationRead = n.read !== undefined ? n.read : n.isRead;
+      return !isNotificationRead && !readNotifications.has(n.id);
+    }).length;
   }, [notifications, readNotifications]);
   
   // Calculate total unread chat messages
@@ -750,6 +1019,35 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
       {/* Chat Panel */}
       {activeTab === 'chat' && (
         <div className="chat-panel-modern">
+          {/* Edit button and actions */}
+          {chatsToShow.length > 0 && (
+            <div className="chat-panel-header">
+              {!isEditMode ? (
+                <button className="edit-button" onClick={handleEditMode}>
+                  Edit
+                </button>
+              ) : (
+                <div className="edit-actions">
+                  <button className="cancel-button" onClick={handleEditMode}>
+                    Cancel
+                  </button>
+                  <div className="edit-action-buttons">
+                    {selectedChats.size > 0 && (
+                      <>
+                        <button className="mark-unread-button" onClick={handleMarkAsUnread}>
+                          Mark as Unread
+                        </button>
+                        <button className="delete-button" onClick={handleDeleteSelected}>
+                          Delete ({selectedChats.size})
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {isLoadingChats ? (
             <div className="chat-loading">
               <div className="loading-spinner"></div>
@@ -758,7 +1056,7 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
           ) : chatsToShow.length === 0 ? (
             <div className="no-chats-message">
               <p>No conversations yet. Start playing games to connect with other players!</p>
-                    </div>
+            </div>
           ) : (
             chatsToShow.map((chat, index) => (
               <SwipeableChatCard
@@ -767,11 +1065,14 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
                 index={index}
                 onSelect={handleChatSelect}
                 onDelete={handleDeleteChatFromSwipe}
+                isEditMode={isEditMode}
+                isSelected={selectedChats.has(chat.id)}
+                onToggleSelection={handleChatSelection}
               />
             ))
           )}
-                      </div>
-                    )}
+        </div>
+      )}
 
       {/* Notification Panel */}
       {activeTab === 'notifications' && (

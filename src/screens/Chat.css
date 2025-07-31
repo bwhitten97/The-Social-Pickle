@@ -727,7 +727,7 @@
 .messages-tabs-modern {
   display: flex;
   gap: 0.75rem;
-  margin-bottom: 3rem;
+  margin-bottom: 0.5rem;
 }
 
 .tab-button-modern {
@@ -795,12 +795,15 @@
   width: 3rem;
   height: 3rem;
   border-radius: 50%;
-  background-color: #F1F2F4;
+  background-color: #007AFF;
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.125rem;
+  font-weight: 500;
   flex-shrink: 0;
+  letter-spacing: -0.025em;
 }
 
 .chat-content-modern {
@@ -1666,4 +1669,415 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+/* Unread Message Indicators - iMessage Style */
+.chat-card-modern.has-unread {
+  background: linear-gradient(135deg, #ffffff 0%, #f0f8ff 100%);
+  border-left: 4px solid #007AFF;
+}
+
+.chat-card-modern.has-unread .chat-name-modern {
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.chat-card-modern.has-unread .chat-message-modern {
+  font-weight: 600;
+  color: rgba(26, 26, 26, 0.8);
+}
+
+.chat-card-modern.has-unread .chat-badge-modern {
+  background-color: #007AFF;
+  color: white;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Blue dot indicator for unread messages */
+.chat-unread-dot {
+  width: 10px;
+  height: 10px;
+  background: #007AFF;
+  border-radius: 50%;
+  border: 2px solid white;
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  box-shadow: 0 2px 4px rgba(0, 122, 255, 0.3);
+}
+
+/* Enhanced visual hierarchy for unread chats */
+.chat-card-modern.has-unread {
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.1);
+  border: 1px solid rgba(0, 122, 255, 0.2);
+}
+
+.chat-card-modern.has-unread:hover {
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Avatar color variations like iMessage */
+.chat-avatar-modern.color-1 { background-color: #007AFF; }
+.chat-avatar-modern.color-2 { background-color: #34C759; }
+.chat-avatar-modern.color-3 { background-color: #FF3B30; }
+.chat-avatar-modern.color-4 { background-color: #FF9500; }
+.chat-avatar-modern.color-5 { background-color: #AF52DE; }
+.chat-avatar-modern.color-6 { background-color: #5856D6; }
+.chat-avatar-modern.color-7 { background-color: #FF2D55; }
+.chat-avatar-modern.color-8 { background-color: #5AC8FA; }
+.chat-avatar-modern.color-9 { background-color: #32D74B; }
+.chat-avatar-modern.color-0 { background-color: #007AFF; }
+
+/* View Profile Button */
+.view-profile-btn {
+  background: #007AFF;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.view-profile-btn:hover {
+  background: #0056CC;
+  transform: scale(1.05);
+}
+
+/* Profile Modal Styles */
+.profile-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.profile-modal-content {
+  position: relative;
+  max-width: 400px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.profile-popup-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  position: relative;
+}
+
+.profile-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(0, 0, 0, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+  color: white;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.profile-modal-close:hover {
+  background: rgba(0, 0, 0, 0.2);
+  transform: scale(1.1);
+}
+
+.profile-popup-image-section {
+  height: 300px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.profile-popup-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-popup-initials {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.profile-popup-details {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profile-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.profile-popup-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2C3E50;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.profile-popup-age {
+  font-size: 0.9rem;
+  color: #6B7280;
+  font-weight: 500;
+}
+
+.profile-popup-gender {
+  font-size: 0.9rem;
+  color: #6B7280;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+.profile-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+}
+
+.profile-loading p {
+  color: #6B7280;
+  font-size: 0.9rem;
+}
+
+.profile-unavailable {
+  color: #9CA3AF;
+  font-size: 0.9rem;
+  margin: 8px 0 0 0;
+  font-style: italic;
+}
+
+.profile-popup-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.profile-popup-skill-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  background: #F3F4F6;
+  color: #374151;
+}
+
+.profile-popup-dupr-badge {
+  background: #3E5D45;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.profile-popup-availability {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.profile-popup-availability-tag {
+  background: #F5EEDC;
+  color: #3E5D45;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid rgba(62, 93, 69, 0.2);
+}
+
+.profile-popup-bio {
+  padding-top: 8px;
+  border-top: 1px solid #F3F4F6;
+}
+
+.profile-popup-bio p {
+  font-size: 0.9rem;
+  color: #6B7280;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Edit Mode Styles */
+.chat-panel-header {
+  padding: 8px 20px 14px 20px;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  background: transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.edit-button {
+  background: none;
+  border: none;
+  color: #007AFF;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  margin-left: auto;
+}
+
+.edit-button:hover {
+  opacity: 0.7;
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.cancel-button {
+  background: none;
+  border: none;
+  color: #007AFF;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+}
+
+.cancel-button:hover {
+  opacity: 0.7;
+}
+
+.edit-action-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.mark-unread-button {
+  background: #007AFF;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mark-unread-button:hover {
+  background: #0056CC;
+}
+
+.delete-button {
+  background: #FF3B30;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-button:hover {
+  background: #D70015;
+}
+
+/* Selection Circle Styles */
+.chat-selection-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #C7C7CC;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.chat-selection-circle.selected {
+  background: #007AFF;
+  border-color: #007AFF;
+}
+
+.chat-selection-circle .checkmark {
+  color: white;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+/* Adjust chat card layout in edit mode */
+.chat-card-modern {
+  position: relative;
+}
+
+.chat-card-modern.in-edit-mode {
+  padding-left: 50px;
+}
+
+/* Selection circle positioning */
+.chat-selection-circle {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
 }

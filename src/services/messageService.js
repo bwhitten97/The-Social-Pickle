@@ -8,11 +8,45 @@ import {
   orderBy, 
   onSnapshot,
   serverTimestamp,
+  updateDoc,
   and
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 export const messageService = {
+  // Mark messages as read in a conversation
+  async markMessagesAsRead(userId1, userId2) {
+    try {
+      console.log('🔍 MESSAGE_SERVICE: Marking messages as read', { userId1, userId2 });
+      
+      const messagesRef = collection(db, 'messages');
+      const q = query(
+        messagesRef,
+        where('participants', 'array-contains-any', [userId1, userId2])
+      );
+      
+      const snapshot = await getDocs(q);
+      const updatePromises = [];
+      
+      snapshot.forEach(doc => {
+        const messageData = doc.data();
+        // Mark messages as read if they were sent TO the current user and are unread
+        if (messageData.toUserId === userId1 && !messageData.read) {
+          const messageRef = doc.ref;
+          updatePromises.push(updateDoc(messageRef, { read: true }));
+        }
+      });
+      
+      await Promise.all(updatePromises);
+      console.log('🔍 MESSAGE_SERVICE: Marked', updatePromises.length, 'messages as read');
+      
+      return { success: true, markedCount: updatePromises.length };
+    } catch (error) {
+      console.error('🔍 MESSAGE_SERVICE: Error marking messages as read:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
   // Create a new message
   async createMessage(messageData) {
     try {
@@ -180,7 +214,8 @@ export const messageService = {
             lastMessage: messageData.message,
             lastMessageTime: messageData.createdAt,
             otherUserName: otherUserName,
-            unreadCount: 0
+            unreadCount: 0,
+            messages: []
           });
         } else {
           // Update with more recent message if this one is newer
@@ -190,6 +225,16 @@ export const messageService = {
             existing.lastMessageTime = messageData.createdAt;
           }
         }
+        
+        // Add message to the chat room for unread count calculation
+        chatRooms.get(chatId).messages.push(messageData);
+      });
+      
+      // Calculate unread counts for each chat room
+      chatRooms.forEach(chatRoom => {
+        chatRoom.unreadCount = chatRoom.messages.filter(msg => 
+          !msg.read && msg.fromUserId !== userId
+        ).length;
       });
       
       const chatRoomsArray = Array.from(chatRooms.values());
