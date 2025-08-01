@@ -128,8 +128,16 @@ const SwipeableCard = memo(({ profile, onSwipe, isTop }) => {
   };
 
   // Button click handlers for accessibility
-  const handleLikeClick = useCallback(() => {
+  const handleLikeClick = useCallback((e) => {
     if (!isTop) return;
+    
+    // Force reset button state
+    const button = e.currentTarget;
+    button.blur();
+    button.style.background = 'white';
+    button.style.color = '#10b981';
+    button.style.transform = 'scale(1)';
+    
     // Enable transitions for smooth exit animation
     setIsTransitioning(true);
     // Animate card off screen to the right
@@ -138,8 +146,16 @@ const SwipeableCard = memo(({ profile, onSwipe, isTop }) => {
     setTimeout(() => handleSwipeCompleteWithCleanup('right'), 300);
   }, [isTop, handleSwipeCompleteWithCleanup]);
 
-  const handleDislikeClick = useCallback(() => {
+  const handleDislikeClick = useCallback((e) => {
     if (!isTop) return;
+    
+    // Force reset button state
+    const button = e.currentTarget;
+    button.blur();
+    button.style.background = 'white';
+    button.style.color = '#ef4444';
+    button.style.transform = 'scale(1)';
+    
     // Enable transitions for smooth exit animation
     setIsTransitioning(true);
     // Animate card off screen to the left
@@ -205,17 +221,12 @@ const SwipeableCard = memo(({ profile, onSwipe, isTop }) => {
 
       {/* Details Section */}
       <div className="swipeable-card-details">
-        {/* Name and Age */}
+        {/* Header: Name, Age (left) + Gender (right) */}
         <div className="swipeable-card-header">
           <h2 className="swipeable-card-name">
             {profile.name}, {profile.age}
           </h2>
-        </div>
-
-        {/* Gender */}
-        <div className="swipeable-card-gender-info">
-          <span className="swipeable-card-gender-label">Gender:</span>
-          <span className="swipeable-card-gender-value">
+          <span className="swipeable-card-gender">
             {profile.gender === 'male' ? 'Male' : 
              profile.gender === 'female' ? 'Female' : 
              profile.gender === 'non-binary' ? 'Non-binary' : 
@@ -223,24 +234,21 @@ const SwipeableCard = memo(({ profile, onSwipe, isTop }) => {
           </span>
         </div>
 
-        {/* Skills and Ratings */}
-        <div className="swipeable-card-skills">
-          <div className="swipeable-card-skill-item">
-            <span className="swipeable-card-skill-label">Skill:</span>
-            <span className="swipeable-card-skill-badge">
-              {profile.skillLevel || 'Not specified'}
-            </span>
-          </div>
-          
+        {/* Skill Row */}
+        <div className="swipeable-card-skill-row">
+          <span className="swipeable-card-info-label">Skill:</span>
+          <span className="swipeable-card-skill-badge">
+            {profile.skillLevel || 'Not specified'}
+          </span>
           {profile.duprRating && 
            profile.duprRating !== 'unrated' && 
            profile.duprRating !== '' && (
-            <div className="swipeable-card-skill-item">
-              <span className="swipeable-card-skill-label">DUPR:</span>
+            <>
+              <span className="swipeable-card-info-label">DUPR:</span>
               <span className="swipeable-card-dupr-badge">
                 {profile.duprRating}
               </span>
-            </div>
+            </>
           )}
         </div>
 
@@ -278,7 +286,7 @@ const SwipeableCard = memo(({ profile, onSwipe, isTop }) => {
               onClick={handleDislikeClick}
               aria-label="Pass"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 6 6 18"></path>
                 <path d="m6 6 12 12"></path>
               </svg>
@@ -289,7 +297,7 @@ const SwipeableCard = memo(({ profile, onSwipe, isTop }) => {
               onClick={handleLikeClick}
               aria-label="Like"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
               </svg>
             </button>

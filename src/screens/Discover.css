@@ -33,16 +33,16 @@
 .discover-container {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0.5rem 1rem;
+  padding: 0.25rem 1rem;
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 3rem;
+  gap: 1rem;
 }
 
 @media (min-width: 640px) {
   .discover-container {
-    padding: 0.75rem 2rem;
+    padding: 0.5rem 2rem;
   }
 }
 
@@ -51,12 +51,13 @@
   border: 1px solid rgba(44, 62, 80, 0.1);
   border-radius: 24px;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  padding: 20px;
+  padding: 12px;
+  min-height: 600px;
 }
 
 @media (min-width: 640px) {
   .discover-section {
-    padding: 24px;
+    padding: 16px;
   }
 }
 
@@ -187,8 +188,9 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 600px;
-  padding: 20px;
+  min-height: 520px;
+  padding: 20px 12px;
+  margin-top: 20px;
 }
 
 /* Swipeable card stack */
@@ -196,10 +198,31 @@
   position: relative;
   width: 100%;
   max-width: 400px;
-  height: 650px;
+  height: 490px;
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+@media (max-width: 640px) {
+  .discover-section {
+    min-height: 500px;
+    padding: 10px;
+  }
+  
+  .swipeable-card-stack {
+    height: 380px;
+  }
+  
+  .discover-card-container {
+    min-height: 400px;
+    padding: 16px 8px;
+    margin-top: 16px;
+  }
+  
+  .swipeable-card-image-section {
+    height: 180px;
+  }
 }
 
 /* Responsive design */
