@@ -20,6 +20,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { logPlayerLiked, logPlayerPassed, logMatchCreated, logPageView } from './utils/analytics';
 import { config } from './config/app';
 import { notificationService } from './services/notificationService';
+import { createLike, listenToIncomingLikes } from './services/matchService';
 import './App.css';
 import './screens/Profile.css';
 import './components/ProtectedRoute.css';
@@ -28,7 +29,6 @@ import './components/ProtectedRoute.css';
 const INITIAL_UNREAD_NOTIFICATIONS = 0;
 const INITIAL_UNREAD_CHATS = 0;
 const INITIAL_LIKED_PLAYERS = [1]; // Alex Johnson (id: 1) has already swiped right
-const PLAYER_TRANSITION_DELAY = 1000; // ms
 
 // Default user profile values
 const DEFAULT_USER_NAME = 'John Doe';
@@ -248,38 +248,46 @@ function AppContent() {
     nextPlayer();
   };
 
-  const handleConnect = () => {
-    const playerId = currentPlayer.id;
-    const playerHasLikedUser = playersWhoLikedUser.includes(playerId);
+  const handleConnect = async () => {
+    // Store current player data before switching
+    const likedPlayer = { ...currentPlayer };
+    const playerId = likedPlayer.id;
+    const playerName = likedPlayer.name;
+    const playerSkillLevel = likedPlayer.skillLevel;
     
-    setConnections(prev => [...prev, currentPlayer]);
+    setConnections(prev => [...prev, likedPlayer]);
     
-    if (playerHasLikedUser) {
-      // It's a match! Both users have liked each other
-      addMatchedPlayer(currentPlayer); // Add to GameContext matches
-      showNotification("It's a match! You and", currentPlayer.name, "🎉", "match");
-      // Remove from the "who liked user" list since it's now a match
-      setPlayersWhoLikedUser(prev => prev.filter(id => id !== playerId));
-      // Log analytics for match
-      if (user) {
-        logMatchCreated(user.id, currentPlayer.id, 'swipe');
-      }
-    } else {
-      // Just a regular like
-      showNotification("You liked", currentPlayer.name, "💚", "like");
-      // Log analytics for like
-      if (user) {
-        logPlayerLiked(user.id, currentPlayer.id, currentPlayer.skillLevel);
+    // Move to next player immediately for smooth UX
+    nextPlayer();
+    
+    // Handle Firebase operations in background
+    if (user) {
+      try {
+        const likeResult = await createLike(user.id, playerId);
+        
+        if (likeResult.success) {
+          if (likeResult.isMatch) {
+            // It's a match!
+            addMatchedPlayer(likedPlayer); // Add to GameContext matches
+            showNotification("It's a match! You and", playerName, "🎉", "match");
+            // Log analytics for match
+            logMatchCreated(user.id, playerId, 'swipe');
+          } else {
+            // Just a regular like
+            showNotification("You liked", playerName, "💚", "like");
+            // Log analytics for like
+            logPlayerLiked(user.id, playerId, playerSkillLevel);
+          }
+        }
+      } catch (error) {
+        console.error('Error handling like:', error);
       }
     }
-    
-    nextPlayer();
   };
 
   const nextPlayer = () => {
-    setTimeout(() => {
-      setCurrentIndex(prev => (prev + 1) % filteredPlayers.length);
-    }, PLAYER_TRANSITION_DELAY);
+    // Update immediately since we have smooth card animations now
+    setCurrentIndex(prev => (prev + 1) % filteredPlayers.length);
   };
 
   const resetFeed = () => {
@@ -315,6 +323,20 @@ function AppContent() {
         setFirebaseNotifications(convertedNotifs);
       }
     );
+
+    return () => unsubscribe();
+  }, [user?.id]);
+
+  // Set up incoming likes listener
+  useEffect(() => {
+    if (!user?.id) return;
+
+    console.log('Setting up incoming likes listener for user:', user.id);
+    const unsubscribe = listenToIncomingLikes(user.id, (likes) => {
+      // Extract user IDs from likes
+      const likerIds = likes.map(like => like.likedBy);
+      setPlayersWhoLikedUser(likerIds);
+    });
 
     return () => unsubscribe();
   }, [user?.id]);

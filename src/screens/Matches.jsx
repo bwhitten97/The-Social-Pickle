@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useGameContext } from '../context/GameContext';
+import { listenToMatches } from '../services/matchService';
 import Notification from '../components/Notification';
 import './Matches.css';
 
@@ -16,36 +17,87 @@ const Matches = memo(() => {
   const [realMatches, setRealMatches] = useState([]);
   const [isLoadingMatches, setIsLoadingMatches] = useState(true);
 
-  // Fetch real matches from Firestore
-  const fetchMatches = async () => {
-    if (!user) {
+  // Fetch match details with user info
+  const fetchMatchWithUserInfo = async (match) => {
+    try {
+      const otherUserId = match.users.find(id => id !== user.id);
+      const userRef = doc(db, 'users', otherUserId);
+      const userSnap = await getDoc(userRef);
+      
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        return {
+          id: otherUserId,
+          name: userData.name || 'Unknown User',
+          age: userData.age || 25,
+          skillLevel: userData.skillLevel || 'intermediate',
+          duprRating: userData.duprRating || 'unrated',
+          availability: userData.availability?.[0] || 'Flexible',
+          bio: userData.bio || 'New to The Social Pickle!',
+          image: userData.profilePicture || null,
+          matchedAt: match.createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching user info:', error);
+      return null;
+    }
+  };
+
+  // Set up real-time listener for matches
+  useEffect(() => {
+    if (!user?.id) {
       setIsLoadingMatches(false);
       return;
     }
 
+    setIsLoadingMatches(true);
+    
+    // Set a timeout to stop loading if no response after 5 seconds
+    const timeoutId = setTimeout(() => {
+      console.log('Matches loading timeout - no matches found');
+      setRealMatches([]);
+      setIsLoadingMatches(false);
+    }, 5000);
+    
     try {
-      setIsLoadingMatches(true);
-      
-      // For now, just use empty array while Firebase collections are being set up
-      // TODO: Implement real Firestore queries when collections exist
-      setRealMatches([]);
-      
-    } catch (error) {
-      // Fallback to empty array on error
-      setRealMatches([]);
-    } finally {
-      setIsLoadingMatches(false);
-    }
-  };
+      const unsubscribe = listenToMatches(user.id, async (matches) => {
+        clearTimeout(timeoutId); // Clear timeout since we got data
+        console.log('Matches received:', matches);
+        
+        if (matches.length === 0) {
+          setRealMatches([]);
+          setIsLoadingMatches(false);
+          return;
+        }
+        
+        // Fetch user info for each match
+        const matchesWithUserInfo = await Promise.all(
+          matches.map(async (match) => {
+            const userInfo = await fetchMatchWithUserInfo(match);
+            return userInfo;
+          })
+        );
+        
+        // Filter out null results
+        const validMatches = matchesWithUserInfo.filter(match => match !== null);
+        console.log('Valid matches:', validMatches);
+        setRealMatches(validMatches);
+        setIsLoadingMatches(false);
+      });
 
-  // Fetch matches when component mounts or user changes
-  useEffect(() => {
-    if (user) {
-      fetchMatches();
-    } else {
+      return () => {
+        clearTimeout(timeoutId);
+        unsubscribe();
+      };
+    } catch (error) {
+      clearTimeout(timeoutId);
+      console.error('Error setting up matches listener:', error);
+      setRealMatches([]);
       setIsLoadingMatches(false);
     }
-  }, [user]);
+  }, [user?.id]);
 
   // Combine real matches, context matches, and mock data
   const matches = useMemo(() => {

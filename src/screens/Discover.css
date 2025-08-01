@@ -186,6 +186,20 @@
 .discover-card-container {
   display: flex;
   justify-content: center;
+  align-items: center;
+  min-height: 600px;
+  padding: 20px;
+}
+
+/* Swipeable card stack */
+.swipeable-card-stack {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  height: 650px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 /* Responsive design */

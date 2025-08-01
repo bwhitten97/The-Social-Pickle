@@ -3,7 +3,7 @@ import { collection, query, where, getDocs, limit, orderBy } from 'firebase/fire
 import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { mockPlayers } from '../data/mockData';
-import DiscoverCard from '../components/DiscoverCard';
+import SwipeableCard from '../components/SwipeableCard';
 import './Discover.css';
 
 // Filter constants
@@ -54,13 +54,13 @@ const Discover = memo(({
     } : null;
   }, [players, currentIndex]);
 
-  const handleLike = useCallback(() => {
-    if (onLike) onLike();
-  }, [onLike]);
-
-  const handleDislike = useCallback(() => {
-    if (onPass) onPass();
-  }, [onPass]);
+  const handleSwipe = useCallback((direction) => {
+    if (direction === 'right' && onLike) {
+      onLike();
+    } else if (direction === 'left' && onPass) {
+      onPass();
+    }
+  }, [onLike, onPass]);
 
   const handleRefresh = useCallback(() => {
     window.location.reload();
@@ -296,11 +296,36 @@ const Discover = memo(({
               <p>Try adjusting your filters or check back later!</p>
             </div>
           ) : currentProfile ? (
-            <DiscoverCard 
-              profile={currentProfile}
-              onLike={handleLike}
-              onDislike={handleDislike}
-            />
+            <div className="swipeable-card-stack">
+              <SwipeableCard 
+                profile={currentProfile}
+                onSwipe={handleSwipe}
+                isTop={true}
+              />
+              {/* Show next card underneath */}
+              {players[currentIndex + 1] && (
+                <SwipeableCard 
+                  profile={{
+                    id: players[currentIndex + 1].id,
+                    name: players[currentIndex + 1].name,
+                    age: players[currentIndex + 1].age,
+                    image: players[currentIndex + 1].image,
+                    experience: players[currentIndex + 1].experience,
+                    playingExperience: players[currentIndex + 1].playingExperience,
+                    skillLevel: players[currentIndex + 1].skillLevel,
+                    duprRating: players[currentIndex + 1].duprRating,
+                    playStyle: players[currentIndex + 1].playStyle,
+                    availability: players[currentIndex + 1].availability,
+                    distance: players[currentIndex + 1].distance,
+                    bio: players[currentIndex + 1].bio,
+                    avatar: players[currentIndex + 1].avatar,
+                    gender: players[currentIndex + 1].gender,
+                    location: players[currentIndex + 1].location
+                  }}
+                  isTop={false}
+                />
+              )}
+            </div>
           ) : (
             <div className="discover-no-players">
               <h3>No more players</h3>
