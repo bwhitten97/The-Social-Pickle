@@ -12,7 +12,7 @@
   transition: box-shadow 0.3s ease;
   display: flex;
   flex-direction: column;
-  border: 2px solid rgba(62, 93, 69, 0.1);
+  border: 2px solid #3E5D45;
 }
 
 .swipeable-card.top-card {
@@ -33,7 +33,7 @@
 .swipeable-card-image-section {
   position: relative;
   width: 100%;
-  height: 220px;
+  height: 400px;
   overflow: hidden;
   background: linear-gradient(180deg, #f3f4f6 0%, #e5e7eb 100%);
 }
@@ -115,7 +115,7 @@
 .swipeable-card-name {
   font-size: 20px;
   font-weight: 700;
-  color: #1f2937;
+  color: #3E5D45;
   margin: 0;
   flex: 1;
 }
@@ -123,7 +123,7 @@
 .swipeable-card-gender {
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: #3E5D45;
   text-align: right;
 }
 
@@ -131,9 +131,16 @@
 .swipeable-card-skill-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
   margin-bottom: 4px;
+}
+
+.swipeable-card-info-icon {
+  width: 14px;
+  height: 14px;
+  color: #6b7280;
+  flex-shrink: 0;
 }
 
 .swipeable-card-info-label {
@@ -163,30 +170,27 @@
 /* Availability */
 .swipeable-card-availability {
   display: flex;
-  flex-direction: column;
+  align-items: flex-start;
   gap: 6px;
-}
-
-.swipeable-card-availability-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: #6b7280;
+  margin-bottom: 4px;
 }
 
 .swipeable-card-availability-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+  flex: 1;
 }
 
 .swipeable-card-availability-tag {
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 11px;
-  font-weight: 500;
-  background: #f3f4f6;
-  color: #4b5563;
-  border: 1px solid #e5e7eb;
+  font-weight: 600;
+  background: rgba(62, 93, 69, 0.1);
+  color: #3E5D45;
+  border: 1px solid rgba(62, 93, 69, 0.2);
+  white-space: nowrap;
 }
 
 .swipeable-card-availability-tag.more {
@@ -204,7 +208,7 @@
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
-  color: #4b5563;
+  color: #3E5D45;
 }
 
 /* Action Buttons */
@@ -324,7 +328,7 @@
   }
   
   .swipeable-card-image-section {
-    height: 160px;
+    height: 260px;
   }
   
   .swipeable-card-details {
