@@ -14,6 +14,7 @@ import Applicants from './screens/Applicants';
 import Chat from './screens/Chat';
 import Matches from './screens/Matches';
 import Profile from './screens/Profile';
+import PhotoUploadDemo from './components/PhotoUploadDemo';
 import Notification from './components/Notification';
 import { GameProvider, useGameContext } from './context/GameContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -493,6 +494,12 @@ function AppContent() {
               </main>
             </div>
           </ProtectedRoute>
+        } />
+        
+        <Route path="/photo-demo" element={
+          <ErrorBoundary>
+            <PhotoUploadDemo />
+          </ErrorBoundary>
         } />
       </Routes>
 

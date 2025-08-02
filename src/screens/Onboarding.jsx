@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Notification from '../components/Notification';
+import PhotoCropModal from '../components/PhotoCropModal';
 import { config, validateZipCode } from '../config/app';
 import './Onboarding.css';
 
@@ -11,6 +12,8 @@ const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
 
   const [userData, setUserData] = useState({
@@ -408,13 +411,13 @@ const Onboarding = () => {
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
-      console.log('Onboarding: File selected:', {
+      console.log('Onboarding: File selected for cropping:', {
         name: file.name,
         size: file.size,
         type: file.type
       });
       
-      // Validate file type (very permissive for original files)
+      // Basic validation
       if (!file.type.startsWith('image/')) {
         setNotification({
           message: "Please select an image file",
@@ -424,7 +427,6 @@ const Onboarding = () => {
         return;
       }
       
-      // Allow very large original files (up to 50MB)
       if (file.size > 50 * 1024 * 1024) {
         setNotification({
           message: "File is too large to process (max 50MB)",
@@ -434,31 +436,48 @@ const Onboarding = () => {
         return;
       }
       
-      try {
-        // Compress the image
-        const compressedFile = await compressImage(file);
-        console.log(`Onboarding: Image compressed: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
-        
-        // Store compressed file
-        updateUserData('profilePicture', compressedFile);
-        console.log('Onboarding: Compressed file stored in userData');
-        
-        // Create preview URL from compressed file
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          updateUserData('profilePictureUrl', e.target.result);
-          console.log('Onboarding: Preview URL created from compressed image');
-        };
-        reader.readAsDataURL(compressedFile);
-        
-      } catch (error) {
-        console.error('Onboarding: Image compression failed:', error);
-        setNotification({
-          message: "Failed to process image. Please try a different photo.",
-          name: "",
-          emoji: "⚠️"
-        });
+      // Store the file and open crop modal
+      setSelectedFile(file);
+      setShowCropModal(true);
+    }
+  };
+
+  const handleCropComplete = async (cropResult) => {
+    try {
+      console.log('Onboarding: Crop completed:', cropResult);
+      
+      // Store the cropped image blob as the profile picture
+      updateUserData('profilePicture', cropResult.blob);
+      updateUserData('profilePictureUrl', cropResult.previewUrl);
+      
+      console.log('Onboarding: Cropped image stored in userData');
+      
+      // Close modal and reset file input
+      setShowCropModal(false);
+      setSelectedFile(null);
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
+      
+    } catch (error) {
+      console.error('Onboarding: Failed to save cropped image:', error);
+      setNotification({
+        message: "Failed to save cropped image. Please try again.",
+        name: "",
+        emoji: "⚠️"
+      });
+    }
+  };
+
+  const handleCropCancel = () => {
+    setShowCropModal(false);
+    setSelectedFile(null);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -792,6 +811,16 @@ const Onboarding = () => {
           name={notification.name}
           emoji={notification.emoji}
           onClose={() => setNotification(null)}
+        />
+      )}
+
+      {/* Photo Crop Modal */}
+      {showCropModal && selectedFile && (
+        <PhotoCropModal
+          isOpen={showCropModal}
+          file={selectedFile}
+          onCropComplete={handleCropComplete}
+          onClose={handleCropCancel}
         />
       )}
     </div>
