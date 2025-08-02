@@ -131,11 +131,11 @@ const SwipeableCard = memo(({ profile, onSwipe, isTop }) => {
   const handleLikeClick = useCallback((e) => {
     if (!isTop) return;
     
-    // Force reset button state
+    // Force reset button state to correct filled style
     const button = e.currentTarget;
     button.blur();
-    button.style.background = 'white';
-    button.style.color = '#10b981';
+    button.style.background = '#3E5D45';
+    button.style.color = 'white';
     button.style.transform = 'scale(1)';
     
     // Enable transitions for smooth exit animation
@@ -149,11 +149,11 @@ const SwipeableCard = memo(({ profile, onSwipe, isTop }) => {
   const handleDislikeClick = useCallback((e) => {
     if (!isTop) return;
     
-    // Force reset button state
+    // Force reset button state to correct filled style
     const button = e.currentTarget;
     button.blur();
-    button.style.background = 'white';
-    button.style.color = '#ef4444';
+    button.style.background = '#f87171';
+    button.style.color = 'white';
     button.style.transform = 'scale(1)';
     
     // Enable transitions for smooth exit animation
@@ -163,6 +163,41 @@ const SwipeableCard = memo(({ profile, onSwipe, isTop }) => {
     setRotation(-30);
     setTimeout(() => handleSwipeCompleteWithCleanup('left'), 300);
   }, [isTop, handleSwipeCompleteWithCleanup]);
+
+  // Reset button states when profile changes
+  useEffect(() => {
+    if (cardRef.current) {
+      const likeBtn = cardRef.current.querySelector('.swipeable-card-like-btn');
+      const dislikeBtn = cardRef.current.querySelector('.swipeable-card-dislike-btn');
+      
+      if (likeBtn) {
+        likeBtn.style.background = '#3E5D45';
+        likeBtn.style.color = 'white';
+        likeBtn.style.transform = 'scale(1)';
+        likeBtn.style.outline = 'none';
+        likeBtn.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.1)';
+        likeBtn.style.border = '2px solid #3E5D45';
+        likeBtn.blur();
+        likeBtn.removeAttribute('data-focus');
+      }
+      
+      if (dislikeBtn) {
+        dislikeBtn.style.background = '#f87171';
+        dislikeBtn.style.color = 'white';
+        dislikeBtn.style.transform = 'scale(1)';
+        dislikeBtn.style.outline = 'none';
+        dislikeBtn.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.1)';
+        dislikeBtn.style.border = '2px solid #f87171';
+        dislikeBtn.blur();
+        dislikeBtn.removeAttribute('data-focus');
+      }
+      
+      // Force remove focus from any focused elements
+      if (document.activeElement && document.activeElement.blur) {
+        document.activeElement.blur();
+      }
+    }
+  }, [profile.id, profile.name]); // Reset when profile changes
 
   const cardStyle = {
     transform: `translate(${position.x}px, ${position.y}px) rotate(${rotation}deg)`,
@@ -221,45 +256,34 @@ const SwipeableCard = memo(({ profile, onSwipe, isTop }) => {
 
       {/* Details Section */}
       <div className="swipeable-card-details">
-        {/* Header: Name, Age (left) + Gender (right) */}
+        {/* Header: Name, Age (left) + Skill Level or DUPR (right) */}
         <div className="swipeable-card-header">
           <h2 className="swipeable-card-name">
             {profile.name}, {profile.age}
           </h2>
-          <span className="swipeable-card-gender">
-            {profile.gender === 'male' ? 'Male' : 
-             profile.gender === 'female' ? 'Female' : 
-             profile.gender === 'non-binary' ? 'Non-binary' : 
-             'Prefer not to say'}
+          <span className="swipeable-card-skill-text">
+            {profile.duprRating && profile.duprRating !== 'unrated' && profile.duprRating !== '' 
+              ? `DUPR: ${profile.duprRating}`
+              : profile.skillLevel 
+                ? profile.skillLevel.charAt(0).toUpperCase() + profile.skillLevel.slice(1).toLowerCase() 
+                : 'Not Specified'}
           </span>
         </div>
 
-        {/* Skill Row */}
-        <div className="swipeable-card-skill-row">
-          <span className="swipeable-card-info-label">Skill:</span>
-          <span className="swipeable-card-skill-badge">
-            {profile.skillLevel || 'Not specified'}
-          </span>
-          {profile.duprRating && 
-           profile.duprRating !== 'unrated' && 
-           profile.duprRating !== '' && (
-            <>
-              <span className="swipeable-card-info-label">DUPR:</span>
-              <span className="swipeable-card-dupr-badge">
-                {profile.duprRating}
-              </span>
-            </>
-          )}
-        </div>
 
         {/* Availability */}
         {profile.availability && profile.availability.length > 0 && (
           <div className="swipeable-card-availability">
-            <span className="swipeable-card-availability-label">Available:</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="swipeable-card-info-icon">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
             <div className="swipeable-card-availability-tags">
               {profile.availability.slice(0, MAX_AVAILABILITY_DISPLAY).map((time, index) => (
                 <span key={index} className="swipeable-card-availability-tag">
-                  {time}
+                  {time.charAt(0).toUpperCase() + time.slice(1).toLowerCase()}
                 </span>
               ))}
               {profile.availability.length > MAX_AVAILABILITY_DISPLAY && (
@@ -271,10 +295,12 @@ const SwipeableCard = memo(({ profile, onSwipe, isTop }) => {
           </div>
         )}
 
-        {/* Bio Preview */}
-        {profile.bio && (
+        {/* Bio Preview - 2 lines max */}
+        {profile.bio && 
+         profile.bio.trim() !== '' && 
+         !profile.bio.toLowerCase().includes('new to the social pickle') && (
           <div className="swipeable-card-bio">
-            <p>{profile.bio.length > BIO_PREVIEW_LENGTH ? `${profile.bio.slice(0, BIO_PREVIEW_LENGTH)}...` : profile.bio}</p>
+            <p className="swipeable-card-bio-text">{profile.bio}</p>
           </div>
         )}
 
@@ -286,7 +312,7 @@ const SwipeableCard = memo(({ profile, onSwipe, isTop }) => {
               onClick={handleDislikeClick}
               aria-label="Pass"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{width: '17px', height: '17px', minWidth: '17px', minHeight: '17px'}}>
                 <path d="M18 6 6 18"></path>
                 <path d="m6 6 12 12"></path>
               </svg>
@@ -297,7 +323,7 @@ const SwipeableCard = memo(({ profile, onSwipe, isTop }) => {
               onClick={handleLikeClick}
               aria-label="Like"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{width: '17px', height: '17px', minWidth: '17px', minHeight: '17px'}}>
                 <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
               </svg>
             </button>
