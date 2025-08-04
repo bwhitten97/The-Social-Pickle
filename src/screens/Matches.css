@@ -18,7 +18,7 @@
 .matches-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0.5rem 1rem;
+  padding: 1rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 3rem;
@@ -38,19 +38,19 @@
 }
 
 .matches-title {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
   letter-spacing: -0.025em;
   line-height: 1.25;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 6px;
 }
 
 .matches-title-icon {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 32px;
+  height: 32px;
   color: #3E5D45;
   flex-shrink: 0;
 }
@@ -488,7 +488,7 @@
 
 @media (max-width: 768px) {
   .matches-content {
-    padding: 0.5rem 1rem;
+    padding: 1rem 1rem;
     gap: 1.5rem;
   }
   
@@ -640,17 +640,17 @@
 /* Extra small screens (mobile portrait) */
 @media (max-width: 480px) {
   .matches-content {
-    padding: 0.75rem;
+    padding: 1rem;
     gap: 1.25rem;
   }
   
   .matches-title {
-    font-size: 1.125rem;
+    font-size: 1.25rem;
   }
   
   .matches-title-icon {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
   }
   
   .matches-cards-section {

@@ -677,7 +677,6 @@
 }
 
 /* Content Container */
-.messages-header-modern,
 .messages-tabs-modern,
 .chat-panel-modern,
 .notification-panel-modern {
@@ -689,7 +688,9 @@
 
 /* Header Section */
 .messages-header-modern {
-  padding: 0.5rem 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 1rem 0 1rem;
   margin-bottom: 3rem;
 }
 
@@ -702,8 +703,8 @@
 .messages-title {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 1.5rem;
+  gap: 6px;
+  font-size: 1.25rem;
   font-weight: 600;
   color: #2C3E50;
   margin: 0;
@@ -711,8 +712,8 @@
 }
 
 .messages-icon {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 32px;
+  height: 32px;
   color: #3E5D45;
   flex-shrink: 0;
 }
@@ -1344,15 +1345,18 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .messages-modern {
-    padding: 1.5rem 0 3rem;
+    padding: 0 0 3rem;
   }
 
-  .messages-header-modern,
   .messages-tabs-modern,
   .chat-panel-modern,
   .notification-panel-modern {
     padding-left: 1rem;
     padding-right: 1rem;
+  }
+  
+  .messages-header-modern {
+    padding: 16px 1rem 0 1rem;
   }
 
   .messages-title-section {
@@ -1366,8 +1370,8 @@
   }
 
   .messages-icon {
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 32px;
+    height: 32px;
   }
 
   .chat-card-modern,
