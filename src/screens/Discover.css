@@ -249,7 +249,8 @@ body.discover-no-scroll {
   height: 560px;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  padding-top: 57px;
 }
 
 @media (max-width: 640px) {
@@ -259,18 +260,16 @@ body.discover-no-scroll {
   }
   
   .swipeable-card-stack {
-    height: 440px;
+    height: 484px;
+    padding-top: 0;
   }
   
   .discover-card-container {
-    min-height: 460px;
+    min-height: 494px;
     padding: 2px 8px 6px 8px;
     margin-top: 0;
   }
   
-  .swipeable-card-image-section {
-    height: 260px;
-  }
 }
 
 /* Responsive design */

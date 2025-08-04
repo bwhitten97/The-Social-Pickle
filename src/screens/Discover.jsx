@@ -22,6 +22,17 @@ const Discover = memo(({
   currentFilter = 'All',
   isLoading = false
 }) => {
+  
+  // Prevent body scrolling on Discover page
+  useEffect(() => {
+    // Add class to prevent scrolling
+    document.body.classList.add('discover-no-scroll');
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.classList.remove('discover-no-scroll');
+    };
+  }, []);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({
     duprRange: { min: DEFAULT_DUPR_MIN, max: DEFAULT_DUPR_MAX },

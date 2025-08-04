@@ -259,7 +259,7 @@ const SwipeableCard = memo(({ profile, onSwipe, isTop }) => {
         {/* Header: Name, Age (left) + Skill Level or DUPR (right) */}
         <div className="swipeable-card-header">
           <h2 className="swipeable-card-name">
-            {profile.name}, {profile.age}
+            <span className="swipeable-card-name-bold">{profile.name}</span>, {profile.age}
           </h2>
           <span className="swipeable-card-skill-text">
             {profile.duprRating && profile.duprRating !== 'unrated' && profile.duprRating !== '' 
@@ -280,29 +280,34 @@ const SwipeableCard = memo(({ profile, onSwipe, isTop }) => {
               <line x1="8" y1="2" x2="8" y2="6"></line>
               <line x1="3" y1="10" x2="21" y2="10"></line>
             </svg>
+            <span className="swipeable-card-availability-colon">:</span>
             <div className="swipeable-card-availability-tags">
-              {profile.availability.slice(0, MAX_AVAILABILITY_DISPLAY).map((time, index) => (
+              {profile.availability.map((time, index) => (
                 <span key={index} className="swipeable-card-availability-tag">
                   {time.charAt(0).toUpperCase() + time.slice(1).toLowerCase()}
                 </span>
               ))}
-              {profile.availability.length > MAX_AVAILABILITY_DISPLAY && (
-                <span className="swipeable-card-availability-tag more">
-                  +{profile.availability.length - MAX_AVAILABILITY_DISPLAY} more
-                </span>
-              )}
             </div>
           </div>
         )}
 
-        {/* Bio Preview - 2 lines max */}
-        {profile.bio && 
-         profile.bio.trim() !== '' && 
-         !profile.bio.toLowerCase().includes('new to the social pickle') && (
-          <div className="swipeable-card-bio">
-            <p className="swipeable-card-bio-text">{profile.bio}</p>
+        {/* Bio Section */}
+        <div className="swipeable-card-bio-section">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="swipeable-card-info-icon">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span className="swipeable-card-bio-colon">:</span>
+          <div className="swipeable-card-bio-content">
+            {false ? (
+              <p className="swipeable-card-bio-text">{profile.bio}</p>
+            ) : (
+              <p className="swipeable-card-bio-fallback">
+                {profile.firstName || 'User'} loves playing pickleball and connecting with fellow players for matches
+              </p>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Action Buttons - Only show for top card */}
         {isTop && (
