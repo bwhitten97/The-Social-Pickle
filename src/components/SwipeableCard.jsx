@@ -299,11 +299,11 @@ const SwipeableCard = memo(({ profile, onSwipe, isTop }) => {
           </svg>
           <span className="swipeable-card-bio-colon">:</span>
           <div className="swipeable-card-bio-content">
-            {false ? (
+            {profile.bio && profile.bio.trim() !== '' ? (
               <p className="swipeable-card-bio-text">{profile.bio}</p>
             ) : (
               <p className="swipeable-card-bio-fallback">
-                {profile.firstName || 'User'} loves playing pickleball and connecting with fellow players for matches
+                {profile.name?.split(' ')[0] || 'User'} is new to The Social Pickle
               </p>
             )}
           </div>

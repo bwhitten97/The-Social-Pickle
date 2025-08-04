@@ -23,7 +23,9 @@
       "Bash(firebase deploy:*)",
       "Bash(./deploy.sh)",
       "Bash(sed:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }

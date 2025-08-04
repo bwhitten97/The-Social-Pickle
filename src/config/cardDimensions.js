@@ -11,11 +11,14 @@ export const DISCOVER_CARD_CONFIG = {
   cardWidth: 400,
   cardMaxWidth: 400,
   
-  // Image section dimensions (can be updated based on bio solution)
-  imageHeight: 420,
+  // Image section dimensions (calculated from actual CSS: 464px total - details section height)
+  imageHeight: 270, // Normal screens: 464px - 194px details
+  imageHeightShort1: 290, // ≤750px height: 464px - 174px details
+  imageHeightShort2: 300, // ≤700px height: 464px - 164px details  
+  imageHeightShort3: 310, // ≤650px height: 464px - 154px details
   
   // Responsive breakpoints
-  mobileImageHeight: 260,
+  mobileImageHeight: 270, // Mobile uses same base calculation as desktop
   mobileBreakpoint: 640,
   
   // Aspect ratios
@@ -30,11 +33,27 @@ export const DISCOVER_CARD_CONFIG = {
   // Get current dimensions based on screen size
   getCurrentDimensions() {
     const isMobile = window.innerWidth <= this.mobileBreakpoint;
+    const screenHeight = window.innerHeight;
+    
+    // Determine image height based on screen height (matches CSS media queries)
+    let imageHeight = this.imageHeight; // Default: 270px
+    if (screenHeight <= 650) {
+      imageHeight = this.imageHeightShort3; // 310px
+    } else if (screenHeight <= 700) {
+      imageHeight = this.imageHeightShort2; // 300px
+    } else if (screenHeight <= 750) {
+      imageHeight = this.imageHeightShort1; // 290px
+    }
+    
+    // For mobile, use the same logic as desktop
+    const finalHeight = isMobile ? imageHeight : imageHeight;
+    
     return {
       width: this.cardWidth,
-      height: isMobile ? this.mobileImageHeight : this.imageHeight,
-      aspectRatio: isMobile ? this.getMobileAspectRatio() : this.getAspectRatio(),
-      isMobile
+      height: finalHeight,
+      aspectRatio: this.cardWidth / finalHeight,
+      isMobile,
+      screenHeight
     };
   },
   
@@ -43,6 +62,9 @@ export const DISCOVER_CARD_CONFIG = {
     return {
       '--card-width': `${this.cardWidth}px`,
       '--card-image-height': `${this.imageHeight}px`,
+      '--card-image-height-short1': `${this.imageHeightShort1}px`,
+      '--card-image-height-short2': `${this.imageHeightShort2}px`,  
+      '--card-image-height-short3': `${this.imageHeightShort3}px`,
       '--card-mobile-image-height': `${this.mobileImageHeight}px`
     };
   }
@@ -69,6 +91,9 @@ export const {
   cardWidth,
   cardMaxWidth,
   imageHeight,
+  imageHeightShort1,
+  imageHeightShort2,
+  imageHeightShort3,
   mobileImageHeight,
   mobileBreakpoint
 } = DISCOVER_CARD_CONFIG;

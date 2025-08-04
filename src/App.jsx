@@ -21,7 +21,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { logPlayerLiked, logPlayerPassed, logMatchCreated, logPageView } from './utils/analytics';
 import { config } from './config/app';
 import { notificationService } from './services/notificationService';
-import { createLike, listenToIncomingLikes } from './services/matchService';
+import { createLike, createPass, getUserPasses, getUsersILiked, listenToIncomingLikes } from './services/matchService';
 import './App.css';
 import './screens/Profile.css';
 import './components/ProtectedRoute.css';
@@ -60,6 +60,14 @@ function AppContent() {
   const [firebaseNotifications, setFirebaseNotifications] = useState([]);
   // Track players who have already swiped right on the current user
   const [playersWhoLikedUser, setPlayersWhoLikedUser] = useState(INITIAL_LIKED_PLAYERS);
+  // Track players the current user has already passed on (loaded from Firebase)
+  const [passedUserIds, setPassedUserIds] = useState(new Set());
+  const [isLoadingPasses, setIsLoadingPasses] = useState(true);
+  // Track players the current user has already liked (loaded from Firebase)
+  const [likedUserIds, setLikedUserIds] = useState(new Set());
+  const [isLoadingLikes, setIsLoadingLikes] = useState(true);
+  // Stable filtered players array to prevent mid-swipe changes
+  const [stableFilteredPlayers, setStableFilteredPlayers] = useState([]);
   const [userProfile, setUserProfile] = useState({
     name: user?.name || DEFAULT_USER_NAME,
     age: user?.age || DEFAULT_USER_AGE,
@@ -134,6 +142,50 @@ function AppContent() {
     }
   };
 
+  // Fetch users the current user has already passed on
+  const fetchPassedUsers = async () => {
+    if (!user?.id) {
+      setPassedUserIds(new Set());
+      setIsLoadingPasses(false);
+      return;
+    }
+
+    try {
+      setIsLoadingPasses(true);
+      console.log('🔍 Fetching passed users for:', user.id);
+      const passedIds = await getUserPasses(user.id);
+      console.log('📋 Loaded passed users:', passedIds);
+      setPassedUserIds(new Set(passedIds));
+    } catch (error) {
+      console.error('💥 Error fetching passed users:', error);
+      setPassedUserIds(new Set());
+    } finally {
+      setIsLoadingPasses(false);
+    }
+  };
+
+  // Fetch users the current user has already liked
+  const fetchLikedUsers = async () => {
+    if (!user?.id) {
+      setLikedUserIds(new Set());
+      setIsLoadingLikes(false);
+      return;
+    }
+
+    try {
+      setIsLoadingLikes(true);
+      console.log('🔍 Fetching liked users for:', user.id);
+      const likedIds = await getUsersILiked(user.id);
+      console.log('💚 Loaded liked users:', likedIds); 
+      setLikedUserIds(new Set(likedIds));
+    } catch (error) {
+      console.error('💥 Error fetching liked users:', error);
+      setLikedUserIds(new Set());
+    } finally {
+      setIsLoadingLikes(false);
+    }
+  };
+
   // Fetch users when component mounts or user changes
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -144,6 +196,26 @@ function AppContent() {
     }
   }, [isAuthenticated, user]);
 
+  // Fetch passed users when component mounts or user changes
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      fetchPassedUsers();
+    } else {
+      setPassedUserIds(new Set());
+      setIsLoadingPasses(false);
+    }
+  }, [isAuthenticated, user?.id]);
+
+  // Fetch liked users when component mounts or user changes
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      fetchLikedUsers();
+    } else {
+      setLikedUserIds(new Set());
+      setIsLoadingLikes(false);
+    }
+  }, [isAuthenticated, user?.id]);
+
   // Track page views when route changes
   useEffect(() => {
     if (user && location.pathname) {
@@ -152,61 +224,91 @@ function AppContent() {
     }
   }, [location.pathname, user]);
 
-  const filteredPlayers = players.filter(player => {
-    // Handle basic 'All' filter
-    if (filter === 'All') {
-      return true;
-    }
-    
-    // Handle Advanced Matching filter
-    if (filter === 'Advanced Matching') {
-      // If no advanced filters are set yet, show all players
-      if (!advancedFilters) {
+  // Compute filtered players and update stable array when dependencies change
+  const computeFilteredPlayers = (playersArray, passedIds, likedIds, currentFilter, advancedFiltersState) => {
+    return playersArray.filter(player => {
+      // First filter out players that have already been passed on (from Firebase)
+      if (passedIds.has(player.id)) {
+        return false;
+      }
+      
+      // Also filter out players that have already been liked (from Firebase)
+      if (likedIds.has(player.id)) {
+        return false;
+      }
+      
+      // Handle basic 'All' filter
+      if (currentFilter === 'All') {
         return true;
       }
-      // DUPR Rating filter
-      if (advancedFilters.duprRange) {
-        const playerDupr = parseFloat(player.duprRating) || 0;
-        if (playerDupr < advancedFilters.duprRange.min || playerDupr > advancedFilters.duprRange.max) {
-          return false;
-        }
-      }
-      
-      // Gender filter
-      if (advancedFilters.gender && advancedFilters.gender !== 'any') {
-        if (player.gender !== advancedFilters.gender) {
-          return false;
-        }
-      }
-      
-      // Age Range filter
-      if (advancedFilters.ageRange) {
-        const playerAge = parseInt(player.age) || 0;
-        if (playerAge < advancedFilters.ageRange.min || playerAge > advancedFilters.ageRange.max) {
-          return false;
-        }
-      }
-      
-      // Availability filter
-      if (advancedFilters.availability && advancedFilters.availability.length > 0) {
-        const playerAvailability = player.availability || [];
-        // Check if player has at least one matching availability
-        const hasMatchingAvailability = advancedFilters.availability.some(filterAvail => 
-          playerAvailability.includes(filterAvail)
-        );
-        if (!hasMatchingAvailability) {
-          return false;
-        }
-      }
-      
-      return true;
-    }
     
-    // Handle other filters (skill level based)
-    return player.skillLevel === filter.toLowerCase();
-  });
+      // Handle Advanced Matching filter
+      if (currentFilter === 'Advanced Matching') {
+        // If no advanced filters are set yet, show all players
+        if (!advancedFiltersState) {
+          return true;
+        }
+        // DUPR Rating filter
+        if (advancedFiltersState.duprRange) {
+          const playerDupr = parseFloat(player.duprRating) || 0;
+          if (playerDupr < advancedFiltersState.duprRange.min || playerDupr > advancedFiltersState.duprRange.max) {
+            return false;
+          }
+        }
+        
+        // Gender filter
+        if (advancedFiltersState.gender && advancedFiltersState.gender !== 'any') {
+          if (player.gender !== advancedFiltersState.gender) {
+            return false;
+          }
+        }
+        
+        // Age Range filter
+        if (advancedFiltersState.ageRange) {
+          const playerAge = parseInt(player.age) || 0;
+          if (playerAge < advancedFiltersState.ageRange.min || playerAge > advancedFiltersState.ageRange.max) {
+            return false;
+          }
+        }
+        
+        // Availability filter
+        if (advancedFiltersState.availability && advancedFiltersState.availability.length > 0) {
+          const playerAvailability = player.availability || [];
+          // Check if player has at least one matching availability
+          const hasMatchingAvailability = advancedFiltersState.availability.some(filterAvail => 
+            playerAvailability.includes(filterAvail)
+          );
+          if (!hasMatchingAvailability) {
+            return false;
+          }
+        }
+        
+        return true;
+      }
+      
+      // Handle other filters (skill level based)
+      return player.skillLevel === currentFilter.toLowerCase();
+    });
+  };
 
-  const currentPlayer = filteredPlayers[currentIndex];
+  // Update stable filtered players only when data first loads, not during swiping
+  useEffect(() => {
+    // Only update when players, passes, and likes are all loaded for the first time
+    if (!isLoadingPlayers && !isLoadingPasses && !isLoadingLikes && stableFilteredPlayers.length === 0) {
+      const newFilteredPlayers = computeFilteredPlayers(players, passedUserIds, likedUserIds, filter, advancedFilters);
+      console.log('🔄 Updating stable filtered players (initial load):', {
+        totalPlayers: players.length,
+        passedCount: passedUserIds.size,
+        likedCount: likedUserIds.size,
+        filteredCount: newFilteredPlayers.length,
+        currentIndex,
+        playerNames: newFilteredPlayers.slice(0, 5).map(p => p.name)
+      });
+      setStableFilteredPlayers(newFilteredPlayers);
+    }
+  }, [players, passedUserIds, likedUserIds, filter, advancedFilters, isLoadingPlayers, isLoadingPasses, isLoadingLikes]);
+
+  const currentPlayer = stableFilteredPlayers[currentIndex];
 
   const addAppNotification = (message, type = "match", targetUser = null) => {
     const newNotification = {
@@ -240,31 +342,82 @@ function AppContent() {
     }
   };
 
-  const handlePass = () => {
-    // Log analytics event
-    if (user) {
-      logPlayerPassed(user.id, currentPlayer.id, currentPlayer.skillLevel);
+  const handlePass = async () => {
+    if (!currentPlayer || !user?.id) return;
+    
+    // Store current player data before switching
+    const passedPlayer = { ...currentPlayer };
+    const passedPlayerId = passedPlayer.id;
+    const passedPlayerName = passedPlayer.name;
+    const passedPlayerSkillLevel = passedPlayer.skillLevel;
+    
+    // Add to local state immediately for smooth UX
+    setPassedUserIds(prev => new Set([...prev, passedPlayerId]));
+    
+    // Remove current player from stable array to prevent recalculation issues
+    setStableFilteredPlayers(prev => prev.filter(player => player.id !== passedPlayerId));
+    
+    console.log('📝 Passed player removed from stable array:', passedPlayerName);
+    
+    // Don't increment index since we removed the current player from the array
+    
+    // Handle Firebase operations in background
+    try {
+      console.log('📝 Creating pass record for:', passedPlayerName, passedPlayerId);
+      const passResult = await createPass(user.id, passedPlayerId);
+      console.log('✅ Pass result:', passResult);
+      
+      if (passResult.success) {
+        // Log analytics event
+        logPlayerPassed(user.id, passedPlayerId, passedPlayerSkillLevel);
+        showNotification("You passed on", passedPlayerName, "👋", "action");
+      } else {
+        console.error('❌ Failed to create pass:', passResult.error);
+        // Revert local state if Firebase operation failed
+        setPassedUserIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(passedPlayerId);
+          return newSet;
+        });
+      }
+    } catch (error) {
+      console.error('💥 Error handling pass:', error);
+      // Revert local state if there was an error
+      setPassedUserIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(passedPlayerId);
+        return newSet;
+      });
     }
-    showNotification("You passed on", currentPlayer.name, "👋", "action");
-    nextPlayer();
   };
 
   const handleConnect = async () => {
+    if (!currentPlayer) return;
+    
     // Store current player data before switching
     const likedPlayer = { ...currentPlayer };
     const playerId = likedPlayer.id;
     const playerName = likedPlayer.name;
     const playerSkillLevel = likedPlayer.skillLevel;
     
+    // Add to liked users set so they won't show up again
+    setLikedUserIds(prev => new Set([...prev, playerId]));
+    
     setConnections(prev => [...prev, likedPlayer]);
     
-    // Move to next player immediately for smooth UX
-    nextPlayer();
+    // Remove current player from stable array to prevent recalculation issues
+    setStableFilteredPlayers(prev => prev.filter(player => player.id !== playerId));
+    
+    console.log('💚 Liked player removed from stable array:', playerName);
+    
+    // Don't increment index since we removed the current player from the array
     
     // Handle Firebase operations in background
     if (user) {
       try {
+        console.log('💚 Creating like record for:', playerName, playerId);
         const likeResult = await createLike(user.id, playerId);
+        console.log('✅ Like result:', likeResult);
         
         if (likeResult.success) {
           if (likeResult.isMatch) {
@@ -279,22 +432,27 @@ function AppContent() {
             // Log analytics for like
             logPlayerLiked(user.id, playerId, playerSkillLevel);
           }
+        } else {
+          console.error('❌ Failed to create like:', likeResult.error);
         }
       } catch (error) {
-        console.error('Error handling like:', error);
+        console.error('💥 Error handling like:', error);
       }
     }
   };
 
   const nextPlayer = () => {
-    // Update immediately since we have smooth card animations now
-    setCurrentIndex(prev => (prev + 1) % filteredPlayers.length);
+    // This function is no longer used since we remove players from array instead of incrementing index
+    console.log('⚠️ nextPlayer called but should not be used with new approach');
   };
 
   const resetFeed = () => {
     setCurrentIndex(0);
     setConnections([]);
     setPlayersWhoLikedUser(INITIAL_LIKED_PLAYERS);
+    setPassedUserIds(new Set()); // Clear passed players (local state only - Firebase records remain)
+    setLikedUserIds(new Set()); // Clear liked players (local state only - Firebase records remain)
+    setStableFilteredPlayers([]); // Clear stable array to trigger recalculation
     fetchUsers(); // Refetch from Firebase
     showNotification("Feed reset!", "", "🔄", "system");
   };
@@ -381,7 +539,7 @@ function AppContent() {
               <main className="main-content">
                 <ErrorBoundary>
                   <Discover 
-                    players={filteredPlayers}
+                    players={stableFilteredPlayers}
                     currentIndex={currentIndex}
                     connections={connections}
                     onLike={handleConnect}
@@ -392,7 +550,7 @@ function AppContent() {
                       setCurrentIndex(0);
                     }}
                     currentFilter={filter}
-                    isLoading={isLoadingPlayers}
+                    isLoading={isLoadingPlayers || isLoadingPasses || isLoadingLikes}
                   />
                 </ErrorBoundary>
               </main>

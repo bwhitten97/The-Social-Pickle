@@ -15,10 +15,11 @@ import {
 import { db } from '../config/firebase';
 
 /**
- * Match Service - Handles likes and matches in Firebase
+ * Match Service - Handles likes, passes, and matches in Firebase
  * 
  * Collections:
  * - likes: { id, likedBy, likedUser, createdAt }
+ * - passes: { id, passedBy, passedUser, createdAt }
  * - matches: { id, users[], createdAt, lastActivity }
  */
 
@@ -95,6 +96,73 @@ export const createMatch = async (userId1, userId2) => {
   }
 };
 
+// Create a pass document
+export const createPass = async (currentUserId, passedUserId) => {
+  try {
+    // Create pass document ID using both user IDs
+    const passId = `${currentUserId}_${passedUserId}`;
+    
+    // Check if pass already exists
+    const passRef = doc(db, 'passes', passId);
+    const passSnap = await getDoc(passRef);
+    
+    if (passSnap.exists()) {
+      console.log('Pass already exists');
+      return { success: true, alreadyPassed: true };
+    }
+    
+    // Create the pass
+    await setDoc(passRef, {
+      passedBy: currentUserId,
+      passedUser: passedUserId,
+      createdAt: serverTimestamp()
+    });
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error creating pass:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Get all users the current user has passed on
+export const getUserPasses = async (userId) => {
+  try {
+    const passesRef = collection(db, 'passes');
+    const q = query(
+      passesRef,
+      where('passedBy', '==', userId)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const passedUserIds = [];
+    
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      passedUserIds.push(data.passedUser);
+    });
+    
+    return passedUserIds;
+  } catch (error) {
+    console.error('Error fetching user passes:', error);
+    return [];
+  }
+};
+
+// Check if user has passed another user
+export const hasUserPassed = async (userId, targetUserId) => {
+  try {
+    const passId = `${userId}_${targetUserId}`;
+    const passRef = doc(db, 'passes', passId);
+    const passSnap = await getDoc(passRef);
+    
+    return passSnap.exists();
+  } catch (error) {
+    console.error('Error checking pass status:', error);
+    return false;
+  }
+};
+
 // Get all matches for a user
 export const getUserMatches = async (userId) => {
   try {
@@ -129,8 +197,7 @@ export const getUsersWhoLikedMe = async (userId) => {
     const likesRef = collection(db, 'likes');
     const q = query(
       likesRef,
-      where('likedUser', '==', userId),
-      orderBy('createdAt', 'desc')
+      where('likedUser', '==', userId)
     );
     
     const querySnapshot = await getDocs(q);
@@ -148,13 +215,36 @@ export const getUsersWhoLikedMe = async (userId) => {
   }
 };
 
+// Get all users the current user has liked
+export const getUsersILiked = async (userId) => {
+  try {
+    const likesRef = collection(db, 'likes');
+    const q = query(
+      likesRef,
+      where('likedBy', '==', userId)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const likedUserIds = [];
+    
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      likedUserIds.push(data.likedUser);
+    });
+    
+    return likedUserIds;
+  } catch (error) {
+    console.error('Error fetching liked users:', error);
+    return [];
+  }
+};
+
 // Listen to real-time likes for a user
 export const listenToIncomingLikes = (userId, callback) => {
   const likesRef = collection(db, 'likes');
   const q = query(
     likesRef,
     where('likedUser', '==', userId),
-    orderBy('createdAt', 'desc'),
     limit(50)
   );
   
