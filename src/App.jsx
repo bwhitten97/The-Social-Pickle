@@ -46,7 +46,6 @@ const DEFAULT_USER_AVATAR = '👤';
 
 function AppContent() {
   const location = useLocation();
-  const { addMatchedPlayer } = useGameContext();
   const { isAuthenticated, user } = useAuth();
   const [players, setPlayers] = useState([]);
   const [isLoadingPlayers, setIsLoadingPlayers] = useState(true);
@@ -531,21 +530,32 @@ function AppContent() {
         if (likeResult.success) {
           if (likeResult.isMatch) {
             // It's a match!
-            addMatchedPlayer(likedPlayer); // Add to GameContext matches
             showNotification("It's a match! You and", playerName, "🎉", "match");
             
             // Create notification for the OTHER user (Person A who swiped first)
             // They need to know that Person B matched with them!
+            // NOTE: playerId is the person we just swiped right on, so they should get the notification
             try {
               await notificationService.createNotification({
-                userId: playerId, // Send to the other user
+                userId: playerId, // Send to the person we swiped right on (they swiped first)
                 type: 'match',
                 title: 'New Match! 🎉',
                 message: `It's a match! You and ${user.name || 'someone'} matched!`,
                 fromUserId: user.id,
                 matchId: likeResult.matchId
               });
-              console.log('✅ Match notification sent to other user');
+              console.log('✅ Match notification sent to user who swiped first:', playerId);
+              
+              // ALSO create notification for current user (Person B who just completed the match)
+              await notificationService.createNotification({
+                userId: user.id, // Send to current user too
+                type: 'match', 
+                title: 'New Match! 🎉',
+                message: `It's a match! You and ${playerName} matched!`,
+                fromUserId: playerId,
+                matchId: likeResult.matchId
+              });
+              console.log('✅ Match notification sent to current user:', user.id);
             } catch (notifError) {
               console.error('❌ Failed to send match notification:', notifError);
             }
