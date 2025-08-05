@@ -12,27 +12,37 @@ const Welcome = () => {
     setIsLoading(true);
     
     try {
-      // Mark that user has seen the welcome page
-      await updateWelcomeStatus();
+      // Mark that user has seen the welcome page and wait for it to complete
+      const result = await updateWelcomeStatus();
       
-      // Navigate to appropriate page based on selection
-      switch (selection) {
-        case 'discover':
-          navigate('/discover');
-          break;
-        case 'games':
-          navigate('/games');
-          break;
-        case 'look-around':
-          navigate('/discover');
-          break;
-        default:
-          navigate('/discover');
+      // Only navigate after the update is complete
+      if (result && result.success) {
+        // Add delay to ensure state has fully propagated
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Navigate to appropriate page based on selection with replace to prevent back navigation
+        switch (selection) {
+          case 'discover':
+            navigate('/discover', { replace: true });
+            break;
+          case 'games':
+            navigate('/games', { replace: true });
+            break;
+          case 'look-around':
+            navigate('/discover', { replace: true });
+            break;
+          default:
+            navigate('/discover', { replace: true });
+        }
+      } else {
+        // If update failed, still navigate but log the issue
+        console.error('Welcome status update failed, navigating anyway');
+        navigate('/discover', { replace: true });
       }
     } catch (error) {
       console.error('Error updating welcome status:', error);
       // Navigate anyway if there's an error
-      navigate('/discover');
+      navigate('/discover', { replace: true });
     } finally {
       setIsLoading(false);
     }

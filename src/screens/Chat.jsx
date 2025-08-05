@@ -1168,9 +1168,13 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
                 {!notification.isRead && !readNotifications.has(notification.id) && <div className="notification-unread-dot"></div>}
               </div>
               <div className="notification-content-modern">
+                {notification.title && <strong>{notification.title}</strong>}
+                {notification.title && notification.message && <br />}
                 {notification.message}
               </div>
-              <time className="notification-time-modern">{notification.timestamp}</time>
+              <time className="notification-time-modern">
+                {notification.timestamp || formatTimestamp(notification.createdAt)}
+              </time>
             </article>
           ))}
           

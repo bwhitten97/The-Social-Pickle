@@ -122,9 +122,19 @@ export const createApplicationNotification = async (applicantId, hostName, gameD
   const notificationData = {
     userId: applicantId,
     type: 'application',
-    title: status === 'accepted' ? 'Game Application Accepted!' : 'Game Application Update',
+    title: status === 'accepted' ? 'Game Application Accepted!' : 
+           status === 'applied' ? 'New Game Application!' :
+           status === 'cancelled' ? 'Game Cancelled' :
+           status === 'updated' ? 'Game Updated' :
+           'Game Application Update',
     message: status === 'accepted' 
       ? `${hostName} accepted you into their game on ${gameData.date} at ${gameData.time}`
+      : status === 'applied'
+      ? `${hostName} applied to join your game on ${gameData.date} at ${gameData.time}`
+      : status === 'cancelled'
+      ? `${hostName} cancelled their game on ${gameData.date} at ${gameData.time}`
+      : status === 'updated'
+      ? `${hostName} updated their game details on ${gameData.date} at ${gameData.time}`
       : `${hostName} rejected your application for their game on ${gameData.date} at ${gameData.time}`,
     gameId: gameData.id,
     fromUserId: gameData.hostId,

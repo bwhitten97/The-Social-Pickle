@@ -483,6 +483,23 @@ const Games = memo(({ addAppNotification }) => {
       console.log('Games: requestToJoinGame result', result);
       
       if (result && result.success) {
+        // Notify the game host about the new application
+        try {
+          await createApplicationNotification(
+            selectedGame.hostId, // Notify the host
+            user.name || 'Someone', // Applicant's name
+            {
+              id: selectedGame.id,
+              date: selectedGame.date,
+              time: selectedGame.time,
+              hostId: selectedGame.hostId
+            },
+            'applied' // New status for applications
+          );
+          console.log('✅ Host notification sent for new application');
+        } catch (notifError) {
+          console.error('❌ Failed to notify host of application:', notifError);
+        }
         console.log('Games: Application submitted successfully, checking applications state...', {
           applicationsCount: applications.length,
           myApplicationsCount: getUserApplications ? getUserApplications().length : 'getUserApplications not available'
@@ -1284,6 +1301,27 @@ const Games = memo(({ addAppNotification }) => {
                         try {
                           const result = await removeGame(selectedGame.id);
                           if (result.success) {
+                            // Notify all applicants that the game was cancelled
+                            try {
+                              const gameApplications = applications.filter(app => app.gameId === selectedGame.id);
+                              for (const application of gameApplications) {
+                                await createApplicationNotification(
+                                  application.applicantId,
+                                  user.name || 'Game Host',
+                                  {
+                                    id: selectedGame.id,
+                                    date: selectedGame.date,
+                                    time: selectedGame.time,
+                                    hostId: selectedGame.hostId
+                                  },
+                                  'cancelled'
+                                );
+                              }
+                              console.log(`✅ Sent cancellation notifications to ${gameApplications.length} applicants`);
+                            } catch (notifError) {
+                              console.error('❌ Failed to send cancellation notifications:', notifError);
+                            }
+                            
                             setNotification({
                               message: 'Game removed successfully!',
                               name: '',
@@ -1525,6 +1563,27 @@ const Games = memo(({ addAppNotification }) => {
                 });
                 
                 if (result.success) {
+                  // Notify all applicants about the game update
+                  try {
+                    const gameApplications = applications.filter(app => app.gameId === editingGame.id);
+                    for (const application of gameApplications) {
+                      await createApplicationNotification(
+                        application.applicantId,
+                        user.name || 'Game Host',
+                        {
+                          id: editingGame.id,
+                          date: editingGame.date,
+                          time: editingGame.time,
+                          hostId: editingGame.hostId
+                        },
+                        'updated'
+                      );
+                    }
+                    console.log(`✅ Sent update notifications to ${gameApplications.length} applicants`);
+                  } catch (notifError) {
+                    console.error('❌ Failed to send update notifications:', notifError);
+                  }
+                  
                   setNotification({
                     message: 'Game updated successfully!',
                     name: '',

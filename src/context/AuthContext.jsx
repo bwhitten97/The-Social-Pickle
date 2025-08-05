@@ -28,6 +28,11 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isUpdatingWelcome, setIsUpdatingWelcome] = useState(false);
+  
+  // Use sessionStorage to track welcome status updates
+  const [welcomeUpdated, setWelcomeUpdated] = useState(
+    sessionStorage.getItem('welcomeUpdated') === 'true'
+  );
 
   // Firebase auth state listener
   useEffect(() => {
@@ -66,7 +71,7 @@ export const AuthProvider = ({ children }) => {
             
             // Don't overwrite hasSeenWelcome if we're in the process of updating it
             const currentUser = user;
-            const hasSeenWelcomeValue = isUpdatingWelcome && currentUser?.hasSeenWelcome === true 
+            const hasSeenWelcomeValue = welcomeUpdated || (isUpdatingWelcome && currentUser?.hasSeenWelcome === true)
               ? true 
               : (userData.hasSeenWelcome !== undefined ? userData.hasSeenWelcome : shouldHaveSeenWelcome);
             
@@ -365,6 +370,9 @@ export const AuthProvider = ({ children }) => {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
+      // Clear welcome status from sessionStorage
+      sessionStorage.removeItem('welcomeUpdated');
+      setWelcomeUpdated(false);
       // User state will be updated by onAuthStateChanged listener
       return { success: true };
     } catch (error) {
@@ -516,21 +524,22 @@ export const AuthProvider = ({ children }) => {
       // Set flag to prevent auth state listener from overwriting
       setIsUpdatingWelcome(true);
       
+      // Mark in sessionStorage that welcome has been updated
+      sessionStorage.setItem('welcomeUpdated', 'true');
+      setWelcomeUpdated(true);
+      
       // Update local state FIRST to prevent redirect loops
       setUser(prevUser => ({
         ...prevUser,
         hasSeenWelcome: true
       }));
       
-      // Then update Firestore (in background)
+      // Then update Firestore
       await updateDoc(userDocRef, {
         hasSeenWelcome: true
       });
       
-      // Small delay to ensure state propagates
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Clear the flag
+      // Clear the flag immediately after Firestore update
       setIsUpdatingWelcome(false);
       
       return { success: true };

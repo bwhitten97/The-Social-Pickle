@@ -163,6 +163,7 @@
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
   min-height: 5.5rem;
+  height: 5.5rem;
 }
 
 .feature-item:hover {
@@ -185,6 +186,7 @@
     width: 100%;
     padding: 0.75rem 1rem !important; /* Force smaller padding with !important */
     min-height: 4rem; /* Consistent height for mobile */
+    height: 4rem; /* Fixed height for mobile */
     align-items: center; /* Ensure vertical alignment */
     margin-left: -0.25rem; /* Fine-tuned shift for equal spacing */
   }
@@ -216,19 +218,7 @@
   flex-shrink: 0;
 }
 
-/* Force calendar icon alignment */
-.feature-item {
-  position: relative;
-}
-
-.feature-item:nth-child(2) .feature-icon {
-  position: absolute;
-  left: 1rem;
-}
-
-.feature-item:nth-child(2) .feature-text {
-  margin-left: 4.25rem; /* Fine-tuned alignment with other modules */
-}
+/* Removed special calendar icon alignment - all items now uniform */
 
 .feature-text {
   font-size: 1.125rem;

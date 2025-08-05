@@ -336,8 +336,8 @@ function AppContent() {
     });
     
     // Only add certain notifications to Messages notifications tab
-    // Exclude "like" notifications but keep "match" and other types
-    if (type !== "like") {
+    // Only include "match" notifications, exclude "like" and "action" (pass) notifications
+    if (type === "match") {
       addAppNotification(`${emoji} ${message} ${name}`, type);
     }
   };
@@ -424,6 +424,23 @@ function AppContent() {
             // It's a match!
             addMatchedPlayer(likedPlayer); // Add to GameContext matches
             showNotification("It's a match! You and", playerName, "🎉", "match");
+            
+            // Create notification for the OTHER user (Person A who swiped first)
+            // They need to know that Person B matched with them!
+            try {
+              await notificationService.createNotification({
+                userId: playerId, // Send to the other user
+                type: 'match',
+                title: 'New Match! 🎉',
+                message: `It's a match! You and ${user.name || 'someone'} matched!`,
+                fromUserId: user.id,
+                matchId: likeResult.matchId
+              });
+              console.log('✅ Match notification sent to other user');
+            } catch (notifError) {
+              console.error('❌ Failed to send match notification:', notifError);
+            }
+            
             // Log analytics for match
             logMatchCreated(user.id, playerId, 'swipe');
           } else {
