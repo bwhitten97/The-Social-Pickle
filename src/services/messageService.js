@@ -78,8 +78,7 @@ export const messageService = {
       const messagesRef = collection(db, 'messages');
       const q = query(
         messagesRef,
-        where('participants', 'array-contains-any', [userId1, userId2]),
-        orderBy('createdAt', 'asc')
+        where('participants', 'array-contains-any', [userId1, userId2])
       );
       
       const snapshot = await getDocs(q);
@@ -93,6 +92,13 @@ export const messageService = {
         }
       });
       
+      // Sort by createdAt on the client side
+      messages.sort((a, b) => {
+        const aTime = a.createdAt?.toDate?.() || new Date(0);
+        const bTime = b.createdAt?.toDate?.() || new Date(0);
+        return aTime - bTime; // Oldest first for conversation order
+      });
+      
       return { success: true, messages };
     } catch (error) {
       console.error('Error fetching conversation:', error);
@@ -104,10 +110,10 @@ export const messageService = {
   async getUserChatRooms(userId) {
     try {
       const messagesRef = collection(db, 'messages');
+      // Remove orderBy to avoid composite index requirement
       const q = query(
         messagesRef,
-        where('participants', 'array-contains', userId),
-        orderBy('createdAt', 'desc')
+        where('participants', 'array-contains', userId)
       );
       
       const snapshot = await getDocs(q);

@@ -2,15 +2,13 @@ import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { collection, query, where, getDocs, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
-import { useGameContext } from '../context/GameContext';
-import { listenToMatches } from '../services/matchService';
+import { listenToMatches, listenToMatchesSimple, getUserMatches } from '../services/matchService';
 import { sendMessageBetweenUsers, messageService } from '../services/messageService';
 import Notification from '../components/Notification';
 import './Matches.css';
 
 const Matches = memo(() => {
   const { user } = useAuth();
-  const { matchedPlayers } = useGameContext();
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
@@ -24,17 +22,27 @@ const Matches = memo(() => {
   const fetchMatchConversationData = async (matchId, otherUserId) => {
     try {
       // Get conversation between current user and the matched user
-      const conversationId = `chat-${[user.id, otherUserId].sort().join('-')}`;
+      const result = await messageService.getConversation(user.id, otherUserId);
       
-      // Get recent messages (just the last message for preview)
-      const messages = await messageService.getConversationMessages(user.id, otherUserId, 1);
-      
-      // Get unread count
-      const unreadCount = await messageService.getUnreadMessageCount(user.id, otherUserId);
+      if (result.success && result.messages.length > 0) {
+        // Get the last message and calculate unread count
+        const lastMessage = result.messages[result.messages.length - 1];
+        const unreadCount = result.messages.filter(msg => 
+          !msg.read && msg.fromUserId !== user.id
+        ).length;
+        
+        return {
+          lastMessage: {
+            content: lastMessage.message,
+            timestamp: lastMessage.createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
+          },
+          unreadCount: unreadCount
+        };
+      }
       
       return {
-        lastMessage: messages.length > 0 ? messages[0] : null,
-        unreadCount: unreadCount || 0
+        lastMessage: null,
+        unreadCount: 0
       };
     } catch (error) {
       console.error('Error fetching conversation data for match:', matchId, error);
@@ -49,13 +57,21 @@ const Matches = memo(() => {
   const fetchMatchWithUserInfo = async (match) => {
     try {
       const otherUserId = match.users.find(id => id !== user.id);
+      console.log('Fetching user info for otherUserId:', otherUserId, 'from match:', match.id);
+      
       const userRef = doc(db, 'users', otherUserId);
       const userSnap = await getDoc(userRef);
       
       if (userSnap.exists()) {
         const userData = userSnap.data();
+        console.log('Found user data:', userData.name, 'for userId:', otherUserId);
+        
         return {
-          id: otherUserId,
+          // Use a unique identifier that combines match info
+          id: `match_${match.id}_${otherUserId}`, // Unique ID for React key
+          matchId: match.id, // Firebase match document ID
+          otherUserId: otherUserId, // The other user's ID
+          users: match.users, // Preserve original match users array
           name: userData.name || 'Unknown User',
           age: userData.age || 25,
           skillLevel: userData.skillLevel || 'intermediate',
@@ -66,33 +82,35 @@ const Matches = memo(() => {
           matchedAt: match.createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
         };
       }
+      console.error('User document not found for userId:', otherUserId);
       return null;
     } catch (error) {
-      console.error('Error fetching user info:', error);
+      console.error('Error fetching user info for match:', match.id, error);
       return null;
     }
   };
 
-  // Set up real-time listener for matches
+  // Set up real-time listener for matches with fallback
   useEffect(() => {
+    console.log('🚨 MATCHES_COMPONENT_DEBUG: Setting up listener with fallback');
+    
     if (!user?.id) {
-      setIsLoadingMatches(false);
+      console.log('🚨 MATCHES_COMPONENT_DEBUG: No user ID, stopping');
+      setIsLoadingMatches(false); 
       return;
     }
 
+    console.log('🚨 MATCHES_COMPONENT_DEBUG: User object:', user);
+    console.log('🚨 MATCHES_COMPONENT_DEBUG: User ID found:', user.id);
+    console.log('🚨 MATCHES_COMPONENT_DEBUG: User ID type:', typeof user.id);
     setIsLoadingMatches(true);
     
-    // Set a timeout to stop loading if no response after 5 seconds
-    const timeoutId = setTimeout(() => {
-      console.log('Matches loading timeout - no matches found');
-      setRealMatches([]);
-      setIsLoadingMatches(false);
-    }, 5000);
-    
-    try {
-      const unsubscribe = listenToMatches(user.id, async (matches) => {
-        clearTimeout(timeoutId); // Clear timeout since we got data
-        console.log('Matches received:', matches);
+    // Fallback function to load matches directly
+    const loadMatchesFallback = async () => {
+      console.log('🚨 MATCHES: Using fallback approach to load matches');
+      try {
+        const matches = await getUserMatches(user.id);
+        console.log('🚨 MATCHES: Fallback loaded', matches.length, 'matches');
         
         if (matches.length === 0) {
           setRealMatches([]);
@@ -100,7 +118,7 @@ const Matches = memo(() => {
           return;
         }
         
-        // Fetch user info for each match
+        // Process matches same as real-time listener
         const matchesWithUserInfo = await Promise.all(
           matches.map(async (match) => {
             const userInfo = await fetchMatchWithUserInfo(match);
@@ -108,21 +126,75 @@ const Matches = memo(() => {
           })
         );
         
-        // Filter out null results
         const validMatches = matchesWithUserInfo.filter(match => match !== null);
-        console.log('Valid matches:', validMatches);
+        console.log('🚨 MATCHES: Fallback valid matches:', validMatches);
         
-        // Fetch conversation data for each valid match
+        // Fetch conversation data
         const conversationData = {};
         const unreadCounts = {};
         
         await Promise.all(
           validMatches.map(async (match) => {
-            // Get the other user's ID from the match
-            const otherUserId = match.users ? match.users.find(id => id !== user.id) : match.id;
-            const conversationInfo = await fetchMatchConversationData(match.id, otherUserId);
-            conversationData[match.id] = conversationInfo.lastMessage;
-            unreadCounts[match.id] = conversationInfo.unreadCount;
+            console.log('Fetching conversation for match:', match.matchId, 'with user:', match.otherUserId);
+            const conversationInfo = await fetchMatchConversationData(match.matchId, match.otherUserId);
+            conversationData[match.matchId] = conversationInfo.lastMessage;
+            unreadCounts[match.matchId] = conversationInfo.unreadCount;
+          })
+        );
+        
+        setMatchConversations(conversationData);
+        setConversationUnreadCounts(unreadCounts);
+        setRealMatches(validMatches);
+        setIsLoadingMatches(false);
+      } catch (error) {
+        console.error('🚨 MATCHES: Fallback error:', error);
+        setRealMatches([]);
+        setIsLoadingMatches(false);
+      }
+    };
+    
+    // Try fallback immediately and set up listener
+    console.log('🚨 MATCHES_COMPONENT_DEBUG: Trying fallback approach immediately');
+    loadMatchesFallback();
+    
+    // Also set a timeout to use fallback if real-time listener fails
+    const timeoutId = setTimeout(() => {
+      console.log('🚨 MATCHES_COMPONENT_DEBUG: Real-time listener timeout, using fallback again');
+      loadMatchesFallback();
+    }, 3000);
+    
+    try {
+      const unsubscribe = listenToMatchesSimple(user.id, async (matches) => {
+        clearTimeout(timeoutId); // Clear timeout since real-time worked
+        console.log('🚨 MATCHES: Real-time listener received:', matches.length, 'matches');
+        
+        if (matches.length === 0) {
+          setRealMatches([]);
+          setIsLoadingMatches(false);
+          return;
+        }
+        
+        // Process matches same as fallback
+        const matchesWithUserInfo = await Promise.all(
+          matches.map(async (match) => {
+            const userInfo = await fetchMatchWithUserInfo(match);
+            return userInfo;
+          })
+        );
+        
+        const validMatches = matchesWithUserInfo.filter(match => match !== null);
+        console.log('🚨 MATCHES: Real-time valid matches:', validMatches);
+        
+        // Fetch conversation data
+        const conversationData = {};
+        const unreadCounts = {};
+        
+        await Promise.all(
+          validMatches.map(async (match) => {
+            console.log('Fetching conversation for match:', match.matchId, 'with user:', match.otherUserId);
+            const conversationInfo = await fetchMatchConversationData(match.matchId, match.otherUserId);
+            conversationData[match.matchId] = conversationInfo.lastMessage;
+            unreadCounts[match.matchId] = conversationInfo.unreadCount;
           })
         );
         
@@ -134,28 +206,21 @@ const Matches = memo(() => {
 
       return () => {
         clearTimeout(timeoutId);
-        unsubscribe();
+        unsubscribe?.();
       };
     } catch (error) {
       clearTimeout(timeoutId);
-      console.error('Error setting up matches listener:', error);
-      setRealMatches([]);
-      setIsLoadingMatches(false);
+      console.error('🚨 MATCHES: Real-time listener setup error:', error);
+      // Use fallback immediately if setup fails
+      loadMatchesFallback();
     }
   }, [user?.id]);
 
-  // Combine real matches, context matches, and mock data
+  // Use only real matches from Firebase - no context dependency
   const matches = useMemo(() => {
-    const allMatches = [...realMatches, ...matchedPlayers];
-    
-    // Remove duplicates based on name
-    const uniqueMatches = allMatches.filter((match, index, self) => 
-      index === self.findIndex(m => m.name === match.name)
-    );
-    
-    // No fallback to mock data - show real matches only
-    return uniqueMatches;
-  }, [realMatches, matchedPlayers]);
+    // Only show real matches from Firebase
+    return realMatches;
+  }, [realMatches]);
 
   const getSkillLevelColor = useCallback((skill) => {
     // All skill levels now use the same green color scheme
@@ -352,7 +417,7 @@ const Matches = memo(() => {
                       )}
 
                       {/* Conversation Preview */}
-                      {matchConversations[match.id] && (
+                      {matchConversations[match.matchId] && (
                         <div className="matches-conversation-preview">
                           <div className="matches-conversation-header">
                             <svg 
@@ -366,17 +431,17 @@ const Matches = memo(() => {
                               <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                             </svg>
                             <span className="matches-conversation-label">Recent message:</span>
-                            {conversationUnreadCounts[match.id] > 0 && (
+                            {conversationUnreadCounts[match.matchId] > 0 && (
                               <span className="matches-unread-badge">
-                                {conversationUnreadCounts[match.id] > 9 ? '9+' : conversationUnreadCounts[match.id]}
+                                {conversationUnreadCounts[match.matchId] > 9 ? '9+' : conversationUnreadCounts[match.matchId]}
                               </span>
                             )}
                           </div>
                           <p className="matches-conversation-text">
-                            "{matchConversations[match.id].content}"
+                            "{matchConversations[match.matchId].content}"
                           </p>
                           <span className="matches-conversation-time">
-                            {new Date(matchConversations[match.id].timestamp).toLocaleDateString()}
+                            {new Date(matchConversations[match.matchId].timestamp).toLocaleDateString()}
                           </span>
                         </div>
                       )}
@@ -400,7 +465,7 @@ const Matches = memo(() => {
                         </button>
                         <button 
                           className="matches-btn matches-btn-secondary"
-                          onClick={() => handleMessage(match)}
+                          onClick={() => handleMessage({...match, id: match.otherUserId})}
                         >
                           <svg 
                             xmlns="http://www.w3.org/2000/svg" 

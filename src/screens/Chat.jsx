@@ -214,17 +214,8 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
 
   // Update messages when conversation changes (new messages from matches page)
   useEffect(() => {
-    const updatedConversation = getConversation(chat.name);
-    if (updatedConversation.length > 0) {
-      const formattedMessages = updatedConversation.map(msg => ({
-        id: msg.id,
-        from: msg.from,
-        message: msg.message,
-        timestamp: msg.timestamp,
-        isCurrentUser: msg.from === user?.name
-      }));
-      setMessages(formattedMessages);
-    }
+    // This effect is no longer needed since we only use Firebase messages
+    // Firebase messages are handled by the real-time listener above
   }, [firebaseMessages, user?.name]);
 
   const handleSendMessage = useCallback(async (e) => {
@@ -634,24 +625,7 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
 
   // Initialize unread counts for real game chats if not already set
   const initializeGameChatUnreadCounts = () => {
-    if (userChatRooms.length > 0) {
-      const newUnreadCounts = {};
-      userChatRooms.forEach(room => {
-        const chatId = room.gameId || room.id;
-        if (chatUnreadCounts[chatId] === undefined) {
-          // For new chat rooms, don't automatically set unread count
-          // Let the user interaction determine if there are unread messages
-          newUnreadCounts[chatId] = 0;
-        }
-      });
-      
-      if (Object.keys(newUnreadCounts).length > 0) {
-        setChatUnreadCounts(prev => ({
-          ...prev,
-          ...newUnreadCounts
-        }));
-      }
-    }
+    // This function is no longer needed since we only use Firebase chats
   };
 
   // Initialize game chat unread counts
@@ -695,7 +669,7 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
       // Sort in descending order (most recent first)
       return bDate.getTime() - aDate.getTime();
     });
-  }, [realChats, userChatRooms, formatTimestamp, getUserInitials, chatUnreadCounts, deletedChats]);
+  }, [realChats, formatTimestamp, getUserInitials, chatUnreadCounts, deletedChats]);
 
   const handleChatSelect = useCallback(async (chat) => {
     // Mark chat as read by setting unread count to 0
