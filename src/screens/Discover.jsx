@@ -170,14 +170,15 @@ const Discover = memo(({
                     })}
                     className="filter-select"
                   >
-                    <option value={DEFAULT_DUPR_MIN}>2.0+</option>
-                    <option value="2.5">2.5+</option>
-                    <option value="3.0">3.0+</option>
-                    <option value="3.5">3.5+</option>
-                    <option value="4.0">4.0+</option>
-                    <option value="4.5">4.5+</option>
-                    <option value="5.0">5.0+</option>
-                    <option value="5.5">5.5+</option>
+                    <option value="2.0">2.0</option>
+                    <option value="2.5">2.5</option>
+                    <option value="3.0">3.0</option>
+                    <option value="3.5">3.5</option>
+                    <option value="4.0">4.0</option>
+                    <option value="4.5">4.5</option>
+                    <option value="5.0">5.0</option>
+                    <option value="5.5">5.5</option>
+                    <option value="6.0">6.0</option>
                   </select>
                   <span>to</span>
                   <select
@@ -188,13 +189,15 @@ const Discover = memo(({
                     })}
                     className="filter-select"
                   >
+                    <option value="2.0">2.0</option>
+                    <option value="2.5">2.5</option>
                     <option value="3.0">3.0</option>
                     <option value="3.5">3.5</option>
                     <option value="4.0">4.0</option>
                     <option value="4.5">4.5</option>
                     <option value="5.0">5.0</option>
                     <option value="5.5">5.5</option>
-                    <option value={DEFAULT_DUPR_MAX}>6.0</option>
+                    <option value="6.0">6.0</option>
                   </select>
                 </div>
               </div>

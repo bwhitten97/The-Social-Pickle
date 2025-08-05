@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom';
 import { collection, query, where, getDocs, orderBy, onSnapshot, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
-import { useGameContext } from '../context/GameContext';
 import ChatRoom from '../components/ChatRoom';
 import Notification from '../components/Notification';
 import { messageService, sendMessageBetweenUsers } from '../services/messageService';
@@ -164,7 +163,6 @@ const SwipeableChatCard = memo(({ chat, index, onSelect, onDelete, isEditMode, i
 SwipeableChatCard.displayName = 'SwipeableChatCard';
 
 const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, onShowNotification }) => {
-  const { getConversation, currentUserName, deleteChat } = useGameContext();
   const { user } = useAuth();
   const [newMessage, setNewMessage] = useState('');
   const [firebaseMessages, setFirebaseMessages] = useState([]);
@@ -197,35 +195,8 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
     return () => unsubscribe();
   }, [chat.isFirebaseChat, chat.chatRoom, user?.id, chat.id]);
   
-  // Load conversation - use Firebase for Firebase chats, GameContext for others
-  const conversationMessages = chat.isFirebaseChat ? [] : getConversation(chat.name);
-  
-  // Convert messages to display format - use Firebase messages for Firebase chats
-  const [messages, setMessages] = useState(() => {
-    if (chat.isFirebaseChat) {
-      // For Firebase chats, start with empty array - will be populated by useEffect
-      return [];
-    } else if (conversationMessages.length > 0) {
-      return conversationMessages.map(msg => ({
-        id: msg.id,
-        from: msg.from,
-        message: msg.message,
-        timestamp: msg.timestamp,
-        isCurrentUser: msg.from === currentUserName
-      }));
-    } else {
-      // If no conversation exists, show the last message as a received message
-      return [
-        {
-          id: 1,
-          from: chat.name,
-          message: chat.lastMessage,
-          timestamp: new Date(Date.now() - (60 * 60 * 1000)).toISOString(), // 1 hour ago
-          isCurrentUser: false
-        }
-      ];
-    }
-  });
+  // All chats now use Firebase - simplified to Firebase only
+  const [messages, setMessages] = useState([]);
 
   // Update messages when Firebase messages change
   useEffect(() => {
@@ -250,11 +221,11 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
         from: msg.from,
         message: msg.message,
         timestamp: msg.timestamp,
-        isCurrentUser: msg.from === currentUserName
+        isCurrentUser: msg.from === user?.name
       }));
       setMessages(formattedMessages);
     }
-  }, [chat.name, currentUserName, getConversation]);
+  }, [firebaseMessages, user?.name]);
 
   const handleSendMessage = useCallback(async (e) => {
     e.preventDefault();
@@ -268,7 +239,7 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
       if (otherUserId) {
         console.log('🔍 DIRECT_CHAT: Sending Firebase message', {
           fromUserId: user.id,
-          fromUserName: currentUserName,
+          fromUserName: user?.name,
           toUserId: otherUserId,
           toUserName: chat.name,
           message: messageText
@@ -277,7 +248,7 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
         try {
           const result = await sendMessageBetweenUsers(
             user.id,
-            currentUserName,
+            user?.name,
             otherUserId,
             chat.name,
             messageText
@@ -295,25 +266,8 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
           console.error('🔍 DIRECT_CHAT: Error sending message:', error);
         }
       }
-    } else {
-      // GameContext chat - use old method
-      const message = {
-        id: Date.now(),
-        from: currentUserName,
-        message: messageText,
-        timestamp: new Date().toISOString(),
-        isCurrentUser: true
-      };
-
-      setMessages(prev => [...prev, message]);
-      setNewMessage('');
-
-      // If this is a real chat, also send through the context
-      if (onSendMessage && !chat.isDummy) {
-        onSendMessage(chat.name, messageText);
-      }
     }
-  }, [newMessage, currentUserName, chat, user, onSendMessage]);
+  }, [newMessage, chat, user]);
 
   const formatTime = useCallback((timestamp) => {
     const date = new Date(timestamp);
@@ -360,22 +314,16 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
   }, [showProfileModal, chat, user?.id, fetchUserProfile]);
 
   const handleDeleteChat = useCallback(() => {
-    const result = deleteChat(chat.name);
-    if (result.success) {
-      // Show success notification
-      if (onShowNotification) {
-        onShowNotification({
-          message: "Conversation deleted with",
-          name: chat.name,
-          emoji: "🗑️"
-        });
-      }
-      if (onDeleteChat) {
-        onDeleteChat(chat.name);
-      }
-      onClose();
+    // TODO: Implement Firebase-based chat deletion
+    console.log('Chat deletion temporarily disabled - need to implement Firebase version');
+    if (onShowNotification) {
+      onShowNotification({
+        message: "Chat deletion temporarily disabled",
+        name: "",
+        emoji: "⚠️"
+      });
     }
-  }, [chat.name, deleteChat, onShowNotification, onDeleteChat, onClose]);
+  }, [onShowNotification]);
 
   return (
     <>
@@ -511,7 +459,7 @@ DirectMessageChat.displayName = 'DirectMessageChat';
 const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotificationsRead }) => {
   const { user } = useAuth();
   const location = useLocation();
-  const { getUserChatRooms, getConversation, sendMessage, currentUserName, deleteChat, getMessages } = useGameContext();
+  // Removed GameContext messaging - now using Firebase only
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [selectedChatName, setSelectedChatName] = useState(null);
   const [activeTab, setActiveTab] = useState('chat');
@@ -599,17 +547,15 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
   // Filter appNotifications to only show ones for current user or general notifications
   const userNotifications = useMemo(() => {
     return appNotifications.filter(notification => 
-      !notification.targetUser || notification.targetUser === currentUserName
+      !notification.targetUser || notification.targetUser === user?.name
     );
-  }, [appNotifications, currentUserName]);
+  }, [appNotifications, user?.name]);
   
   // Combine real notifications and app notifications only
   const notifications = useMemo(() => {
     return [...realNotifications, ...userNotifications];
   }, [realNotifications, userNotifications]);
   
-  const userChatRooms = getUserChatRooms();
-
   // Helper function to format timestamps like iMessage
   const formatTimestamp = useCallback((timestamp) => {
     if (!timestamp) return 'Now';
@@ -727,27 +673,8 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
       chatRoom: room
     }));
 
-    const gameChats = userChatRooms.map(room => ({
-      id: room.gameId || room.id,
-      name: room.gameName,
-      lastMessage: room.lastMessage || 'Start a conversation',
-      timestamp: formatTimestamp(room.lastMessageTime),
-      avatar: getUserInitials(room.gameName),
-      unread: chatUnreadCounts[room.gameId || room.id] || 0,
-      isDummy: false,
-      isGameChat: !!room.gameId,
-      chatRoom: room
-    }));
-    
-    const allChats = [...firebaseChats, ...gameChats];
-    
-    // Remove duplicates based on name
-    const uniqueChats = allChats.filter((chat, index, self) => 
-      index === self.findIndex(c => c.name === chat.name)
-    );
-    
-    // Add unread counts for real chats
-    const chatsWithCounts = uniqueChats.map(chat => ({
+    // Only use Firebase chats now - GameContext messaging removed
+    const chatsWithCounts = firebaseChats.map(chat => ({
       ...chat,
       unread: chat.unread || chatUnreadCounts[chat.id] || 0
     }));
@@ -827,19 +754,14 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
   }, [chatsToShow]);
 
   const handleDeleteChatFromSwipe = useCallback((chatName) => {
-    // Call the deleteChat function from GameContext
-    const result = deleteChat(chatName);
-    if (result.success) {
-      // Show success notification
-      setNotification({
-        message: "Conversation deleted with",
-        name: chatName,
-        emoji: "🗑️"
-      });
-      // Update local state
-      handleDeleteChat(chatName);
-    }
-  }, [deleteChat, handleDeleteChat]);
+    // TODO: Implement Firebase-based chat deletion
+    console.log('Chat deletion temporarily disabled - need to implement Firebase version');
+    setNotification({
+      message: "Chat deletion temporarily disabled",
+      name: "",
+      emoji: "⚠️"
+    });
+  }, []);
 
   const [readNotifications, setReadNotifications] = useState(new Set());
 
@@ -942,11 +864,6 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
             delete updated[chatId];
             return updated;
           });
-        } else {
-          // For GameContext chats, use the existing method
-          console.log('🔍 DELETE: Deleting GameContext chat:', chatToDelete.name);
-          const result = deleteChat(chatToDelete.name);
-          console.log('🔍 DELETE: Delete result:', result);
         }
         
         // Also remove from local chat unread counts and mark as deleted
@@ -972,7 +889,7 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
     
     setSelectedChats(new Set());
     setIsEditMode(false);
-  }, [selectedChats, chatsToShow, deleteChat, setChatUnreadCounts, setNotification]);
+  }, [selectedChats, chatsToShow, setChatUnreadCounts, setNotification]);
 
   const unreadNotificationsCount = useMemo(() => {
     return notifications.filter(n => {

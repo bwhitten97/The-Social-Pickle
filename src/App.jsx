@@ -22,6 +22,7 @@ import { logPlayerLiked, logPlayerPassed, logMatchCreated, logPageView } from '.
 import { config } from './config/app';
 import { notificationService } from './services/notificationService';
 import { createLike, createPass, getUserPasses, getUsersILiked, listenToIncomingLikes } from './services/matchService';
+import { discoveryPreferencesService } from './services/discoveryPreferencesService';
 import './App.css';
 import './screens/Profile.css';
 import './components/ProtectedRoute.css';
@@ -52,6 +53,7 @@ function AppContent() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [filter, setFilter] = useState('All');
   const [advancedFilters, setAdvancedFilters] = useState(null);
+  const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
   const [connections, setConnections] = useState([]);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(INITIAL_UNREAD_NOTIFICATIONS);
   const [unreadChatCount, setUnreadChatCount] = useState(INITIAL_UNREAD_CHATS);
@@ -216,6 +218,53 @@ function AppContent() {
     }
   }, [isAuthenticated, user?.id]);
 
+  // Load discovery preferences when user is authenticated
+  useEffect(() => {
+    const loadPreferences = async () => {
+      if (isAuthenticated && user?.id) {
+        try {
+          const result = await discoveryPreferencesService.getUserPreferences(user.id);
+          if (result.success && result.preferences) {
+            console.log('✅ Loaded discovery preferences:', result.preferences);
+            // Set the loaded preferences
+            setFilter(result.preferences.filter || 'All');
+            setAdvancedFilters(result.preferences.advancedFilters || null);
+            setCurrentIndex(result.preferences.currentIndex || 0);
+          }
+        } catch (error) {
+          console.error('❌ Error loading discovery preferences:', error);
+        }
+      } else {
+        // Reset to defaults when not authenticated
+        setFilter('All');
+        setAdvancedFilters(null);
+        setCurrentIndex(0);
+      }
+      setIsLoadingPreferences(false);
+    };
+
+    loadPreferences();
+  }, [isAuthenticated, user?.id]);
+
+  // Save current discovery position when it changes
+  useEffect(() => {
+    const savePosition = async () => {
+      if (isAuthenticated && user?.id && !isLoadingPreferences) {
+        try {
+          await discoveryPreferencesService.updateCurrentIndex(user.id, currentIndex);
+          console.log('✅ Discovery position saved:', currentIndex);
+        } catch (error) {
+          console.error('❌ Error saving discovery position:', error);
+        }
+      }
+    };
+
+    // Only save position if preferences have been loaded (to avoid overwriting on initial load)
+    if (!isLoadingPreferences) {
+      savePosition();
+    }
+  }, [currentIndex, isAuthenticated, user?.id, isLoadingPreferences]);
+
   // Track page views when route changes
   useEffect(() => {
     if (user && location.pathname) {
@@ -248,10 +297,39 @@ function AppContent() {
         if (!advancedFiltersState) {
           return true;
         }
-        // DUPR Rating filter
+        // DUPR Rating filter (includes corresponding skill levels)
         if (advancedFiltersState.duprRange) {
           const playerDupr = parseFloat(player.duprRating) || 0;
-          if (playerDupr < advancedFiltersState.duprRange.min || playerDupr > advancedFiltersState.duprRange.max) {
+          const playerSkillLevel = player.skillLevel?.toLowerCase() || '';
+          
+          // Define skill level to DUPR mapping
+          const skillToDuprMap = {
+            'beginner': { min: 2.0, max: 3.0 },
+            'intermediate': { min: 3.0, max: 4.5 },
+            'advanced': { min: 4.5, max: 6.0 }
+          };
+          
+          // Check if player passes DUPR filter either by:
+          // 1. Having a DUPR rating within range, OR
+          // 2. Having a skill level that corresponds to the DUPR range
+          let passesDuprFilter = false;
+          
+          // Check direct DUPR rating
+          if (playerDupr > 0 && playerDupr >= advancedFiltersState.duprRange.min && playerDupr <= advancedFiltersState.duprRange.max) {
+            passesDuprFilter = true;
+          }
+          
+          // Check skill level mapping to DUPR range
+          if (!passesDuprFilter && playerSkillLevel && skillToDuprMap[playerSkillLevel]) {
+            const skillDuprRange = skillToDuprMap[playerSkillLevel];
+            // If the skill level's DUPR range overlaps with the filter range, include the player
+            if (skillDuprRange.max >= advancedFiltersState.duprRange.min && 
+                skillDuprRange.min <= advancedFiltersState.duprRange.max) {
+              passesDuprFilter = true;
+            }
+          }
+          
+          if (!passesDuprFilter) {
             return false;
           }
         }
@@ -286,22 +364,53 @@ function AppContent() {
         return true;
       }
       
-      // Handle other filters (skill level based)
-      return player.skillLevel === currentFilter.toLowerCase();
+      // Handle other filters (skill level based) - includes corresponding DUPR ratings
+      const filterSkillLevel = currentFilter.toLowerCase();
+      const playerSkillLevel = player.skillLevel?.toLowerCase() || '';
+      const playerDupr = parseFloat(player.duprRating) || 0;
+      
+      // Define skill level to DUPR mapping
+      const skillToDuprMap = {
+        'beginner': { min: 2.0, max: 3.0 },
+        'intermediate': { min: 3.0, max: 4.5 },
+        'advanced': { min: 4.5, max: 6.0 }
+      };
+      
+      // Check if player matches filter either by:
+      // 1. Having the exact skill level, OR
+      // 2. Having a DUPR rating that corresponds to the skill level
+      let matchesSkillFilter = false;
+      
+      // Check direct skill level match
+      if (playerSkillLevel === filterSkillLevel) {
+        matchesSkillFilter = true;
+      }
+      
+      // Check DUPR rating mapping to skill level
+      if (!matchesSkillFilter && playerDupr > 0 && skillToDuprMap[filterSkillLevel]) {
+        const skillDuprRange = skillToDuprMap[filterSkillLevel];
+        if (playerDupr >= skillDuprRange.min && playerDupr <= skillDuprRange.max) {
+          matchesSkillFilter = true;
+        }
+      }
+      
+      return matchesSkillFilter;
     });
   };
 
-  // Update stable filtered players only when data first loads, not during swiping
+  // Update stable filtered players when data loads OR when filters change
   useEffect(() => {
-    // Only update when players, passes, and likes are all loaded for the first time
-    if (!isLoadingPlayers && !isLoadingPasses && !isLoadingLikes && stableFilteredPlayers.length === 0) {
+    // Update when players, passes, and likes are loaded AND when filters change
+    if (!isLoadingPlayers && !isLoadingPasses && !isLoadingLikes) {
       const newFilteredPlayers = computeFilteredPlayers(players, passedUserIds, likedUserIds, filter, advancedFilters);
-      console.log('🔄 Updating stable filtered players (initial load):', {
+      console.log('🔄 Updating stable filtered players:', {
         totalPlayers: players.length,
         passedCount: passedUserIds.size,
         likedCount: likedUserIds.size,
         filteredCount: newFilteredPlayers.length,
         currentIndex,
+        filterType: filter,
+        hasAdvancedFilters: !!advancedFilters,
         playerNames: newFilteredPlayers.slice(0, 5).map(p => p.name)
       });
       setStableFilteredPlayers(newFilteredPlayers);
@@ -561,13 +670,27 @@ function AppContent() {
                     connections={connections}
                     onLike={handleConnect}
                     onPass={handlePass}
-                    onFilterChange={(newFilter, filters) => {
+                    onFilterChange={async (newFilter, filters) => {
                       setFilter(newFilter);
                       setAdvancedFilters(filters);
                       setCurrentIndex(0);
+                      
+                      // Save filter preferences to Firebase
+                      if (user?.id) {
+                        try {
+                          await discoveryPreferencesService.updateFilterPreferences(
+                            user.id, 
+                            newFilter, 
+                            filters
+                          );
+                          console.log('✅ Filter preferences saved to Firebase');
+                        } catch (error) {
+                          console.error('❌ Error saving filter preferences:', error);
+                        }
+                      }
                     }}
                     currentFilter={filter}
-                    isLoading={isLoadingPlayers || isLoadingPasses || isLoadingLikes}
+                    isLoading={isLoadingPlayers || isLoadingPasses || isLoadingLikes || isLoadingPreferences}
                   />
                 </ErrorBoundary>
               </main>

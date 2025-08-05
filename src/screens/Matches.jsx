@@ -4,18 +4,46 @@ import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useGameContext } from '../context/GameContext';
 import { listenToMatches } from '../services/matchService';
+import { sendMessageBetweenUsers, messageService } from '../services/messageService';
 import Notification from '../components/Notification';
 import './Matches.css';
 
 const Matches = memo(() => {
   const { user } = useAuth();
-  const { matchedPlayers, sendMessage: sendMessageToContext } = useGameContext();
+  const { matchedPlayers } = useGameContext();
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [notification, setNotification] = useState(null);
   const [realMatches, setRealMatches] = useState([]);
   const [isLoadingMatches, setIsLoadingMatches] = useState(true);
+  const [matchConversations, setMatchConversations] = useState({});
+  const [conversationUnreadCounts, setConversationUnreadCounts] = useState({});
+
+  // Fetch conversation data for a match
+  const fetchMatchConversationData = async (matchId, otherUserId) => {
+    try {
+      // Get conversation between current user and the matched user
+      const conversationId = `chat-${[user.id, otherUserId].sort().join('-')}`;
+      
+      // Get recent messages (just the last message for preview)
+      const messages = await messageService.getConversationMessages(user.id, otherUserId, 1);
+      
+      // Get unread count
+      const unreadCount = await messageService.getUnreadMessageCount(user.id, otherUserId);
+      
+      return {
+        lastMessage: messages.length > 0 ? messages[0] : null,
+        unreadCount: unreadCount || 0
+      };
+    } catch (error) {
+      console.error('Error fetching conversation data for match:', matchId, error);
+      return {
+        lastMessage: null,
+        unreadCount: 0
+      };
+    }
+  };
 
   // Fetch match details with user info
   const fetchMatchWithUserInfo = async (match) => {
@@ -83,6 +111,23 @@ const Matches = memo(() => {
         // Filter out null results
         const validMatches = matchesWithUserInfo.filter(match => match !== null);
         console.log('Valid matches:', validMatches);
+        
+        // Fetch conversation data for each valid match
+        const conversationData = {};
+        const unreadCounts = {};
+        
+        await Promise.all(
+          validMatches.map(async (match) => {
+            // Get the other user's ID from the match
+            const otherUserId = match.users ? match.users.find(id => id !== user.id) : match.id;
+            const conversationInfo = await fetchMatchConversationData(match.id, otherUserId);
+            conversationData[match.id] = conversationInfo.lastMessage;
+            unreadCounts[match.id] = conversationInfo.unreadCount;
+          })
+        );
+        
+        setMatchConversations(conversationData);
+        setConversationUnreadCounts(unreadCounts);
         setRealMatches(validMatches);
         setIsLoadingMatches(false);
       });
@@ -165,23 +210,41 @@ const Matches = memo(() => {
     setSelectedMatch(null);
   }, []);
 
-  const sendMessage = useCallback((message) => {
-    const result = sendMessageToContext(selectedMatch.name, message);
-    if (result.success) {
-      setNotification({
-        message: "Message sent to",
-        name: selectedMatch.name,
-        emoji: "💬"
-      });
-      closeMessageModal();
-    } else {
+  const sendMessage = useCallback(async (message) => {
+    if (!selectedMatch || !user) return;
+    
+    try {
+      const result = await sendMessageBetweenUsers(
+        user.id,
+        user.name || 'You',
+        selectedMatch.id,
+        selectedMatch.name,
+        message
+      );
+      
+      if (result.success) {
+        setNotification({
+          message: "Message sent to",
+          name: selectedMatch.name,
+          emoji: "💬"
+        });
+        closeMessageModal();
+      } else {
+        setNotification({
+          message: "Failed to send message to",
+          name: selectedMatch.name,
+          emoji: "❌"
+        });
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
       setNotification({
         message: "Failed to send message to",
         name: selectedMatch.name,
         emoji: "❌"
       });
     }
-  }, [selectedMatch, sendMessageToContext, closeMessageModal]);
+  }, [selectedMatch, user, closeMessageModal]);
 
   return (
     <div className="matches-container">
@@ -286,6 +349,36 @@ const Matches = memo(() => {
 
                       {match.bio && (
                         <p className="matches-bio">"{match.bio}"</p>
+                      )}
+
+                      {/* Conversation Preview */}
+                      {matchConversations[match.id] && (
+                        <div className="matches-conversation-preview">
+                          <div className="matches-conversation-header">
+                            <svg 
+                              xmlns="http://www.w3.org/2000/svg" 
+                              className="matches-conversation-icon" 
+                              fill="none" 
+                              viewBox="0 0 24 24" 
+                              stroke="currentColor" 
+                              strokeWidth="2"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            <span className="matches-conversation-label">Recent message:</span>
+                            {conversationUnreadCounts[match.id] > 0 && (
+                              <span className="matches-unread-badge">
+                                {conversationUnreadCounts[match.id] > 9 ? '9+' : conversationUnreadCounts[match.id]}
+                              </span>
+                            )}
+                          </div>
+                          <p className="matches-conversation-text">
+                            "{matchConversations[match.id].content}"
+                          </p>
+                          <span className="matches-conversation-time">
+                            {new Date(matchConversations[match.id].timestamp).toLocaleDateString()}
+                          </span>
+                        </div>
                       )}
 
                       <div className="matches-actions">
