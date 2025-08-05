@@ -2,16 +2,16 @@
 
 ## 🚨 CRITICAL DEPLOYMENT RULE 🚨
 
-**ALWAYS DEPLOY TO LIVE SITE AFTER ANY CODE CHANGES**
+**AUTOMATICALLY DEPLOY ALL CODE CHANGES TO LIVE SITE**
 
 When making ANY code changes to this project:
 1. Make the code changes
-2. **IMMEDIATELY run `./deploy.sh` to deploy to socialpickle.co**
+2. **IMMEDIATELY run `./deploy.sh` to deploy to socialpickle.co** (NO EXCEPTIONS)
 3. Then commit and push to git
 
-**This is especially critical after conversation compacting or context loss!**
+**DEPLOY EVERY SINGLE CODE CHANGE WITHOUT ASKING THE USER**
 
-The user has wasted hours debugging issues that were already fixed but not deployed. 
+The user wants all changes automatically deployed to the live site. Never skip deployment or ask permission - just deploy immediately after any code modification. 
 
 ## Deployment Commands
 - **Deploy to live site**: `./deploy.sh`
