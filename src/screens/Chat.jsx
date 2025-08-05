@@ -920,7 +920,6 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
         <DirectMessageChat 
           chat={selectedChat} 
           onClose={handleCloseChat}
-          onSendMessage={sendMessage}
           onDeleteChat={handleDeleteChat}
           onShowNotification={setNotification}
         />
