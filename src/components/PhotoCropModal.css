@@ -21,7 +21,7 @@
   width: 500px;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
@@ -83,9 +83,9 @@
   align-items: center;
   justify-content: center;
   padding: 1rem 1.5rem;
-  min-height: 400px;
-  max-height: 500px;
-  overflow: hidden;
+  min-height: 300px;
+  max-height: none;
+  overflow: visible;
 }
 
 /* Loading State */
@@ -296,8 +296,8 @@
   
   .photo-crop-container {
     padding: 0.5rem 1rem;
-    min-height: 300px;
-    max-height: 400px;
+    min-height: 250px;
+    max-height: none;
   }
   
   .photo-crop-actions {
@@ -308,5 +308,40 @@
   .photo-crop-cancel-btn,
   .photo-crop-save-btn {
     flex: none;
+  }
+}
+
+/* Ensure modal is scrollable on very short screens */
+@media (max-height: 700px) {
+  .photo-crop-modal {
+    max-height: 95vh;
+  }
+  
+  .photo-crop-container {
+    min-height: 200px;
+    flex-shrink: 1;
+  }
+}
+
+@media (max-height: 600px) {
+  .photo-crop-modal {
+    max-height: 98vh;
+  }
+  
+  .photo-crop-container {
+    min-height: 150px;
+    padding: 0.5rem 1.5rem;
+  }
+  
+  .photo-crop-header {
+    padding: 1rem 1.5rem 0.5rem 1.5rem;
+  }
+  
+  .photo-crop-instructions {
+    margin-bottom: 0.5rem;
+  }
+  
+  .photo-crop-actions {
+    padding: 1rem 1.5rem;
   }
 }
