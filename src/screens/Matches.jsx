@@ -465,7 +465,7 @@ const Matches = memo(() => {
                         </button>
                         <button 
                           className="matches-btn matches-btn-secondary"
-                          onClick={() => handleMessage({...match, id: match.otherUserId})}
+                          onClick={() => handleMessage(match)}
                         >
                           <svg 
                             xmlns="http://www.w3.org/2000/svg" 

@@ -521,16 +521,8 @@ function AppContent() {
               });
               console.log('✅ Match notification sent to user who swiped first:', playerId);
               
-              // ALSO create notification for current user (Person B who just completed the match)
-              await notificationService.createNotification({
-                userId: user.id, // Send to current user too
-                type: 'match', 
-                title: 'New Match! 🎉',
-                message: `It's a match! You and ${playerName} matched!`,
-                fromUserId: playerId,
-                matchId: likeResult.matchId
-              });
-              console.log('✅ Match notification sent to current user:', user.id);
+              // Current user gets immediate visual feedback from the swipe action
+              // No notification needed for the person who completed the match
             } catch (notifError) {
               console.error('❌ Failed to send match notification:', notifError);
             }
