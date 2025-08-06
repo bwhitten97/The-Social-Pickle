@@ -33,8 +33,8 @@ const PhotoCropModal = ({
   // Get current card dimensions
   const cardDimensions = DISCOVER_CARD_CONFIG.getCurrentDimensions();
   const cropFrameSize = {
-    width: 300, // Display size in crop interface
-    height: 300 * (cardDimensions.height / cardDimensions.width)
+    width: 200, // Smaller display size in crop interface
+    height: 200 * (cardDimensions.height / cardDimensions.width)
   };
 
   // Load image when file changes
@@ -68,15 +68,11 @@ const PhotoCropModal = ({
         const containerRect = container.getBoundingClientRect();
         console.log('Container size:', containerRect.width, containerRect.height);
         
-        // Constrain max display size to reasonable limits
-        const maxWidth = Math.min(containerRect.width - 40, 400); // Max 400px wide
-        const maxHeight = Math.min(containerRect.height - 40, 350); // Max 350px tall
-        
         const displaySize = getOptimalDisplaySize(
           img.naturalWidth,
           img.naturalHeight,
-          maxWidth,
-          maxHeight
+          Math.min(containerRect.width - 40, 280), // Max 280px wide
+          Math.min(containerRect.height - 40, 220) // Max 220px tall
         );
         
         console.log('Display size calculated:', displaySize);
