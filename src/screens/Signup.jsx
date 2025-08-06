@@ -4,12 +4,13 @@ import { useAuth } from '../context/AuthContext';
 import LocationSelector from '../components/LocationSelector';
 import ImageUpload from '../components/ImageUpload';
 import Notification from '../components/Notification';
+import { config } from '../config/app';
 import './Signup.css';
 
 // Form constants
 const MIN_AGE = 18;
 const MAX_AGE = 100;
-const TOTAL_STEPS = 2;
+const TOTAL_STEPS = 4;
 const SUCCESS_REDIRECT_DELAY = 2000; // ms
 
 const AvailabilitySelector = ({ selected, onChange }) => {
@@ -67,6 +68,9 @@ const Signup = () => {
     playingExperience: '',
     availability: [],
     
+    // City Selection
+    city: config.AVAILABLE_CITIES[0] || 'Chicago', // Default to first available city
+    
     // Profile
     bio: ''
   });
@@ -119,7 +123,12 @@ const Signup = () => {
       if (formData.availability.length === 0) {
         newErrors.availability = 'Please select at least one availability option';
       }
+    } else if (step === 3) {
+      if (!formData.city.trim()) {
+        newErrors.city = 'City selection is required';
+      }
     }
+    // Step 4 (Profile) has no required fields
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -151,6 +160,7 @@ const Signup = () => {
           playStyle: formData.playStyle,
           playingExperience: formData.playingExperience,
           availability: formData.availability,
+          city: formData.city,
           bio: formData.bio,
           location: formData.location,
           phone: formData.phone,
@@ -381,7 +391,42 @@ const Signup = () => {
           />
           {errors.availability && <span className="error-message">{errors.availability}</span>}
         </div>
+      </div>
+    </div>
+  );
 
+  const renderStep3 = () => (
+    <div className="signup-step">
+      <h2 className="step-title">Where Do You Play?</h2>
+      <p className="step-description">Select your city to connect with players in your area</p>
+      
+      <div className="form-grid">
+        <div className="form-field form-field-full">
+          <label className="form-label">What city do you play in? *</label>
+          <select
+            name="city"
+            value={formData.city}
+            onChange={handleInputChange}
+            className={`form-select ${errors.city ? 'error' : ''}`}
+          >
+            {config.AVAILABLE_CITIES.map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+          </select>
+          {errors.city && <span className="error-message">{errors.city}</span>}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderStep4 = () => (
+    <div className="signup-step">
+      <h2 className="step-title">Complete Your Profile</h2>
+      <p className="step-description">Add a photo and tell us about yourself</p>
+      
+      <div className="form-grid">
         <div className="form-field form-field-full">
           <label className="form-label">Profile Picture</label>
           <ImageUpload
@@ -424,9 +469,17 @@ const Signup = () => {
               <div className="step-number">1</div>
               <div className="step-label">Basic Info</div>
             </div>
-            <div className={`progress-step ${currentStep >= TOTAL_STEPS ? 'active' : ''}`}>
+            <div className={`progress-step ${currentStep >= 2 ? 'active' : ''}`}>
               <div className="step-number">2</div>
               <div className="step-label">Pickleball</div>
+            </div>
+            <div className={`progress-step ${currentStep >= 3 ? 'active' : ''}`}>
+              <div className="step-number">3</div>
+              <div className="step-label">Location</div>
+            </div>
+            <div className={`progress-step ${currentStep >= 4 ? 'active' : ''}`}>
+              <div className="step-number">4</div>
+              <div className="step-label">Profile</div>
             </div>
           </div>
           <div className="progress-line">
@@ -440,6 +493,8 @@ const Signup = () => {
           <form onSubmit={handleSubmit}>
             {currentStep === 1 && renderStep1()}
             {currentStep === 2 && renderStep2()}
+            {currentStep === 3 && renderStep3()}
+            {currentStep === 4 && renderStep4()}
             
             <div className="form-actions">
               {currentStep > 1 && (

@@ -42,13 +42,14 @@ export const testFirebaseConnection = async () => {
 // Games service functions
 export const gameService = {
   // Create a new game
-  async createGame(gameData, userId, userName) {
+  async createGame(gameData, userId, userName, userCity) {
     try {
       const gamesRef = collection(db, 'games');
       const newGame = {
         ...gameData,
         createdBy: userName,
         createdById: userId,
+        city: userCity || config.AVAILABLE_CITIES[0] || 'Chicago', // Store creator's city
         createdAt: serverTimestamp(),
         status: 'active'
       };
@@ -61,8 +62,8 @@ export const gameService = {
     }
   },
 
-  // Get all active games
-  async getAllGames() {
+  // Get all active games for a specific city
+  async getAllGames(userCity) {
     try {
       const gamesRef = collection(db, 'games');
       // Get all games, filter on client side to avoid indexes
@@ -71,8 +72,12 @@ export const gameService = {
       const games = [];
       snapshot.forEach(doc => {
         const gameData = { id: doc.id, ...doc.data() };
-        // Filter active games on client side
+        // Filter active games and city-specific games on client side
         if (gameData.status === 'active') {
+          // City filtering: only show games from user's city
+          if (userCity && gameData.city && gameData.city !== userCity) {
+            return; // Skip games from different cities
+          }
           games.push(gameData);
         }
       });
@@ -164,39 +169,30 @@ export const gameService = {
   },
 
   // Set up real-time listener for games
-  setupGamesListener(callback, userLocation = null) {
+  setupGamesListener(callback, userCity = null) {
     const gamesRef = collection(db, 'games');
-    // Get all games, filter status on client side to avoid indexes
+    // Get all games, filter on client side to avoid complex indexes
     
     return onSnapshot(gamesRef, (snapshot) => {
       const games = [];
-      const targetGameIds = ['77fHWTlEfTh713J5Pkt2', 'AmT64CdEVVJnGKYJEi23'];
-      let filteredOutGames = [];
       
       snapshot.forEach(doc => {
         const gameData = { id: doc.id, ...doc.data() };
         
-        // Debug target games
-        if (targetGameIds.includes(doc.id)) {
-          console.log('gameService: FIXED VERSION - Found target game in snapshot', {
-            id: doc.id,
-            status: gameData.status,
-            location: gameData.location,
-            userLocation,
-            multiCityEnabled: config.MULTI_CITY_ENABLED,
-            locationFilteringDisabled: true
-          });
+        // Filter active games only
+        if (gameData.status !== 'active') {
+          return;
         }
         
-        // TEMPORARILY REMOVE ALL FILTERING - load everything
-        // if (gameData.status !== 'active') {
-        //   if (targetGameIds.includes(doc.id)) {
-        //     console.log('gameService: Target game filtered out - not active', doc.id, gameData.status);
-        //   }
-        //   return;
-        // }
-        
-        // Location filtering COMPLETELY REMOVED
+        // City-based filtering: only show games from user's city
+        if (userCity && gameData.city) {
+          if (gameData.city !== userCity) {
+            return; // Skip games from different cities
+          }
+        } else if (!gameData.city && userCity) {
+          // Skip games without city data when user has a city
+          return;
+        }
         
         games.push(gameData);
       });

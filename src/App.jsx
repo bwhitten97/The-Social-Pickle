@@ -104,12 +104,14 @@ function AppContent() {
           return;
         }
         
-        // Location filtering when multi-city is enabled
-        if (config.MULTI_CITY_ENABLED && user.location && userData.location) {
-          // Only show users in the same location
-          if (user.location.zip !== userData.location.zip) {
-            return;
+        // City-based filtering - users only see players from their own city
+        if (user.city && userData.city) {
+          if (user.city !== userData.city) {
+            return; // Skip users from different cities
           }
+        } else if (!userData.city) {
+          // For backwards compatibility: exclude users without city data
+          return;
         }
         
         // Only include users with at least basic profile info

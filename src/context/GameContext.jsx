@@ -431,18 +431,14 @@ export const GameProvider = ({ children }) => {
           
           // Set up real-time listeners for games
           const unsubscribeGames = gameService.setupGamesListener((gamesData) => {
-            const targetGameIds = ['77fHWTlEfTh713J5Pkt2', 'AmT64CdEVVJnGKYJEi23'];
-            const foundTargetGames = gamesData.filter(g => targetGameIds.includes(g.id));
-            
-            console.log('GameContext: Games loaded', {
+            console.log('GameContext: City-filtered games loaded', {
               count: gamesData.length,
-              userLocation: user?.location,
-              targetGamesFound: foundTargetGames.length,
-              targetGames: foundTargetGames,
-              allGameIds: gamesData.map(g => g.id)
+              userCity: user?.city,
+              gameIds: gamesData.map(g => g.id),
+              gameCities: gamesData.map(g => ({ id: g.id, city: g.city }))
             });
             setGames(gamesData);
-          }, null); // Remove location filter to load all games
+          }, user?.city); // Pass user's city for filtering
           
           // Set up real-time listeners for user applications
           let unsubscribeApplications = null;
@@ -595,7 +591,7 @@ export const GameProvider = ({ children }) => {
 
   const addGame = async (gameData) => {
     try {
-      const result = await gameService.createGame(gameData, currentUserId, currentUserName);
+      const result = await gameService.createGame(gameData, currentUserId, currentUserName, user?.city);
       if (result.success) {
         // Game will be added to state via real-time listener
         return { success: true, message: "Game created successfully!" };

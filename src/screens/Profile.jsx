@@ -59,6 +59,7 @@ const Profile = memo(() => {
     age: '',
     bio: '',
     availability: [],
+    city: config.AVAILABLE_CITIES[0] || 'Chicago',
     location: config.DEFAULT_LOCATION,
   });
 
@@ -89,6 +90,7 @@ const Profile = memo(() => {
         age: user.age || '',
         bio: user.bio || '',
         availability: user.availability || [],
+        city: user.city || config.AVAILABLE_CITIES[0] || 'Chicago',
         location: user.location || config.DEFAULT_LOCATION,
       });
       
@@ -122,6 +124,7 @@ const Profile = memo(() => {
             age: userData.age || prev.age,
             bio: userData.bio || prev.bio,
             availability: userData.availability || prev.availability,
+            city: userData.city || prev.city,
           }));
           
           // Update profile picture
@@ -594,6 +597,35 @@ const Profile = memo(() => {
                     <div className="field-value">{profile.availability.join(', ')}</div>
                   )}
                 </div>
+              </div>
+            </div>
+
+            <div className="form-section-modern">
+              <h3 className="section-title">
+                <svg className="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+                Location
+              </h3>
+              <div className="form-field">
+                <label className="field-label">City</label>
+                {isEditing ? (
+                  <select
+                    name="city"
+                    value={profile.city}
+                    onChange={handleInputChange}
+                    className="field-select"
+                  >
+                    {config.AVAILABLE_CITIES.map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="field-value">{profile.city}</div>
+                )}
               </div>
             </div>
 

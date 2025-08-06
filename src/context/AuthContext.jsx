@@ -190,6 +190,7 @@ export const AuthProvider = ({ children }) => {
         skillLevel: additionalDataWithoutFile.skillLevel || '',
         duprRating: additionalDataWithoutFile.duprRating || '',
         availability: additionalDataWithoutFile.availability || [],
+        city: additionalDataWithoutFile.city || config.AVAILABLE_CITIES[0] || 'Chicago',
         profilePicture: profilePictureUrl || additionalDataWithoutFile.profilePictureUrl || '',
         bio: additionalDataWithoutFile.bio || '',
         location: additionalDataWithoutFile.location || config.DEFAULT_LOCATION,

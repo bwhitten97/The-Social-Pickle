@@ -9,6 +9,12 @@ export const config = {
     city: 'Chicago'
   },
   
+  // Available cities for onboarding selection (alphabetically sorted)
+  AVAILABLE_CITIES: [
+    'Chicago'
+    // Add more cities as we expand: 'Austin', 'Dallas', 'Los Angeles', etc.
+  ],
+  
   // Supported cities for multi-city mode
   SUPPORTED_CITIES: [
     { code: 'CHI', name: 'Chicago', zip: '60601' },
