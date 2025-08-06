@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import ImageUpload from '../components/ImageUpload';
+import PhotoCropModal from '../components/PhotoCropModal';
 import Notification from '../components/Notification';
 import { config, validateZipCode } from '../config/app';
 import './Profile.css';
@@ -64,6 +65,10 @@ const Profile = memo(() => {
   const [isEditing, setIsEditing] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
   const [profileImagePreview, setProfileImagePreview] = useState(null);
+  
+  // Photo crop modal states
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   // Update profile state when user context changes
   useEffect(() => {
@@ -151,8 +156,30 @@ const Profile = memo(() => {
   }, []);
 
   const handleImageChange = useCallback((file, previewUrl) => {
-    setProfileImage(file);
-    setProfileImagePreview(previewUrl);
+    if (file) {
+      // Open crop modal instead of directly setting the image
+      setSelectedFile(file);
+      setShowCropModal(true);
+    } else {
+      // Handle image removal
+      setProfileImage(null);
+      setProfileImagePreview(null);
+    }
+  }, []);
+
+  // Handle crop completion
+  const handleCropComplete = useCallback((cropResult) => {
+    console.log('Profile: Crop completed:', cropResult);
+    setProfileImage(cropResult.blob);
+    setProfileImagePreview(cropResult.previewUrl);
+    setShowCropModal(false);
+    setSelectedFile(null);
+  }, []);
+
+  // Handle crop cancel
+  const handleCropCancel = useCallback(() => {
+    setShowCropModal(false);
+    setSelectedFile(null);
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -615,6 +642,15 @@ const Profile = memo(() => {
       </div>
 
       {/* Native Notification */}
+      {/* Photo Crop Modal */}
+      <PhotoCropModal
+        isOpen={showCropModal}
+        file={selectedFile}
+        onCropComplete={handleCropComplete}
+        onClose={handleCropCancel}
+        title="Crop Your Profile Photo"
+      />
+
       {notification && (
         <Notification
           message={notification.message}
