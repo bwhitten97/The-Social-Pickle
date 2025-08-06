@@ -75,6 +75,7 @@
   
   .nav-links {
     padding: 8px 40px;
+    max-width: none; /* Remove width constraint on desktop */
   }
   
   .nav-link {
@@ -88,8 +89,28 @@
   }
 }
 
+/* Constraints for screens larger than iPhone 16 (393px) */
+@media (min-width: 394px) and (max-width: 767px) {
+  .nav-links {
+    /* Allow slight expansion but cap at reasonable width */
+    max-width: min(420px, 100%);
+  }
+  
+  .nav-link {
+    /* Prevent individual items from stretching too wide */
+    max-width: 80px;
+  }
+}
+
 /* Mobile bottom nav spacing */
 @media (max-width: 767px) {
+  .nav-links {
+    /* Only constrain width on mobile */
+    max-width: 393px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
   .main-content {
     padding-bottom: 80px;
   }

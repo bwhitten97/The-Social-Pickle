@@ -2145,6 +2145,29 @@
   z-index: 1100 !important;
 }
 
+/* Desktop-only card width constraint and force mobile button layout */
+@media (min-width: 768px) {
+  .games-card {
+    max-width: 900px !important;
+    width: 90% !important;
+    margin: 0 auto;
+  }
+  
+  /* Force mobile button layout - prevent switching to absolute positioning */
+  .games-join-btn,
+  .games-applied-btn,
+  .games-host-profile-btn {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    margin: 0 !important;
+    width: 100% !important;
+    margin-top: 0.5rem !important;
+    display: block !important;
+    text-align: center !important;
+  }
+}
+
 /* FORCE YELLOW HOVER - PUT AT END */
 .games-nav-section .games-nav-btn:hover,
 .games-nav-btn:hover,
