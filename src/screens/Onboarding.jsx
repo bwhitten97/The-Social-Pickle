@@ -23,6 +23,7 @@ const Onboarding = () => {
     skillLevel: '',
     duprRating: '',
     availability: [],
+    city: config.AVAILABLE_CITIES[0] || 'Chicago', // Default city
     profilePicture: null,
     profilePictureUrl: '',
     bio: '',
@@ -90,6 +91,17 @@ const Onboarding = () => {
         { value: 'weekends', label: 'Weekends', icon: '🎉' },
         { value: 'flexible', label: 'Flexible', icon: '⚡' }
       ]
+    },
+    {
+      id: 'city',
+      title: "What city do you play in?",
+      subtitle: "Connect with players in your area",
+      field: 'city',
+      type: 'select',
+      options: config.AVAILABLE_CITIES.map(city => ({
+        value: city,
+        label: city
+      }))
     },
     ...(config.MULTI_CITY_ENABLED ? [{
       id: 'location',
