@@ -68,11 +68,15 @@ const PhotoCropModal = ({
         const containerRect = container.getBoundingClientRect();
         console.log('Container size:', containerRect.width, containerRect.height);
         
+        // Constrain max display size to reasonable limits
+        const maxWidth = Math.min(containerRect.width - 40, 400); // Max 400px wide
+        const maxHeight = Math.min(containerRect.height - 40, 350); // Max 350px tall
+        
         const displaySize = getOptimalDisplaySize(
           img.naturalWidth,
           img.naturalHeight,
-          containerRect.width - 40, // Padding
-          containerRect.height - 40
+          maxWidth,
+          maxHeight
         );
         
         console.log('Display size calculated:', displaySize);

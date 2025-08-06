@@ -84,7 +84,7 @@
   justify-content: center;
   padding: 1rem 1.5rem;
   min-height: 300px;
-  max-height: none;
+  max-height: 400px;
   overflow: visible;
 }
 
@@ -123,6 +123,8 @@
   position: relative;
   border-radius: 8px;
   overflow: hidden;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .photo-crop-image {
