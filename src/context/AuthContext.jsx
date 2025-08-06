@@ -381,7 +381,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const updateUserProfile = async (profileData) => {
+  const updateUserProfile = async (profileData, profileImage = null) => {
     try {
       if (!auth.currentUser) {
         throw new Error('No authenticated user');
@@ -392,19 +392,22 @@ export const AuthProvider = ({ children }) => {
       // Handle profile picture upload
       let profilePictureUrl = profileData.profilePictureUrl || '';
       
-      if (profileData.profilePicture) {
+      // Use the separate profileImage parameter if provided, otherwise fall back to profileData.profilePicture
+      const imageToUpload = profileImage || profileData.profilePicture;
+      
+      if (imageToUpload) {
         try {
           console.log('UpdateProfile: Starting profile picture upload for user:', firebaseUser.uid);
           console.log('UpdateProfile: File details:', {
-            name: profileData.profilePicture.name,
-            size: profileData.profilePicture.size,
-            type: profileData.profilePicture.type
+            name: imageToUpload.name,
+            size: imageToUpload.size,
+            type: imageToUpload.type
           });
           
           const imageRef = ref(storage, `profile-pictures/${firebaseUser.uid}`);
           console.log('UpdateProfile: Uploading to path:', `profile-pictures/${firebaseUser.uid}`);
           
-          const uploadResult = await uploadBytes(imageRef, profileData.profilePicture);
+          const uploadResult = await uploadBytes(imageRef, imageToUpload);
           console.log('UpdateProfile: Upload result:', uploadResult);
           
           profilePictureUrl = await getDownloadURL(imageRef);
@@ -422,7 +425,10 @@ export const AuthProvider = ({ children }) => {
             code: uploadError.code,
             message: uploadError.message
           });
-          // Continue without profile picture if upload fails
+          // Don't fail the entire update if only image upload fails
+          // But preserve existing profile picture URL if available
+          profilePictureUrl = profileData.profilePictureUrl || '';
+          console.log('UpdateProfile: Image upload failed, continuing with existing URL:', profilePictureUrl);
         }
       }
       
@@ -443,6 +449,7 @@ export const AuthProvider = ({ children }) => {
         duprRating: profileData.duprRating || '',
         availability: profileData.availability || [],
         bio: profileData.bio || '',
+        location: profileData.location || config.DEFAULT_LOCATION,
         profilePicture: profilePictureUrl || profileData.profilePictureUrl || '',
         profileComplete: true,
         updatedAt: new Date()

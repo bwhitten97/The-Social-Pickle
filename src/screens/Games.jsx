@@ -139,6 +139,7 @@ const Games = memo(({ addAppNotification }) => {
         const profileResult = await userService.getChatUserProfile(hostUser.id);
         
         if (profileResult.success && profileResult.user) {
+          console.log('Host profile data:', profileResult.user);
           setHostProfile(profileResult.user);
         } else {
           // Fallback to basic host info from the game
@@ -1731,84 +1732,92 @@ const Games = memo(({ addAppNotification }) => {
         </div>
       )}
 
-      {/* Host Profile Modal */}
+      {/* Host Profile Modal - SwipeableCard Style */}
       {showHostProfileModal && hostProfile && (
         <div className="profile-modal-overlay" onClick={() => setShowHostProfileModal(false)}>
           <div className="profile-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="profile-popup-card">
-              {/* Close button */}
-              <button 
-                className="profile-modal-close" 
-                onClick={() => setShowHostProfileModal(false)}
-                title="Close profile"
-              >
-                ✕
-              </button>
-              
-              {/* Profile Image Section */}
-              <div className="profile-popup-image-section">
-                <div className="profile-popup-image-placeholder">
-                  {hostProfile.profilePicture ? (
-                    <img 
-                      src={hostProfile.profilePicture} 
-                      alt={`${hostProfile.name}'s profile`}
-                      className="profile-popup-image"
-                      onError={(e) => {
-                        // Fallback to initials if image fails to load
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
-                      }}
-                    />
-                  ) : null}
-                  <div 
-                    className="profile-popup-initials"
-                    style={{ display: hostProfile.profilePicture ? 'none' : 'flex' }}
-                  >
-                    {hostProfile.avatar}
+            {loadingHostProfile ? (
+              <div className="profile-loading">
+                <p>Loading profile...</p>
+              </div>
+            ) : (
+              <div className="games-host-profile-card">
+                {/* Close button */}
+                <button 
+                  className="profile-modal-close" 
+                  onClick={() => setShowHostProfileModal(false)}
+                  title="Close profile"
+                >
+                  ✕
+                </button>
+                
+                {/* Image Section - SwipeableCard Style */}
+                <div className="games-host-card-image-section">
+                  <div className="games-host-card-image-container">
+                    {(hostProfile.profilePicture || hostProfile.image) ? (
+                      <img 
+                        src={hostProfile.profilePicture || hostProfile.image} 
+                        alt={`${hostProfile.name}'s profile`}
+                        className="games-host-card-image"
+                        onError={(e) => {
+                          console.log('Image failed to load:', e.target.src);
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                        onLoad={(e) => {
+                          console.log('Image loaded successfully:', e.target.src);
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className="games-host-card-placeholder"
+                      style={{ display: (hostProfile.profilePicture || hostProfile.image) ? 'none' : 'flex' }}
+                    >
+                      <div className="games-host-card-initials">
+                        {hostProfile.avatar}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              {/* Profile Details Section */}
-              <div className="profile-popup-details">
-                {loadingHostProfile ? (
-                  <div className="profile-loading">
-                    <p>Loading profile...</p>
+                
+                {/* Details Section - SwipeableCard Style */}
+                <div className="games-host-card-details">
+                  {/* Header with name and skill/DUPR */}
+                  <div className="games-host-card-header">
+                    <h2 className="games-host-card-name">
+                      {hostProfile.name}
+                      {hostProfile.age && <span className="games-host-card-age">, {hostProfile.age}</span>}
+                    </h2>
+                    {(hostProfile.skillLevel || (hostProfile.duprRating && hostProfile.duprRating !== 'unrated')) && (
+                      <div className="games-host-card-skill-text">
+                        {hostProfile.duprRating && hostProfile.duprRating !== 'unrated' 
+                          ? `DUPR ${hostProfile.duprRating}`
+                          : hostProfile.skillLevel ? capitalizeBadge(hostProfile.skillLevel) : ''
+                        }
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <>
-                    <div className="profile-popup-header">
-                      <h2 className="profile-popup-name">{hostProfile.name}</h2>
-                      {hostProfile.age && <span className="profile-popup-age">Age {hostProfile.age}</span>}
-                      {hostProfile.gender && <span className="profile-popup-gender">{capitalizeBadge(hostProfile.gender)}</span>}
+                  
+                  {/* Availability tags */}
+                  {hostProfile.availability && hostProfile.availability.length > 0 && (
+                    <div className="games-host-card-availability">
+                      {hostProfile.availability.map((time, index) => (
+                        <span key={index} className="games-host-availability-tag">
+                          {capitalizeBadge(time)}
+                        </span>
+                      ))}
                     </div>
-                    
-                    {(hostProfile.skillLevel || hostProfile.duprRating) && (
-                      <div className="profile-popup-badges">
-                        {hostProfile.skillLevel && <span className="profile-popup-skill-badge">{capitalizeBadge(hostProfile.skillLevel)}</span>}
-                        {hostProfile.duprRating && hostProfile.duprRating !== 'unrated' && (
-                          <span className="profile-popup-dupr-badge">DUPR {hostProfile.duprRating}</span>
-                        )}
-                      </div>
-                    )}
-                    
-                    {hostProfile.availability && hostProfile.availability.length > 0 && (
-                      <div className="profile-popup-availability">
-                        {hostProfile.availability.map((time, index) => (
-                          <span key={index} className="profile-popup-availability-tag">{capitalizeBadge(time)}</span>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {hostProfile.bio && hostProfile.bio.trim() && (
-                      <div className="profile-popup-bio">
-                        <p>{hostProfile.bio}</p>
-                      </div>
-                    )}
-                  </>
-                )}
+                  )}
+                  
+                  {/* Bio */}
+                  {hostProfile.bio && hostProfile.bio.trim() && (
+                    <div className="games-host-card-bio">
+                      <p>{hostProfile.bio}</p>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}

@@ -180,8 +180,28 @@ const Profile = memo(() => {
 
       // Save to backend
       if (updateUserProfile) {
-        const result = await updateUserProfile(profile, profileImage);
+        // Include location and current profile picture URL in the profile data
+        const profileToSave = {
+          ...profile,
+          location: config.MULTI_CITY_ENABLED ? profile.location : config.DEFAULT_LOCATION,
+          // If profileImagePreview is null (user removed image), clear the profile picture
+          // Otherwise, use current preview or fallback to existing user profile picture
+          profilePictureUrl: profileImagePreview === null ? '' : (profileImagePreview || user?.profilePicture || '')
+        };
+        
+        console.log('Profile: Saving profile with image:', {
+          profileToSave,
+          hasProfileImage: !!profileImage,
+          profileImageType: profileImage?.type,
+          profileImageSize: profileImage?.size
+        });
+        
+        const result = await updateUserProfile(profileToSave, profileImage);
+        console.log('Profile: Save result:', result);
+        
         if (result.success) {
+          // Reset the profileImage state since it's now saved
+          setProfileImage(null);
           setIsEditing(false);
           setNotification({
             message: "Profile updated",
