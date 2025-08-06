@@ -6,7 +6,7 @@
 
 When making ANY code changes to this project:
 1. Make the code changes
-2. **IMMEDIATELY run `./deploy.sh` to deploy to socialpickle.co** (NO EXCEPTIONS)
+2. **IMMEDIATELY run `npm run deploy` to deploy to socialpickle.co** (NO EXCEPTIONS)
 3. Then commit and push to git
 
 **DEPLOY EVERY SINGLE CODE CHANGE WITHOUT ASKING THE USER**
@@ -14,7 +14,7 @@ When making ANY code changes to this project:
 The user wants all changes automatically deployed to the live site. Never skip deployment or ask permission - just deploy immediately after any code modification. 
 
 ## Deployment Commands
-- **Deploy to live site**: `./deploy.sh`
+- **Deploy to live site**: `npm run deploy`
 - **Test locally**: `npm run dev`
 - **Build only**: `npm run build`
 

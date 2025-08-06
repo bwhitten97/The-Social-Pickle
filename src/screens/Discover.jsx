@@ -7,8 +7,8 @@ import SwipeableCard from '../components/SwipeableCard';
 import './Discover.css';
 
 // Filter constants
-const DEFAULT_DUPR_MIN = 2.0;
-const DEFAULT_DUPR_MAX = 6.0;
+const DEFAULT_DUPR_MIN = "2.0";
+const DEFAULT_DUPR_MAX = "6.0";
 const DEFAULT_AGE_MIN = 18;
 const DEFAULT_AGE_MAX = 100;
 
@@ -166,7 +166,7 @@ const Discover = memo(({
                     value={advancedFilters.duprRange.min}
                     onChange={(e) => handleAdvancedFilterChange('duprRange', { 
                       ...advancedFilters.duprRange, 
-                      min: parseFloat(e.target.value) 
+                      min: e.target.value 
                     })}
                     className="filter-select"
                   >
@@ -185,7 +185,7 @@ const Discover = memo(({
                     value={advancedFilters.duprRange.max}
                     onChange={(e) => handleAdvancedFilterChange('duprRange', { 
                       ...advancedFilters.duprRange, 
-                      max: parseFloat(e.target.value) 
+                      max: e.target.value 
                     })}
                     className="filter-select"
                   >

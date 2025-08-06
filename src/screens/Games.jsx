@@ -1,6 +1,7 @@
 import React, { useState, memo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameContext } from '../context/GameContext';
+import { useAuth } from '../context/AuthContext';
 import DatePicker from '../components/DatePicker';
 import TimePicker from '../components/TimePicker';
 import Notification from '../components/Notification';
@@ -12,6 +13,7 @@ import './Games.css';
 const Games = memo(({ addAppNotification }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('find');
+  const { isAuthenticated } = useAuth();
   
   // Get data from GameContext
   const { 
@@ -237,7 +239,7 @@ const Games = memo(({ addAppNotification }) => {
   // Filter games for "Find" tab (exclude user's own games, applied games, past games, and apply filters)
   const findGames = displayGames.filter(game => {
     // Basic filters
-    if (game.createdBy === currentUserName) return false;
+    if (game.createdById === currentUserId) return false;
     if (hasUserApplied(game.id)) return false;
     if (isGameInPast(game)) {
       console.log('Games: Filtering out past game', { 
@@ -293,10 +295,13 @@ const Games = memo(({ addAppNotification }) => {
   });
   
   // Get user's own games (exclude games expired by more than 1 hour)
-  const myGames = displayGames.filter(game => 
-    game.createdBy === currentUserName && 
-    !isGameExpired(game)
-  );
+  // Only show games if we have a valid, authenticated user ID
+  const myGames = (currentUserId && currentUserId !== 'dev-user' && currentUserId !== 'anonymous-user' && isAuthenticated) 
+    ? displayGames.filter(game => 
+        game.createdById === currentUserId && 
+        !isGameExpired(game)
+      )
+    : [];
   
   // Get user's applications - SIMPLIFIED
   console.log('Games: About to get applications', {

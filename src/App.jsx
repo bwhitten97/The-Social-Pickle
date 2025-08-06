@@ -296,39 +296,14 @@ function AppContent() {
         if (!advancedFiltersState) {
           return true;
         }
-        // DUPR Rating filter (includes corresponding skill levels)
+        // DUPR Rating filter (strict - only actual DUPR ratings)
         if (advancedFiltersState.duprRange) {
-          const playerDupr = parseFloat(player.duprRating) || 0;
-          const playerSkillLevel = player.skillLevel?.toLowerCase() || '';
+          const playerDupr = parseFloat(player.duprRating);
+          const filterMinDupr = parseFloat(advancedFiltersState.duprRange.min);
+          const filterMaxDupr = parseFloat(advancedFiltersState.duprRange.max);
           
-          // Define skill level to DUPR mapping
-          const skillToDuprMap = {
-            'beginner': { min: 2.0, max: 3.0 },
-            'intermediate': { min: 3.0, max: 4.5 },
-            'advanced': { min: 4.5, max: 6.0 }
-          };
-          
-          // Check if player passes DUPR filter either by:
-          // 1. Having a DUPR rating within range, OR
-          // 2. Having a skill level that corresponds to the DUPR range
-          let passesDuprFilter = false;
-          
-          // Check direct DUPR rating
-          if (playerDupr > 0 && playerDupr >= advancedFiltersState.duprRange.min && playerDupr <= advancedFiltersState.duprRange.max) {
-            passesDuprFilter = true;
-          }
-          
-          // Check skill level mapping to DUPR range
-          if (!passesDuprFilter && playerSkillLevel && skillToDuprMap[playerSkillLevel]) {
-            const skillDuprRange = skillToDuprMap[playerSkillLevel];
-            // If the skill level's DUPR range overlaps with the filter range, include the player
-            if (skillDuprRange.max >= advancedFiltersState.duprRange.min && 
-                skillDuprRange.min <= advancedFiltersState.duprRange.max) {
-              passesDuprFilter = true;
-            }
-          }
-          
-          if (!passesDuprFilter) {
+          // Only include players who have a valid DUPR rating within the specified range
+          if (!playerDupr || isNaN(playerDupr) || playerDupr < filterMinDupr || playerDupr > filterMaxDupr) {
             return false;
           }
         }
