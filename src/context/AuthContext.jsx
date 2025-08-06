@@ -287,6 +287,7 @@ export const AuthProvider = ({ children }) => {
           email: firebaseUser.email || '',
           profilePicture: firebaseUser.photoURL || '',
           provider: 'google',
+          city: config.AVAILABLE_CITIES[0] || 'Chicago', // Assign default city for social login users
           location: config.DEFAULT_LOCATION,
           profileComplete: false,
           createdAt: new Date(),
@@ -334,6 +335,7 @@ export const AuthProvider = ({ children }) => {
           email: firebaseUser.email || '',
           profilePicture: firebaseUser.photoURL || '',
           provider: 'apple',
+          city: config.AVAILABLE_CITIES[0] || 'Chicago', // Assign default city for social login users
           location: config.DEFAULT_LOCATION,
           profileComplete: false,
           createdAt: new Date(),

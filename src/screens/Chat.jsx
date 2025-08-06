@@ -475,35 +475,60 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
     console.log('🔍 CHAT: Setting up listeners for user:', user.id);
     console.log('🔍 CHAT: User object:', user);
     
+    let isMounted = true;
+    let unsubscribeChats = null;
+    let unsubscribeNotifications = null;
+    
     // Reset loading states
     setIsLoadingChats(true);
     setIsLoadingNotifications(true);
     
-    // Set up chat rooms listener
-    const unsubscribeChats = messageService.setupChatRoomsListener(
-      user.id,
-      (chatRooms) => {
-        console.log('🔍 CHAT: Received chat rooms callback with:', chatRooms.length, 'rooms');
-        console.log('🔍 CHAT: Chat rooms data:', chatRooms);
-        setRealChats(chatRooms);
-        setIsLoadingChats(false);
-      }
-    );
+    try {
+      // Set up chat rooms listener with error handling
+      unsubscribeChats = messageService.setupChatRoomsListener(
+        user.id,
+        (chatRooms) => {
+          if (!isMounted) return;
+          console.log('🔍 CHAT: Received chat rooms callback with:', chatRooms.length, 'rooms');
+          console.log('🔍 CHAT: Chat rooms data:', chatRooms);
+          setRealChats(chatRooms);
+          setIsLoadingChats(false);
+        }
+      );
 
-    // Set up notifications listener  
-    const unsubscribeNotifications = notificationService.setupNotificationsListener(
-      user.id,
-      (notifications) => {
-        console.log('🔍 CHAT: Received notifications callback with:', notifications.length, 'notifications');
-        console.log('🔍 CHAT: Notifications data:', notifications);
-        setRealNotifications(notifications);
+      // Set up notifications listener with error handling
+      unsubscribeNotifications = notificationService.setupNotificationsListener(
+        user.id,
+        (notifications) => {
+          if (!isMounted) return;
+          console.log('🔍 CHAT: Received notifications callback with:', notifications.length, 'notifications');
+          console.log('🔍 CHAT: Notifications data:', notifications);
+          setRealNotifications(notifications);
+          setIsLoadingNotifications(false);
+        }
+      );
+    } catch (error) {
+      console.error('🔍 CHAT: Error setting up listeners:', error);
+      if (isMounted) {
+        setIsLoadingChats(false);
         setIsLoadingNotifications(false);
       }
-    );
+    }
 
     return () => {
-      unsubscribeChats();
-      unsubscribeNotifications();
+      isMounted = false;
+      console.log('🔍 CHAT: Cleaning up listeners');
+      
+      try {
+        if (typeof unsubscribeChats === 'function') {
+          unsubscribeChats();
+        }
+        if (typeof unsubscribeNotifications === 'function') {
+          unsubscribeNotifications();
+        }
+      } catch (error) {
+        console.error('🔍 CHAT: Error during listener cleanup:', error);
+      }
     };
   }, [user?.id]);
 

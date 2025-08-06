@@ -23,7 +23,7 @@ const Onboarding = () => {
     skillLevel: '',
     duprRating: '',
     availability: [],
-    city: config.AVAILABLE_CITIES[0] || 'Chicago', // Default city
+    city: '', // No default city - user must select from dropdown
     profilePicture: null,
     profilePictureUrl: '',
     bio: '',
@@ -97,7 +97,8 @@ const Onboarding = () => {
       title: "What city do you play in?",
       subtitle: "Connect with players in your area",
       field: 'city',
-      type: 'select',
+      type: 'dropdown',
+      placeholder: 'Choose your city...',
       options: config.AVAILABLE_CITIES.map(city => ({
         value: city,
         label: city
@@ -195,6 +196,7 @@ const Onboarding = () => {
       case 'text':
       case 'select':
       case 'skill-select':
+      case 'dropdown':
         if (!value || value === '') {
           setNotification({
             message: "This field is required",
@@ -213,12 +215,12 @@ const Onboarding = () => {
           });
           return false;
         }
-        // Age validation for age field
+        // Age validation for age field - FIXED: Consistent 18+ requirement
         if (step.field === 'age') {
           const age = parseInt(value);
-          if (age < 13 || age > 100) {
+          if (age < 18 || age > 100) {
             setNotification({
-              message: "Please enter an age between 13 and 100",
+              message: "You must be at least 18 years old to use this app",
               name: "",
               emoji: "⚠️"
             });
@@ -546,7 +548,7 @@ const Onboarding = () => {
               value={userData[step.field]}
               onChange={(e) => updateUserData(step.field, e.target.value)}
               className="onboarding-input large"
-              min="13"
+              min="18"
               max="100"
               autoFocus
             />
@@ -687,6 +689,24 @@ const Onboarding = () => {
                 </button>
               ))}
             </div>
+          </div>
+        );
+
+      case 'dropdown':
+        return (
+          <div className="step-content">
+            <select
+              value={userData[step.field] || ''}
+              onChange={(e) => updateUserData(step.field, e.target.value)}
+              className="onboarding-input large dropdown"
+            >
+              <option value="" disabled>{step.placeholder}</option>
+              {step.options.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
         );
 

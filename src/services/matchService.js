@@ -10,9 +10,11 @@ import {
   serverTimestamp,
   onSnapshot,
   deleteDoc,
-  limit
+  limit,
+  runTransaction
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { config } from '../config/app';
 
 /**
  * Match Service - Handles likes, passes, and matches in Firebase
@@ -23,51 +25,123 @@ import { db } from '../config/firebase';
  * - matches: { id, users[], createdAt, lastActivity }
  */
 
-// Create a like document
+// Create a like document with atomic match creation using transactions
 export const createLike = async (currentUserId, likedUserId) => {
   try {
-    // Create like document ID using both user IDs
-    const likeId = `${currentUserId}_${likedUserId}`;
-    
-    // Check if like already exists
-    const likeRef = doc(db, 'likes', likeId);
-    const likeSnap = await getDoc(likeRef);
-    
-    if (likeSnap.exists()) {
-      console.log('Like already exists');
-      return { success: true, alreadyLiked: true };
-    }
-    
-    // Create the like
-    await setDoc(likeRef, {
-      likedBy: currentUserId,
-      likedUser: likedUserId,
-      createdAt: serverTimestamp()
+    // Run the entire like/match creation process in a transaction
+    const result = await runTransaction(db, async (transaction) => {
+      // SECURITY: Verify both users are from the same city
+      const currentUserRef = doc(db, 'users', currentUserId);
+      const likedUserRef = doc(db, 'users', likedUserId);
+      
+      const [currentUserSnap, likedUserSnap] = await Promise.all([
+        transaction.get(currentUserRef),
+        transaction.get(likedUserRef)
+      ]);
+      
+      if (!currentUserSnap.exists() || !likedUserSnap.exists()) {
+        throw new Error('One or both users not found');
+      }
+      
+      const currentUserData = currentUserSnap.data();
+      const likedUserData = likedUserSnap.data();
+      
+      // City-based security check
+      if (!currentUserData.city || !likedUserData.city) {
+        throw new Error('One or both users missing city data');
+      }
+      
+      if (currentUserData.city !== likedUserData.city) {
+        console.error('Cross-city like attempt blocked:', currentUserData.city, 'vs', likedUserData.city);
+        throw new Error('Users must be from the same city');
+      }
+      
+      // Create like document references
+      const likeId = `${currentUserId}_${likedUserId}`;
+      const reciprocalLikeId = `${likedUserId}_${currentUserId}`;
+      const likeRef = doc(db, 'likes', likeId);
+      const reciprocalLikeRef = doc(db, 'likes', reciprocalLikeId);
+      
+      // Check if like already exists
+      const likeSnap = await transaction.get(likeRef);
+      if (likeSnap.exists()) {
+        return { success: true, alreadyLiked: true };
+      }
+      
+      // Check for reciprocal like
+      const reciprocalLikeSnap = await transaction.get(reciprocalLikeRef);
+      const isMatch = reciprocalLikeSnap.exists();
+      
+      // Create the like document
+      transaction.set(likeRef, {
+        likedBy: currentUserId,
+        likedUser: likedUserId,
+        city: currentUserData.city,
+        createdAt: serverTimestamp()
+      });
+      
+      let matchId = null;
+      
+      // If it's a match, create match document atomically
+      if (isMatch) {
+        const sortedIds = [currentUserId, likedUserId].sort();
+        matchId = `${sortedIds[0]}_${sortedIds[1]}`;
+        const matchRef = doc(db, 'matches', matchId);
+        
+        // Check if match already exists
+        const matchSnap = await transaction.get(matchRef);
+        if (!matchSnap.exists()) {
+          transaction.set(matchRef, {
+            users: sortedIds,
+            city: currentUserData.city,
+            createdAt: serverTimestamp(),
+            lastActivity: serverTimestamp(),
+            active: true
+          });
+        }
+      }
+      
+      return { success: true, isMatch, matchId };
     });
     
-    // Check if other user has liked back (to create a match)
-    const reciprocalLikeId = `${likedUserId}_${currentUserId}`;
-    const reciprocalLikeRef = doc(db, 'likes', reciprocalLikeId);
-    const reciprocalLikeSnap = await getDoc(reciprocalLikeRef);
+    console.log('Transaction completed successfully:', result);
+    return result;
     
-    if (reciprocalLikeSnap.exists()) {
-      // It's a match! Create match document
-      const match = await createMatch(currentUserId, likedUserId);
-      return { success: true, isMatch: true, matchId: match.id };
-    }
-    
-    return { success: true, isMatch: false };
   } catch (error) {
-    console.error('Error creating like:', error);
+    console.error('Error in createLike transaction:', error);
     return { success: false, error: error.message };
   }
 };
 
-// Create a match document
+// Create a match document with city validation
 export const createMatch = async (userId1, userId2) => {
   try {
     console.log('🔄 MATCH_DEBUG: Creating match between users:', userId1, 'and', userId2);
     console.log('🔄 MATCH_DEBUG: userId1 type:', typeof userId1, 'userId2 type:', typeof userId2);
+    
+    // SECURITY: Double-check both users are from the same city
+    const user1Ref = doc(db, 'users', userId1);
+    const user2Ref = doc(db, 'users', userId2);
+    
+    const [user1Snap, user2Snap] = await Promise.all([
+      getDoc(user1Ref),
+      getDoc(user2Ref)
+    ]);
+    
+    if (!user1Snap.exists() || !user2Snap.exists()) {
+      throw new Error('One or both users not found');
+    }
+    
+    const user1Data = user1Snap.data();
+    const user2Data = user2Snap.data();
+    
+    if (!user1Data.city || !user2Data.city) {
+      throw new Error('One or both users missing city data');
+    }
+    
+    if (user1Data.city !== user2Data.city) {
+      throw new Error('Cannot create match between users from different cities');
+    }
     
     // Sort user IDs to ensure consistent match ID
     const sortedIds = [userId1, userId2].sort();
@@ -90,6 +164,7 @@ export const createMatch = async (userId1, userId2) => {
     const now = new Date();
     const matchData = {
       users: sortedIds,
+      city: user1Data.city, // Store city for additional security and filtering
       createdAt: serverTimestamp(),
       lastActivity: serverTimestamp(),
       active: true,
@@ -99,6 +174,7 @@ export const createMatch = async (userId1, userId2) => {
     
     console.log('💾 MATCH_DEBUG: Saving match to Firebase with data:', matchData);
     console.log('💾 MATCH_DEBUG: Match users array:', matchData.users);
+    console.log('💾 MATCH_DEBUG: Match city:', matchData.city);
     console.log('💾 MATCH_DEBUG: Match active status:', matchData.active);
     
     await setDoc(matchRef, matchData);
@@ -112,6 +188,7 @@ export const createMatch = async (userId1, userId2) => {
       console.log('✅ MATCH_DEBUG: Match successfully saved and verified in Firebase!');
       console.log('✅ MATCH_DEBUG: Saved match data:', savedData);
       console.log('✅ MATCH_DEBUG: Saved users array:', savedData.users);
+      console.log('✅ MATCH_DEBUG: Saved match city:', savedData.city);
       console.log('✅ MATCH_DEBUG: Saved active status:', savedData.active);
       return { id: matchId, ...savedData };
     } else {
@@ -125,9 +202,37 @@ export const createMatch = async (userId1, userId2) => {
   }
 };
 
-// Create a pass document
+// Create a pass document with city validation
 export const createPass = async (currentUserId, passedUserId) => {
   try {
+    // SECURITY: Verify both users are from the same city before allowing pass
+    const currentUserRef = doc(db, 'users', currentUserId);
+    const passedUserRef = doc(db, 'users', passedUserId);
+    
+    const [currentUserSnap, passedUserSnap] = await Promise.all([
+      getDoc(currentUserRef),
+      getDoc(passedUserRef)
+    ]);
+    
+    if (!currentUserSnap.exists() || !passedUserSnap.exists()) {
+      console.error('One or both users not found');
+      return { success: false, error: 'User not found' };
+    }
+    
+    const currentUserData = currentUserSnap.data();
+    const passedUserData = passedUserSnap.data();
+    
+    // City-based security check
+    if (!currentUserData.city || !passedUserData.city) {
+      console.error('One or both users missing city data');
+      return { success: false, error: 'City data missing' };
+    }
+    
+    if (currentUserData.city !== passedUserData.city) {
+      console.error('Cross-city pass attempt blocked:', currentUserData.city, 'vs', passedUserData.city);
+      return { success: false, error: 'Users must be from the same city' };
+    }
+    
     // Create pass document ID using both user IDs
     const passId = `${currentUserId}_${passedUserId}`;
     
@@ -140,10 +245,11 @@ export const createPass = async (currentUserId, passedUserId) => {
       return { success: true, alreadyPassed: true };
     }
     
-    // Create the pass
+    // Create the pass with city information
     await setDoc(passRef, {
       passedBy: currentUserId,
       passedUser: passedUserId,
+      city: currentUserData.city, // Store city for additional security
       createdAt: serverTimestamp()
     });
     

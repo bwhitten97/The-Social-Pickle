@@ -343,6 +343,10 @@ export const GameProvider = ({ children }) => {
       allConditions: currentUserId !== previousUserId && currentUserId !== "dev-user" && previousUserId === "dev-user"
     });
     
+    let isMounted = true;
+    let unsubscribeApplications = null;
+    let unsubscribeHostApplications = null;
+    
     if (currentUserId !== previousUserId && currentUserId !== "dev-user" && previousUserId === "dev-user") {
       console.log('🔍 USER CHANGE DETECTED: Setting up new listeners', {
         previousUserId,
@@ -351,41 +355,66 @@ export const GameProvider = ({ children }) => {
       });
       
       // Clear existing data
-      setApplications([]);
-      setHostApplications([]);
+      if (isMounted) {
+        setApplications([]);
+        setHostApplications([]);
+      }
       
       // Set up new listeners for the authenticated user
-      if (currentUserId) {
+      if (currentUserId && isMounted) {
         console.log('🔍 USER CHANGE: Setting up application listeners for new user:', currentUserId);
         
-        // Listen for user's own applications
-        const unsubscribeApplications = applicationService.setupUserApplicationsListener(
-          currentUserId, 
-          (applicationsData) => {
-            console.log('🔍 USER CHANGE: Received applications update for new user:', {
-              userId: currentUserId,
-              count: applicationsData.length,
-              applications: applicationsData
-            });
-            setApplications(applicationsData);
-          }
-        );
-        
-        // Listen for applications to games hosted by user
-        const unsubscribeHostApplications = applicationService.setupGameHostApplicationsListener(
-          currentUserId,
-          (hostApplicationsData) => {
-            console.log('🔍 USER CHANGE: Received host applications update for new user:', {
-              userId: currentUserId,
-              count: hostApplicationsData.length
-            });
-            setHostApplications(hostApplicationsData);
-          }
-        );
+        try {
+          // Listen for user's own applications
+          unsubscribeApplications = applicationService.setupUserApplicationsListener(
+            currentUserId, 
+            (applicationsData) => {
+              if (!isMounted) return;
+              console.log('🔍 USER CHANGE: Received applications update for new user:', {
+                userId: currentUserId,
+                count: applicationsData.length,
+                applications: applicationsData
+              });
+              setApplications(applicationsData);
+            }
+          );
+          
+          // Listen for applications to games hosted by user
+          unsubscribeHostApplications = applicationService.setupGameHostApplicationsListener(
+            currentUserId,
+            (hostApplicationsData) => {
+              if (!isMounted) return;
+              console.log('🔍 USER CHANGE: Received host applications update for new user:', {
+                userId: currentUserId,
+                count: hostApplicationsData.length
+              });
+              setHostApplications(hostApplicationsData);
+            }
+          );
+        } catch (error) {
+          console.error('🔍 USER CHANGE: Error setting up listeners:', error);
+        }
       }
     }
     
     setPreviousUserId(currentUserId);
+
+    // Cleanup function to prevent memory leaks
+    return () => {
+      isMounted = false;
+      console.log('🔍 GAMECONTEXT: Cleaning up listeners for user:', currentUserId);
+      
+      try {
+        if (typeof unsubscribeApplications === 'function') {
+          unsubscribeApplications();
+        }
+        if (typeof unsubscribeHostApplications === 'function') {
+          unsubscribeHostApplications();
+        }
+      } catch (error) {
+        console.error('🔍 GAMECONTEXT: Error during listener cleanup:', error);
+      }
+    };
   }, [currentUserId, previousUserId, isAuthenticated]);
   
   // Log authentication status for debugging

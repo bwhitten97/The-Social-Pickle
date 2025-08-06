@@ -4,68 +4,107 @@ import './ErrorBoundary.css';
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    this.state = { 
+      hasError: false, 
+      error: null, 
+      errorInfo: null,
+      errorId: null
+    };
   }
 
   static getDerivedStateFromError(error) {
     // Update state so the next render will show the fallback UI
-    return { hasError: true };
+    return { 
+      hasError: true,
+      errorId: Date.now().toString(36) + Math.random().toString(36).substr(2)
+    };
   }
 
   componentDidCatch(error, errorInfo) {
-    // You can log the error to an error reporting service here
+    // Log error details for monitoring
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    
     this.setState({
       error: error,
       errorInfo: errorInfo
     });
-    
-    // Log to console for development (in production, you might want to send to logging service)
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+
+    // Log to error reporting service (if available)
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'exception', {
+        description: error.toString(),
+        fatal: false,
+        error_id: this.state.errorId,
+        component_stack: errorInfo.componentStack
+      });
+    }
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false, error: null, errorInfo: null });
+    // Reset error state to retry rendering
+    this.setState({ 
+      hasError: false, 
+      error: null, 
+      errorInfo: null,
+      errorId: null
+    });
+  };
+
+  handleRefresh = () => {
+    // Force page refresh
+    window.location.reload();
   };
 
   render() {
     if (this.state.hasError) {
-      // Fallback UI
+      const { fallback: CustomFallback, showDetails = false } = this.props;
+      
+      // Use custom fallback if provided
+      if (CustomFallback) {
+        return <CustomFallback 
+          error={this.state.error} 
+          onRetry={this.handleRetry}
+          onRefresh={this.handleRefresh}
+        />;
+      }
+
+      // Default error UI
       return (
         <div className="error-boundary">
-          <div className="error-boundary-container">
-            <div className="error-boundary-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.862 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-              </svg>
-            </div>
-            <h2 className="error-boundary-title">Oops! Something went wrong</h2>
-            <p className="error-boundary-message">
-              We're sorry, but something unexpected happened. This error has been logged and we'll look into it.
-            </p>
-            {this.props.showDetails && this.state.error && (
-              <details className="error-boundary-details">
-                <summary>Error Details (for developers)</summary>
-                <pre className="error-boundary-stack">
-                  {this.state.error && this.state.error.toString()}
-                  <br />
-                  {this.state.errorInfo.componentStack}
-                </pre>
-              </details>
-            )}
-            <div className="error-boundary-actions">
+          <div className="error-boundary-content">
+            <div className="error-icon">⚠️</div>
+            <h2>Oops! Something went wrong</h2>
+            <p>We're sorry, but something unexpected happened. Please try refreshing the page.</p>
+            
+            <div className="error-actions">
               <button 
+                className="error-button primary" 
                 onClick={this.handleRetry}
-                className="error-boundary-retry-btn"
               >
                 Try Again
               </button>
               <button 
-                onClick={() => window.location.reload()}
-                className="error-boundary-reload-btn"
+                className="error-button secondary" 
+                onClick={this.handleRefresh}
               >
-                Reload Page
+                Refresh Page
               </button>
             </div>
+
+            {showDetails && this.state.error && (
+              <details className="error-details">
+                <summary>Technical Details</summary>
+                <div className="error-info">
+                  <p><strong>Error ID:</strong> {this.state.errorId}</p>
+                  <p><strong>Error:</strong> {this.state.error.toString()}</p>
+                  {this.state.errorInfo && (
+                    <pre className="error-stack">
+                      {this.state.errorInfo.componentStack}
+                    </pre>
+                  )}
+                </div>
+              </details>
+            )}
           </div>
         </div>
       );
@@ -74,5 +113,66 @@ class ErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
+
+// Higher-order component for wrapping components with error boundaries
+export const withErrorBoundary = (Component, fallback = null, options = {}) => {
+  const WrappedComponent = (props) => (
+    <ErrorBoundary fallback={fallback} {...options}>
+      <Component {...props} />
+    </ErrorBoundary>
+  );
+  
+  WrappedComponent.displayName = `withErrorBoundary(${Component.displayName || Component.name})`;
+  return WrappedComponent;
+};
+
+// Specific error boundaries for different parts of the app
+export const DiscoverErrorBoundary = ({ children }) => (
+  <ErrorBoundary 
+    fallback={({ onRetry }) => (
+      <div className="discover-error-fallback">
+        <h3>Unable to load profiles</h3>
+        <p>We're having trouble loading new profiles for you to discover.</p>
+        <button onClick={onRetry} className="retry-button">
+          Try Again
+        </button>
+      </div>
+    )}
+  >
+    {children}
+  </ErrorBoundary>
+);
+
+export const ChatErrorBoundary = ({ children }) => (
+  <ErrorBoundary 
+    fallback={({ onRetry }) => (
+      <div className="chat-error-fallback">
+        <h3>Chat temporarily unavailable</h3>
+        <p>We're having trouble loading your messages. Please try again.</p>
+        <button onClick={onRetry} className="retry-button">
+          Retry
+        </button>
+      </div>
+    )}
+  >
+    {children}
+  </ErrorBoundary>
+);
+
+export const GamesErrorBoundary = ({ children }) => (
+  <ErrorBoundary 
+    fallback={({ onRetry }) => (
+      <div className="games-error-fallback">
+        <h3>Games not available</h3>
+        <p>We're having trouble loading games in your area.</p>
+        <button onClick={onRetry} className="retry-button">
+          Try Again
+        </button>
+      </div>
+    )}
+  >
+    {children}
+  </ErrorBoundary>
+);
 
 export default ErrorBoundary;
