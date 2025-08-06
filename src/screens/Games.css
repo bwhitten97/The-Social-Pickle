@@ -730,7 +730,7 @@
   background-color: white;
   border-radius: 1rem;
   width: 100%;
-  max-width: 500px;
+  max-width: 600px; /* Increased from 500px for better desktop experience */
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
@@ -807,7 +807,7 @@
   padding: 0.75rem 1rem;
   border: 2px solid #e5e7eb;
   border-radius: 0.5rem;
-  font-size: 0.95rem;
+  font-size: 1rem; /* 16px - prevents iOS auto-zoom */
   transition: border-color 0.2s ease;
   background: white;
   color: #374151;
@@ -1707,7 +1707,7 @@
   padding: 0.5rem 0.75rem;
   border: 2px solid rgba(44, 62, 80, 0.1);
   border-radius: 0.5rem;
-  font-size: 0.8125rem;
+  font-size: 1rem; /* 16px - prevents iOS auto-zoom */
   font-family: 'Inter', sans-serif;
   background: white;
   color: #2C3E50;
@@ -2176,6 +2176,19 @@
   background-color: #F5EEDC !important;
 }
 
+/* Prevent iOS auto-zoom on smaller screens */
+@media (max-width: 480px) {
+  .games-modal-overlay {
+    padding: 0.75rem; /* More padding for very small screens */
+  }
+  
+  .games-modal {
+    max-width: 100%; /* Full width on very small screens */
+    max-height: 90vh; /* More vertical space */
+    width: 100%;
+  }
+}
+
 /* Mobile modal fixes */
 @media (max-width: 768px) {
   .games-modal-overlay {
@@ -2269,7 +2282,7 @@
   .games-form-select,
   .games-form-textarea {
     padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
+    font-size: 1rem; /* 16px - prevents iOS auto-zoom */
   }
   
   .games-form-group textarea {
