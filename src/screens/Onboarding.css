@@ -381,9 +381,9 @@
 }
 
 .preview-image {
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
+  width: 240px;
+  height: 162px; /* Maintains 400:270 aspect ratio */
+  border-radius: 12px; /* Slight rounding to match card style */
   object-fit: cover;
   border: 4px solid #3E5D45;
 }
@@ -592,4 +592,20 @@
 .terms-link:hover {
   color: #2C4A33;
   text-decoration: underline;
+}
+
+/* Birth Date Picker in Onboarding */
+.onboarding-birth-date-picker {
+  margin: 0 auto;
+  max-width: 350px;
+}
+
+.onboarding-birth-date-picker .birth-date-picker-label {
+  font-size: 1.125rem;
+  margin-bottom: 1.5rem;
+}
+
+.onboarding-birth-date-picker .birth-date-picker-wheels {
+  background: rgba(62, 93, 69, 0.05);
+  border: 2px solid rgba(62, 93, 69, 0.1);
 }
