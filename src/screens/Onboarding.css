@@ -556,7 +556,26 @@
   border: 2px solid #3E5D45;
   border-radius: 4px;
   cursor: pointer;
-  accent-color: #3E5D45;
+  background-color: #FFFFFF;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  position: relative;
+}
+
+.terms-checkbox:checked {
+  background-color: #FFFFFF;
+}
+
+.terms-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #2C3E50;
+  font-size: 14px;
+  font-weight: bold;
 }
 
 .terms-text {

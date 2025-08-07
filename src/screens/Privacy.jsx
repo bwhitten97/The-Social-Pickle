@@ -56,7 +56,7 @@ const Privacy = () => {
         <section className="privacy-section">
           <h2>4. Your Choices</h2>
           <p>
-            You can update or delete your profile anytime. To request full deletion of your data, email us at <a href="mailto:support@socialpickle.co">support@socialpickle.co</a>.
+            You can update or delete your profile anytime. To request full deletion of your data, email us at <a href="mailto:blake@socialpickle.co">blake@socialpickle.co</a>.
           </p>
         </section>
 
@@ -84,7 +84,7 @@ const Privacy = () => {
         <section className="privacy-section">
           <h2>8. Contact Us</h2>
           <p>
-            Questions? Email us at: <a href="mailto:support@socialpickle.co">support@socialpickle.co</a>
+            Questions? Email us at: <a href="mailto:blake@socialpickle.co">blake@socialpickle.co</a>
           </p>
         </section>
       </div>

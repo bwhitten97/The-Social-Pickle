@@ -194,6 +194,8 @@ export const AuthProvider = ({ children }) => {
         profilePicture: profilePictureUrl || additionalDataWithoutFile.profilePictureUrl || '',
         bio: additionalDataWithoutFile.bio || '',
         location: additionalDataWithoutFile.location || config.DEFAULT_LOCATION,
+        termsAccepted: true, // User accepted terms during onboarding
+        termsAcceptedAt: new Date(), // Track when terms were accepted
         profileComplete: true,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -454,6 +456,8 @@ export const AuthProvider = ({ children }) => {
         bio: profileData.bio || '',
         location: profileData.location || config.DEFAULT_LOCATION,
         profilePicture: profilePictureUrl || profileData.profilePictureUrl || '',
+        termsAccepted: true, // User accepted terms during onboarding
+        termsAcceptedAt: new Date(), // Track when terms were accepted
         profileComplete: true,
         updatedAt: new Date()
       };

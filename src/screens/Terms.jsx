@@ -84,7 +84,7 @@ const Terms = () => {
         <section className="terms-section">
           <h2>8. Contact Us</h2>
           <p>
-            Questions? Email us at: <a href="mailto:support@socialpickle.co">support@socialpickle.co</a>
+            Questions? Email us at: <a href="mailto:blake@socialpickle.co">blake@socialpickle.co</a>
           </p>
         </section>
       </div>
