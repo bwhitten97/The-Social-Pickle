@@ -111,5 +111,11 @@ service cloud.firestore {
       allow create: if isAuthenticated() &&
         request.auth.uid == request.resource.data.userId;
     }
+    
+    // Chat Rooms collection - TEMPORARY: Allow authenticated users to access chat rooms
+    match /chatRooms/{chatRoomId} {
+      allow read, write: if isAuthenticated();
+      allow create: if isAuthenticated();
+    }
   }
 }

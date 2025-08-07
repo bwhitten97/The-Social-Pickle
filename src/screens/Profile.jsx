@@ -214,9 +214,10 @@ const Profile = memo(() => {
         const profileToSave = {
           ...profile,
           location: config.MULTI_CITY_ENABLED ? profile.location : config.DEFAULT_LOCATION,
-          // If profileImagePreview is null (user removed image), clear the profile picture
-          // Otherwise, use current preview or fallback to existing user profile picture
-          profilePictureUrl: profileImagePreview === null ? '' : (profileImagePreview || user?.profilePicture || '')
+          // Check if user is removing the image (both are null after removal)
+          // If removing, explicitly set to empty string
+          // Otherwise use the preview URL
+          profilePictureUrl: (profileImage === null && profileImagePreview === null) ? '' : profileImagePreview
         };
         
         console.log('Profile: Saving profile with image:', {
@@ -643,14 +644,18 @@ const Profile = memo(() => {
               <div className="form-field-full">
                 <label className="field-label">Bio</label>
                 {isEditing ? (
-                  <textarea
-                    name="bio"
-                    value={profile.bio}
-                    onChange={handleInputChange}
-                    rows={4}
-                    placeholder="Tell other players about yourself..."
-                    className="field-textarea"
-                  />
+                  <>
+                    <textarea
+                      name="bio"
+                      value={profile.bio}
+                      onChange={handleInputChange}
+                      rows={3}
+                      maxLength={80}
+                      placeholder="Tell other players about yourself..."
+                      className="field-textarea"
+                    />
+                    <div className="bio-counter">{profile.bio.length}/80 characters</div>
+                  </>
                 ) : (
                   <div className="field-value field-value-bio">{profile.bio}</div>
                 )}
