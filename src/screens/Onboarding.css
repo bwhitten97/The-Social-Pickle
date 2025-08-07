@@ -529,3 +529,48 @@
 .input-helper.error {
   color: #ef4444;
 }
+
+/* Terms and Privacy Policy Checkbox */
+.terms-checkbox-section {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: rgba(62, 93, 69, 0.05);
+  border-radius: 12px;
+}
+
+.terms-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: #2C3E50;
+}
+
+.terms-checkbox {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border: 2px solid #3E5D45;
+  border-radius: 4px;
+  cursor: pointer;
+  accent-color: #3E5D45;
+}
+
+.terms-text {
+  flex: 1;
+}
+
+.terms-link {
+  color: #3E5D45;
+  text-decoration: underline;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.terms-link:hover {
+  color: #2C4A33;
+  text-decoration: underline;
+}

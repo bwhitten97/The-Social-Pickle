@@ -16,6 +16,8 @@ import Matches from './screens/Matches';
 import Profile from './screens/Profile';
 import PhotoUploadDemo from './components/PhotoUploadDemo';
 import Notification from './components/Notification';
+import Terms from './screens/Terms';
+import Privacy from './screens/Privacy';
 import { GameProvider, useGameContext } from './context/GameContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { logPlayerLiked, logPlayerPassed, logMatchCreated, logPageView } from './utils/analytics';
@@ -776,6 +778,19 @@ function AppContent() {
         <Route path="/photo-demo" element={
           <ErrorBoundary>
             <PhotoUploadDemo />
+          </ErrorBoundary>
+        } />
+        
+        {/* Legal Pages */}
+        <Route path="/terms" element={
+          <ErrorBoundary>
+            <Terms />
+          </ErrorBoundary>
+        } />
+        
+        <Route path="/privacy" element={
+          <ErrorBoundary>
+            <Privacy />
           </ErrorBoundary>
         } />
       </Routes>

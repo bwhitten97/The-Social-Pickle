@@ -29,7 +29,8 @@ const Onboarding = () => {
     bio: '',
     email: '', // For email signups
     password: '', // For email signups
-    location: config.DEFAULT_LOCATION // Default location
+    location: config.DEFAULT_LOCATION, // Default location
+    termsAccepted: false // Terms and privacy policy acceptance
   });
 
   const steps = [
@@ -215,12 +216,12 @@ const Onboarding = () => {
           });
           return false;
         }
-        // Age validation for age field - FIXED: Consistent 18+ requirement
+        // Age validation for age field - Updated to match Terms of Use (13+)
         if (step.field === 'age') {
           const age = parseInt(value);
-          if (age < 18 || age > 100) {
+          if (age < 13 || age > 100) {
             setNotification({
-              message: "You must be at least 18 years old to use this app",
+              message: "You must be at least 13 years old to use this app",
               name: "",
               emoji: "⚠️"
             });
@@ -257,7 +258,16 @@ const Onboarding = () => {
         }
         return true;
       case 'photo':
-        // Photo is optional
+      case 'photo-and-bio':
+        // Photo is optional, but terms must be accepted
+        if (!userData.termsAccepted) {
+          setNotification({
+            message: "Please accept the terms and privacy policy",
+            name: "",
+            emoji: "⚠️"
+          });
+          return false;
+        }
         return true;
       default:
         return true;
@@ -548,7 +558,7 @@ const Onboarding = () => {
               value={userData[step.field]}
               onChange={(e) => updateUserData(step.field, e.target.value)}
               className="onboarding-input large"
-              min="18"
+              min="13"
               max="100"
               autoFocus
             />
@@ -759,20 +769,44 @@ const Onboarding = () => {
 
             {/* Bio input field */}
             {step.type === 'photo-and-bio' && (
-              <div className="bio-input-section">
-                <label className="bio-label">Tell others about yourself (Optional)</label>
-                <textarea
-                  placeholder="Feel free to share more detail about who you are as a player, where you like to play, or what you are trying to accomplish on The Social Pickle..."
-                  value={userData.bio}
-                  onChange={(e) => updateUserData('bio', e.target.value)}
-                  className="bio-textarea"
-                  rows="4"
-                  maxLength="200"
-                />
-                <div className="bio-counter">
-                  {userData.bio.length}/200 characters
+              <>
+                <div className="bio-input-section">
+                  <label className="bio-label">Tell others about yourself (Optional)</label>
+                  <textarea
+                    placeholder="Feel free to share more detail about who you are as a player, where you like to play, or what you are trying to accomplish on The Social Pickle..."
+                    value={userData.bio}
+                    onChange={(e) => updateUserData('bio', e.target.value)}
+                    className="bio-textarea"
+                    rows="4"
+                    maxLength="200"
+                  />
+                  <div className="bio-counter">
+                    {userData.bio.length}/200 characters
+                  </div>
                 </div>
-              </div>
+                
+                {/* Terms and Privacy Policy Checkbox */}
+                <div className="terms-checkbox-section">
+                  <label className="terms-checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={userData.termsAccepted}
+                      onChange={(e) => updateUserData('termsAccepted', e.target.checked)}
+                      className="terms-checkbox"
+                    />
+                    <span className="terms-text">
+                      I agree to The Social Pickle's{' '}
+                      <a href="/terms" target="_blank" rel="noopener noreferrer" className="terms-link">
+                        Terms of Use
+                      </a>
+                      {' '}and{' '}
+                      <a href="/privacy" target="_blank" rel="noopener noreferrer" className="terms-link">
+                        Privacy Policy
+                      </a>
+                    </span>
+                  </label>
+                </div>
+              </>
             )}
           </div>
         );
