@@ -459,15 +459,26 @@ export const GameProvider = ({ children }) => {
           }
           
           // Set up real-time listeners for games
-          const unsubscribeGames = gameService.setupGamesListener((gamesData) => {
-            console.log('GameContext: City-filtered games loaded', {
-              count: gamesData.length,
-              userCity: user?.city,
-              gameIds: gamesData.map(g => g.id),
-              gameCities: gamesData.map(g => ({ id: g.id, city: g.city }))
-            });
-            setGames(gamesData);
-          }, user?.city); // Pass user's city for filtering
+          // For authenticated users, only set up listener if we have their city
+          // For unauthenticated users, show all games
+          let unsubscribeGames = () => {};
+          
+          if (!user || user.city) {
+            // Either no user (show all) or user with city (filter by city)
+            unsubscribeGames = gameService.setupGamesListener((gamesData) => {
+              console.log('GameContext: City-filtered games loaded', {
+                count: gamesData.length,
+                userCity: user?.city,
+                gameIds: gamesData.map(g => g.id),
+                gameCities: gamesData.map(g => ({ id: g.id, city: g.city }))
+              });
+              setGames(gamesData);
+            }, user?.city); // Pass user's city for filtering
+          } else {
+            // Authenticated user but city not loaded yet - wait
+            console.log('GameContext: Waiting for user city to load before setting up games listener');
+            setGames([]); // Clear games while waiting
+          }
           
           // Set up real-time listeners for user applications
           let unsubscribeApplications = null;
@@ -545,7 +556,7 @@ export const GameProvider = ({ children }) => {
     };
     
     initializeData();
-  }, [isInitialized, user]);
+  }, [isInitialized, user, user?.city]);
 
   // Function to clean up expired games (games that are more than 1 hour past their start time)
   const cleanupExpiredGames = React.useCallback(() => {

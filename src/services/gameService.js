@@ -75,9 +75,13 @@ export const gameService = {
         // Filter active games and city-specific games on client side
         if (gameData.status === 'active') {
           // City filtering: only show games from user's city
-          if (userCity && gameData.city && gameData.city !== userCity) {
-            return; // Skip games from different cities
+          if (userCity !== null && userCity !== undefined) {
+            // User has a city, so filter games
+            if (!gameData.city || gameData.city !== userCity) {
+              return; // Skip games without city or from different cities
+            }
           }
+          // If userCity is null/undefined, show all games (no filtering)
           games.push(gameData);
         }
       });
@@ -185,14 +189,14 @@ export const gameService = {
         }
         
         // City-based filtering: only show games from user's city
-        if (userCity && gameData.city) {
-          if (gameData.city !== userCity) {
-            return; // Skip games from different cities
+        // If userCity is provided, filter by it
+        if (userCity !== null && userCity !== undefined) {
+          // User has a city, so filter games
+          if (!gameData.city || gameData.city !== userCity) {
+            return; // Skip games without city or from different cities
           }
-        } else if (!gameData.city && userCity) {
-          // Skip games without city data when user has a city
-          return;
         }
+        // If userCity is null/undefined, show all games (no filtering)
         
         games.push(gameData);
       });
