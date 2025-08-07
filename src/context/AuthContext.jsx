@@ -455,7 +455,7 @@ export const AuthProvider = ({ children }) => {
         availability: profileData.availability || [],
         bio: profileData.bio || '',
         location: profileData.location || config.DEFAULT_LOCATION,
-        profilePicture: profilePictureUrl || profileData.profilePictureUrl || '',
+        profilePicture: profilePictureUrl !== undefined ? profilePictureUrl : (profileData.profilePictureUrl || ''),
         termsAccepted: true, // User accepted terms during onboarding
         termsAcceptedAt: new Date(), // Track when terms were accepted
         profileComplete: true,

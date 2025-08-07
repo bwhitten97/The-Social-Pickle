@@ -27,14 +27,15 @@ const PhotoCropModal = ({
   
   const containerRef = useRef(null);
   const imageRef = useRef(null);
+  const overlayRef = useRef(null);
   const dragStartPos = useRef({ x: 0, y: 0 });
   const cropStartPos = useRef({ x: 0, y: 0 });
 
   // Get current card dimensions
   const cardDimensions = DISCOVER_CARD_CONFIG.getCurrentDimensions();
   const cropFrameSize = {
-    width: 200, // Smaller display size in crop interface
-    height: 200 * (cardDimensions.height / cardDimensions.width)
+    width: 160, // Larger crop frame to better match actual profile card size
+    height: 160 * (cardDimensions.height / cardDimensions.width)
   };
 
   // Load image when file changes
@@ -71,8 +72,8 @@ const PhotoCropModal = ({
         const displaySize = getOptimalDisplaySize(
           img.naturalWidth,
           img.naturalHeight,
-          Math.min(containerRect.width - 40, 280), // Max 280px wide
-          Math.min(containerRect.height - 40, 220) // Max 220px tall
+          Math.min(containerRect.width - 40, 200), // Much smaller max width so image doesn't take over
+          Math.min(containerRect.height - 80, 120) // Much smaller max height to leave room for UI
         );
         
         console.log('Display size calculated:', displaySize);
@@ -94,7 +95,13 @@ const PhotoCropModal = ({
   // Mouse/Touch handlers for dragging crop area
   const handleMouseDown = useCallback((e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(true);
+    
+    // Prevent scrolling on the modal overlay while dragging
+    if (overlayRef.current) {
+      overlayRef.current.classList.add('no-scroll');
+    }
     
     const rect = imageRef.current.getBoundingClientRect();
     const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
@@ -111,6 +118,8 @@ const PhotoCropModal = ({
     if (!isDragging || !imageRef.current) return;
     
     e.preventDefault();
+    e.stopPropagation();
+    
     const rect = imageRef.current.getBoundingClientRect();
     const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
     const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
@@ -141,6 +150,10 @@ const PhotoCropModal = ({
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
+    // Re-enable scrolling when dragging stops
+    if (overlayRef.current) {
+      overlayRef.current.classList.remove('no-scroll');
+    }
   }, []);
 
   // Set up global mouse/touch listeners
@@ -165,6 +178,10 @@ const PhotoCropModal = ({
     return () => {
       if (image && image.cleanup) {
         image.cleanup();
+      }
+      // Re-enable scrolling when component unmounts
+      if (overlayRef.current) {
+        overlayRef.current.classList.remove('no-scroll');
       }
     };
   }, [image]);
@@ -206,7 +223,7 @@ const PhotoCropModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="photo-crop-modal-overlay">
+    <div ref={overlayRef} className="photo-crop-modal-overlay">
       <div className="photo-crop-modal">
         <div className="photo-crop-header">
           <h2>{title}</h2>
@@ -226,7 +243,7 @@ const PhotoCropModal = ({
         )}
 
         <div className="photo-crop-instructions">
-          Drag to position your photo. This is exactly how you'll appear in Discover.
+          Drag the highlighted area to position your photo. This preview shows exactly how you'll appear on player cards.
         </div>
 
         <div 

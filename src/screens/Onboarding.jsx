@@ -18,7 +18,7 @@ const Onboarding = () => {
 
   const [userData, setUserData] = useState({
     name: '',
-    age: '',
+    age: '', // Back to simple age input
     gender: '',
     skillLevel: '',
     duprRating: '',
@@ -133,6 +133,7 @@ const Onboarding = () => {
     navigate('/discover');
     return null;
   }
+
 
   const updateUserData = (field, value) => {
     setUserData(prev => ({
@@ -544,6 +545,7 @@ const Onboarding = () => {
               value={userData[step.field]}
               onChange={(e) => updateUserData(step.field, e.target.value)}
               className="onboarding-input large"
+              maxLength="50"
               autoFocus
             />
           </div>
@@ -564,6 +566,7 @@ const Onboarding = () => {
             />
           </div>
         );
+
 
       case 'location':
         return (
@@ -773,15 +776,15 @@ const Onboarding = () => {
                 <div className="bio-input-section">
                   <label className="bio-label">Tell others about yourself (Optional)</label>
                   <textarea
-                    placeholder="Feel free to share more detail about who you are as a player, where you like to play, or what you are trying to accomplish on The Social Pickle..."
+                    placeholder="Tell others about yourself as a player..."
                     value={userData.bio}
                     onChange={(e) => updateUserData('bio', e.target.value)}
                     className="bio-textarea"
-                    rows="4"
-                    maxLength="200"
+                    rows="3"
+                    maxLength="80"
                   />
                   <div className="bio-counter">
-                    {userData.bio.length}/200 characters
+                    {userData.bio.length}/80 characters
                   </div>
                 </div>
                 
