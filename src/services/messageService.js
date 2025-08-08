@@ -10,6 +10,7 @@ import {
   onSnapshot,
   serverTimestamp,
   updateDoc,
+  deleteDoc,
   and
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -402,4 +403,48 @@ export const sendMessageBetweenUsers = async (fromUserId, fromUserName, toUserId
   console.log('🔍 MESSAGE_SERVICE: createMessage result', result);
   
   return result;
+};
+
+// Delete all messages in a conversation between two users
+export const deleteConversation = async (userId1, userId2) => {
+  try {
+    console.log('🗑️ MESSAGE_SERVICE: deleteConversation called', { userId1, userId2 });
+    
+    const messagesRef = collection(db, 'messages');
+    const conversationKey = [userId1, userId2].sort().join('_');
+    const q = query(messagesRef, where('conversationKey', '==', conversationKey));
+    
+    const snapshot = await getDocs(q);
+    console.log(`🗑️ MESSAGE_SERVICE: Found ${snapshot.size} messages to delete`);
+    
+    if (snapshot.empty) {
+      console.log('🗑️ MESSAGE_SERVICE: No messages found to delete');
+      return { success: true, deletedCount: 0 };
+    }
+    
+    // Delete all messages in the conversation
+    const deletePromises = [];
+    snapshot.forEach(docSnapshot => {
+      const messageData = docSnapshot.data();
+      // Double-check these are messages between the two users
+      if ((messageData.fromUserId === userId1 && messageData.toUserId === userId2) ||
+          (messageData.fromUserId === userId2 && messageData.toUserId === userId1)) {
+        deletePromises.push(deleteDoc(doc(db, 'messages', docSnapshot.id)));
+      }
+    });
+    
+    await Promise.all(deletePromises);
+    console.log(`🗑️ MESSAGE_SERVICE: Successfully deleted ${deletePromises.length} messages`);
+    
+    return { 
+      success: true, 
+      deletedCount: deletePromises.length 
+    };
+  } catch (error) {
+    console.error('🗑️ MESSAGE_SERVICE: Error deleting conversation:', error);
+    return { 
+      success: false, 
+      error: error.message 
+    };
+  }
 };

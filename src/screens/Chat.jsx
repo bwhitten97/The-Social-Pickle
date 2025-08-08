@@ -5,7 +5,7 @@ import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import ChatRoom from '../components/ChatRoom';
 import Notification from '../components/Notification';
-import { messageService, sendMessageBetweenUsers } from '../services/messageService';
+import { messageService, sendMessageBetweenUsers, deleteConversation } from '../services/messageService';
 import { notificationService } from '../services/notificationService';
 import './Chat.css';
 import '../components/SwipeableCard.css';
@@ -357,17 +357,47 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
     }
   }, [showProfileModal, chat, user?.id, fetchUserProfile]);
 
-  const handleDeleteChat = useCallback(() => {
-    // TODO: Implement Firebase-based chat deletion
-    console.log('Chat deletion temporarily disabled - need to implement Firebase version');
-    if (onShowNotification) {
-      onShowNotification({
-        message: "Chat deletion temporarily disabled",
-        name: "",
-        emoji: "⚠️"
-      });
+  const handleDeleteChat = useCallback(async () => {
+    if (!user?.id || !chat.otherUserId) {
+      console.error('Missing user ID or other user ID for chat deletion');
+      return;
     }
-  }, [onShowNotification]);
+    
+    try {
+      const result = await deleteConversation(user.id, chat.otherUserId);
+      
+      if (result.success) {
+        if (onShowNotification) {
+          onShowNotification({
+            message: `Deleted conversation with ${chat.name}`,
+            name: `${result.deletedCount} messages removed`,
+            emoji: "🗑️"
+          });
+        }
+        // Close the chat after deletion
+        if (onClose) {
+          onClose();
+        }
+      } else {
+        if (onShowNotification) {
+          onShowNotification({
+            message: "Failed to delete conversation",
+            name: result.error || "Unknown error",
+            emoji: "❌"
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting chat:', error);
+      if (onShowNotification) {
+        onShowNotification({
+          message: "Failed to delete conversation",
+          name: "Please try again",
+          emoji: "❌"
+        });
+      }
+    }
+  }, [user?.id, chat.otherUserId, chat.name, onShowNotification, onClose]);
 
   return (
     <>
@@ -386,18 +416,23 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
         </div>
         {chat.isDummy && <span className="demo-badge">Demo</span>}
         {!chat.isDummy && (
-          <button className="view-profile-btn" onClick={() => {
-            console.log('🔍 PROFILE: View Profile button clicked', { 
-              chatId: chat.id, 
-              chatName: chat.name, 
-              isDummy: chat.isDummy,
-              isFirebaseChat: chat.isFirebaseChat,
-              currentShowState: showProfileModal
-            });
-            setShowProfileModal(true);
-          }} title="View profile">
-            View Profile
-          </button>
+          <div className="chat-header-actions">
+            <button className="view-profile-btn" onClick={() => {
+              console.log('🔍 PROFILE: View Profile button clicked', { 
+                chatId: chat.id, 
+                chatName: chat.name, 
+                isDummy: chat.isDummy,
+                isFirebaseChat: chat.isFirebaseChat,
+                currentShowState: showProfileModal
+              });
+              setShowProfileModal(true);
+            }} title="View profile">
+              View Profile
+            </button>
+            <button className="delete-chat-btn" onClick={handleDeleteChat} title="Delete conversation">
+              🗑️
+            </button>
+          </div>
         )}
       </div>
 
@@ -907,7 +942,7 @@ const Chat = memo(({ appNotifications = [], onNotificationsRead }) => {
         console.log('🔍 SWIPE_DELETE: Deleting Firebase conversation between', user.id, 'and', otherUserId);
         
         try {
-          const result = await messageService.deleteConversation(user.id, otherUserId);
+          const result = await deleteConversation(user.id, otherUserId);
           if (result.success) {
             console.log('🔍 SWIPE_DELETE: Successfully deleted conversation:', result.deletedCount, 'messages');
             
@@ -1093,7 +1128,7 @@ const Chat = memo(({ appNotifications = [], onNotificationsRead }) => {
           console.log('🔍 DELETE: Deleting Firebase conversation between', user.id, 'and', otherUserId);
           
           try {
-            const result = await messageService.deleteConversation(user.id, otherUserId);
+            const result = await deleteConversation(user.id, otherUserId);
             if (result.success) {
               console.log('🔍 DELETE: Successfully deleted conversation:', result.deletedCount, 'messages');
               deletedCount++;

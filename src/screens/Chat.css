@@ -1747,7 +1747,13 @@
 .chat-avatar-modern.color-9 { background-color: #32D74B; }
 .chat-avatar-modern.color-0 { background-color: #007AFF; }
 
-/* View Profile Button */
+/* Chat Header Actions */
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .view-profile-btn {
   background: #007AFF;
   color: white;
@@ -1763,6 +1769,25 @@
 
 .view-profile-btn:hover {
   background: #0056CC;
+  transform: scale(1.05);
+}
+
+.delete-chat-btn {
+  background: #FF3B30;
+  color: white;
+  border: none;
+  padding: 6px 8px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-chat-btn:hover {
+  background: #D70015;
   transform: scale(1.05);
 }
 
