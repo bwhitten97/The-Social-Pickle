@@ -27,17 +27,68 @@ export const messageService = {
       
       const messagesRef = collection(db, 'messages');
       const conversationKey = [userId1, userId2].sort().join('_');
-      const q = query(messagesRef, where('conversationKey', '==', conversationKey));
       
-      const snapshot = await getDocs(q);
+      // Try multiple query approaches to catch all messages
+      console.log('🔍 MESSAGE_SERVICE: Using conversationKey query first:', conversationKey);
+      const conversationKeyQuery = query(messagesRef, where('conversationKey', '==', conversationKey));
+      
+      // Also try participant-based queries as backup
+      const participantQuery1 = query(messagesRef, where('participants', 'array-contains', userId1));
+      const participantQuery2 = query(messagesRef, where('toUserId', '==', userId1), where('fromUserId', '==', userId2));
+      const participantQuery3 = query(messagesRef, where('toUserId', '==', userId1), where('fromUserId', '==', userId2));
+      
+      // Execute all queries and combine results
+      const [conversationSnapshot, participantSnapshot1, participantSnapshot2, participantSnapshot3] = await Promise.all([
+        getDocs(conversationKeyQuery),
+        getDocs(participantQuery1),
+        getDocs(participantQuery2), 
+        getDocs(participantQuery3)
+      ]);
+      
+      console.log('🔍 MESSAGE_SERVICE: Query results:', {
+        conversationKeyResults: conversationSnapshot.size,
+        participantResults1: participantSnapshot1.size,
+        participantResults2: participantSnapshot2.size,
+        participantResults3: participantSnapshot3.size
+      });
+      
+      // Combine all unique messages
+      const allMessages = new Map();
+      
+      [conversationSnapshot, participantSnapshot1, participantSnapshot2, participantSnapshot3].forEach(snapshot => {
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          // Only include messages between these two users
+          if ((data.fromUserId === userId1 && data.toUserId === userId2) || 
+              (data.fromUserId === userId2 && data.toUserId === userId1)) {
+            allMessages.set(doc.id, { doc, data });
+          }
+        });
+      });
+      
+      console.log('🔍 MESSAGE_SERVICE: Found', allMessages.size, 'unique messages between users');
+      
       const updatePromises = [];
       
-      snapshot.forEach(doc => {
-        const messageData = doc.data();
+      allMessages.forEach(({doc, data: messageData}) => {
+        console.log('🔍 MESSAGE_SERVICE: Checking message for read status', {
+          messageId: doc.id,
+          fromUserId: messageData.fromUserId,
+          toUserId: messageData.toUserId,
+          currentUserId: userId1,
+          isToCurrentUser: messageData.toUserId === userId1,
+          currentReadStatus: messageData.read,
+          conversationKey: messageData.conversationKey,
+          expectedConversationKey: conversationKey,
+          conversationKeyMatch: messageData.conversationKey === conversationKey,
+          shouldMarkAsRead: messageData.toUserId === userId1 && !messageData.read
+        });
+        
         // Mark messages as read if they were sent TO the current user and are unread
         if (messageData.toUserId === userId1 && !messageData.read) {
           const messageRef = doc.ref;
           updatePromises.push(updateDoc(messageRef, { read: true }));
+          console.log('🔍 MESSAGE_SERVICE: Will mark message as read:', doc.id);
         }
       });
       
@@ -256,6 +307,73 @@ export const messageService = {
       console.error('🔍 MESSAGE_SERVICE: Error in chat rooms listener:', error);
       // Do not clear chats on transient errors; keep last known list
     });
+  },
+
+  // Delete all messages in a conversation
+  async deleteConversation(userId1, userId2) {
+    try {
+      console.log('🔍 MESSAGE_SERVICE: Deleting conversation between', userId1, 'and', userId2);
+      
+      const messagesRef = collection(db, 'messages');
+      const conversationKey = [userId1, userId2].sort().join('_');
+      
+      // Use multiple query approaches like in markMessagesAsRead
+      console.log('🔍 MESSAGE_SERVICE: Finding all messages to delete');
+      const conversationKeyQuery = query(messagesRef, where('conversationKey', '==', conversationKey));
+      const participantQuery1 = query(messagesRef, where('participants', 'array-contains', userId1));
+      const directQuery1 = query(messagesRef, where('toUserId', '==', userId1), where('fromUserId', '==', userId2));
+      const directQuery2 = query(messagesRef, where('toUserId', '==', userId2), where('fromUserId', '==', userId1));
+      
+      // Execute all queries
+      const [conversationSnapshot, participantSnapshot1, directSnapshot1, directSnapshot2] = await Promise.all([
+        getDocs(conversationKeyQuery),
+        getDocs(participantQuery1),
+        getDocs(directQuery1),
+        getDocs(directQuery2)
+      ]);
+      
+      console.log('🔍 MESSAGE_SERVICE: Delete query results:', {
+        conversationKeyResults: conversationSnapshot.size,
+        participantResults: participantSnapshot1.size,
+        directResults1: directSnapshot1.size,
+        directResults2: directSnapshot2.size
+      });
+      
+      // Combine all unique messages to delete
+      const messagesToDelete = new Map();
+      
+      [conversationSnapshot, participantSnapshot1, directSnapshot1, directSnapshot2].forEach(snapshot => {
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          // Only include messages between these two users
+          if ((data.fromUserId === userId1 && data.toUserId === userId2) || 
+              (data.fromUserId === userId2 && data.toUserId === userId1)) {
+            messagesToDelete.set(doc.id, { doc, data });
+          }
+        });
+      });
+      
+      console.log('🔍 MESSAGE_SERVICE: Found', messagesToDelete.size, 'unique messages to delete');
+      
+      const deletePromises = [];
+      messagesToDelete.forEach(({doc, data}) => {
+        console.log('🔍 MESSAGE_SERVICE: Will delete message:', doc.id, {
+          from: data.fromUserId,
+          to: data.toUserId,
+          conversationKey: data.conversationKey,
+          message: data.message?.substring(0, 50) + '...'
+        });
+        deletePromises.push(doc.ref.delete());
+      });
+      
+      await Promise.all(deletePromises);
+      console.log('🔍 MESSAGE_SERVICE: Successfully deleted', deletePromises.length, 'messages');
+      
+      return { success: true, deletedCount: deletePromises.length };
+    } catch (error) {
+      console.error('🔍 MESSAGE_SERVICE: Error deleting conversation:', error);
+      return { success: false, error: error.message };
+    }
   }
 };
 

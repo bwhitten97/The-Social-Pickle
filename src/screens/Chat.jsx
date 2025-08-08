@@ -8,6 +8,7 @@ import Notification from '../components/Notification';
 import { messageService, sendMessageBetweenUsers } from '../services/messageService';
 import { notificationService } from '../services/notificationService';
 import './Chat.css';
+import '../components/SwipeableCard.css';
 
 // SwipeableChat component for swipe-to-delete functionality
 const SWIPE_THRESHOLD = 40; // px - minimum swipe distance to trigger action
@@ -183,12 +184,35 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
       chatId: chat.id
     });
     
+    // Immediately mark messages as read when conversation opens
+    console.log('🔍 DIRECT_CHAT: Immediately marking messages as read on conversation open');
+    messageService.markMessagesAsRead(user.id, otherUserId)
+      .then(result => {
+        console.log('🔍 DIRECT_CHAT: Initial mark as read result:', result);
+      })
+      .catch(error => {
+        console.error('🔍 DIRECT_CHAT: Error in initial mark as read:', error);
+      });
+    
     const unsubscribe = messageService.setupConversationListener(
       user.id,
       otherUserId,
       (messages) => {
         console.log('🔍 DIRECT_CHAT: Received messages for conversation:', messages.length);
         setFirebaseMessages(messages);
+        
+        // Also mark as read whenever new messages arrive
+        const unreadMessages = messages.filter(msg => !msg.read && msg.fromUserId !== user.id);
+        if (unreadMessages.length > 0) {
+          console.log('🔍 DIRECT_CHAT: Found unread messages in listener, marking as read');
+          messageService.markMessagesAsRead(user.id, otherUserId)
+            .then(result => {
+              console.log('🔍 DIRECT_CHAT: Listener mark as read result:', result);
+            })
+            .catch(error => {
+              console.error('🔍 DIRECT_CHAT: Error in listener mark as read:', error);
+            });
+        }
       }
     );
     
@@ -211,6 +235,35 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
       setMessages(formattedMessages);
     }
   }, [firebaseMessages, chat.isFirebaseChat, user?.id]);
+
+  // Mark messages as read when conversation is active
+  useEffect(() => {
+    if (!chat.isFirebaseChat || !chat.chatRoom || !user?.id || firebaseMessages.length === 0) return;
+    
+    const otherUserId = chat.chatRoom.participants.find(id => id !== user.id);
+    if (!otherUserId) return;
+    
+    // Check if there are any unread messages from the other user
+    const unreadMessages = firebaseMessages.filter(msg => 
+      !msg.read && msg.fromUserId !== user.id
+    );
+    
+    if (unreadMessages.length > 0) {
+      console.log('🔍 DIRECT_CHAT: Found', unreadMessages.length, 'unread messages, marking as read');
+      
+      // Mark messages as read after a short delay to ensure the user sees them
+      const timeoutId = setTimeout(async () => {
+        try {
+          const result = await messageService.markMessagesAsRead(user.id, otherUserId);
+          console.log('🔍 DIRECT_CHAT: Marked messages as read:', result);
+        } catch (error) {
+          console.error('🔍 DIRECT_CHAT: Error marking messages as read:', error);
+        }
+      }, 1000); // 1 second delay
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [firebaseMessages, chat.isFirebaseChat, chat.chatRoom, user?.id]);
 
   // Update messages when conversation changes (new messages from matches page)
   useEffect(() => {
@@ -333,7 +386,16 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
         </div>
         {chat.isDummy && <span className="demo-badge">Demo</span>}
         {!chat.isDummy && (
-          <button className="view-profile-btn" onClick={() => setShowProfileModal(true)} title="View profile">
+          <button className="view-profile-btn" onClick={() => {
+            console.log('🔍 PROFILE: View Profile button clicked', { 
+              chatId: chat.id, 
+              chatName: chat.name, 
+              isDummy: chat.isDummy,
+              isFirebaseChat: chat.isFirebaseChat,
+              currentShowState: showProfileModal
+            });
+            setShowProfileModal(true);
+          }} title="View profile">
             View Profile
           </button>
         )}
@@ -372,11 +434,18 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
       </div>
     </div>
 
-    {/* Profile Modal */}
+    {/* Profile Modal - Styled to match SwipeableCard */}
     {showProfileModal && (
+      console.log('🔍 PROFILE: Rendering profile modal', { 
+        showProfileModal, 
+        userProfile, 
+        loadingProfile, 
+        chatName: chat.name 
+      }) || true
+    ) && (
       <div className="profile-modal-overlay" onClick={() => setShowProfileModal(false)}>
         <div className="profile-modal-content" onClick={(e) => e.stopPropagation()}>
-          <div className="profile-popup-card">
+          <div className="swipeable-card profile-modal-card" style={{position: 'static', transform: 'none', zIndex: 'auto', cursor: 'default'}}>
             {/* Close button */}
             <button 
               className="profile-modal-close" 
@@ -387,53 +456,127 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
             </button>
             
             {/* Profile Image Section */}
-            <div className="profile-popup-image-section">
-              <div className="profile-popup-image-placeholder">
-                <div className="profile-popup-initials">
-                  {chat.avatar}
-                </div>
+            <div className="swipeable-card-image-section">
+              <div className="swipeable-card-image-container">
+                {(() => {
+                  const imageUrl = userProfile?.profilePictureUrl || userProfile?.profilePicture || userProfile?.image || userProfile?.avatar;
+                  console.log('🔍 PROFILE_IMAGE: Profile image check', {
+                    userProfile,
+                    profilePictureUrl: userProfile?.profilePictureUrl,
+                    profilePicture: userProfile?.profilePicture,
+                    image: userProfile?.image,
+                    avatar: userProfile?.avatar,
+                    finalImageUrl: imageUrl,
+                    hasImage: !!imageUrl
+                  });
+                  
+                  return imageUrl ? (
+                    <img 
+                      src={imageUrl} 
+                      alt={`Portrait of ${userProfile?.name || chat.name}`}
+                      className="swipeable-card-image"
+                      onError={(e) => {
+                        console.log('🔍 PROFILE_IMAGE: Image failed to load', imageUrl);
+                        console.error('Image load error:', e);
+                      }}
+                      onLoad={() => {
+                        console.log('🔍 PROFILE_IMAGE: Image loaded successfully', imageUrl);
+                      }}
+                    />
+                  ) : (
+                    <div className="swipeable-card-placeholder">
+                      <span className="swipeable-card-initials">
+                        {chat.avatar || (userProfile?.name || chat.name)?.split(' ').map(n => n[0]).join('') || '?'}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
+              
+              {/* Distance Badge - Only show if available */}
+              {userProfile?.distance && 
+               userProfile.distance !== '-- miles away' && 
+               userProfile.distance !== '--' && 
+               !userProfile.distance.includes('--') && (
+                <div className="swipeable-card-distance">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="swipeable-card-distance-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  {userProfile.distance}
+                </div>
+              )}
             </div>
-            
-            {/* Profile Details Section */}
-            <div className="profile-popup-details">
+
+            {/* Details Section */}
+            <div className="swipeable-card-details">
               {loadingProfile ? (
                 <div className="profile-loading">
                   <p>Loading profile...</p>
                 </div>
               ) : userProfile ? (
                 <>
-                  <div className="profile-popup-header">
-                    <h2 className="profile-popup-name">{userProfile.name || chat.name}</h2>
-                    {userProfile.age && <span className="profile-popup-age">Age {userProfile.age}</span>}
-                    {userProfile.gender && <span className="profile-popup-gender">{userProfile.gender}</span>}
+                  {/* Header: Name, Age (left) + Skill Level or DUPR (right) */}
+                  <div className="swipeable-card-header">
+                    <h2 className="swipeable-card-name">
+                      <span className="swipeable-card-name-bold">{userProfile.name || chat.name}</span>
+                      {userProfile.age && <>, {userProfile.age}</>}
+                    </h2>
+                    <span className="swipeable-card-skill-text">
+                      {userProfile.duprRating && userProfile.duprRating !== 'unrated' && userProfile.duprRating !== '' 
+                        ? `DUPR: ${userProfile.duprRating}`
+                        : userProfile.skillLevel 
+                          ? userProfile.skillLevel.charAt(0).toUpperCase() + userProfile.skillLevel.slice(1).toLowerCase() 
+                          : 'Not Specified'}
+                    </span>
                   </div>
-                  
-                  {(userProfile.skillLevel || userProfile.duprRating) && (
-                    <div className="profile-popup-badges">
-                      {userProfile.skillLevel && <span className="profile-popup-skill-badge">{userProfile.skillLevel}</span>}
-                      {userProfile.duprRating && <span className="profile-popup-dupr-badge">DUPR {userProfile.duprRating}</span>}
-                    </div>
-                  )}
-                  
+
+                  {/* Availability */}
                   {userProfile.availability && userProfile.availability.length > 0 && (
-                    <div className="profile-popup-availability">
-                      {userProfile.availability.map((time, index) => (
-                        <span key={index} className="profile-popup-availability-tag">{time}</span>
-                      ))}
+                    <div className="swipeable-card-availability">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="swipeable-card-info-icon">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                      </svg>
+                      <span className="swipeable-card-availability-colon">:</span>
+                      <div className="swipeable-card-availability-tags">
+                        {userProfile.availability.map((time, index) => (
+                          <span key={index} className="swipeable-card-availability-tag">
+                            {time.charAt(0).toUpperCase() + time.slice(1).toLowerCase()}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
-                  
-                  {userProfile.bio && userProfile.bio.trim() && (
-                    <div className="profile-popup-bio">
-                      <p>{userProfile.bio}</p>
+
+                  {/* Bio Section */}
+                  <div className="swipeable-card-bio-section">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="swipeable-card-info-icon">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <span className="swipeable-card-bio-colon">:</span>
+                    <div className="swipeable-card-bio-content">
+                      {userProfile.bio && userProfile.bio.trim() !== '' ? (
+                        <p className="swipeable-card-bio-text">{userProfile.bio}</p>
+                      ) : (
+                        <p className="swipeable-card-bio-fallback">
+                          {(userProfile.name || chat.name)?.split(' ')[0] || 'User'} is new to The Social Pickle
+                        </p>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </>
               ) : (
-                <div className="profile-popup-header">
-                  <h2 className="profile-popup-name">{chat.name}</h2>
-                  <p className="profile-unavailable">Profile information not available</p>
+                <div className="swipeable-card-header">
+                  <h2 className="swipeable-card-name">
+                    <span className="swipeable-card-name-bold">{chat.name}</span>
+                  </h2>
+                  <div className="swipeable-card-bio-section">
+                    <p className="swipeable-card-bio-fallback">Profile information not available</p>
+                  </div>
                 </div>
               )}
             </div>
@@ -447,7 +590,7 @@ const DirectMessageChat = memo(({ chat, onClose, onSendMessage, onDeleteChat, on
 
 DirectMessageChat.displayName = 'DirectMessageChat';
 
-const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotificationsRead }) => {
+const Chat = memo(({ appNotifications = [], onNotificationsRead }) => {
   const { user } = useAuth();
   const location = useLocation();
   // Removed GameContext messaging - now using Firebase only
@@ -748,36 +891,114 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
     });
   }, [chatsToShow]);
 
-  const handleDeleteChatFromSwipe = useCallback((chatName) => {
-    // TODO: Implement Firebase-based chat deletion
-    console.log('Chat deletion temporarily disabled - need to implement Firebase version');
-    setNotification({
-      message: "Chat deletion temporarily disabled",
-      name: "",
-      emoji: "⚠️"
-    });
-  }, []);
+  const handleDeleteChatFromSwipe = useCallback(async (chatName) => {
+    console.log('🔍 SWIPE_DELETE: Attempting to delete chat:', chatName);
+    
+    // Find the chat by name
+    const chatToDelete = chatsToShow.find(chat => chat.name === chatName);
+    if (!chatToDelete) {
+      console.log('🔍 SWIPE_DELETE: Chat not found');
+      return;
+    }
+    
+    if (chatToDelete.isFirebaseChat && chatToDelete.chatRoom && user?.id) {
+      const otherUserId = chatToDelete.chatRoom.participants.find(id => id !== user.id);
+      if (otherUserId) {
+        console.log('🔍 SWIPE_DELETE: Deleting Firebase conversation between', user.id, 'and', otherUserId);
+        
+        try {
+          const result = await messageService.deleteConversation(user.id, otherUserId);
+          if (result.success) {
+            console.log('🔍 SWIPE_DELETE: Successfully deleted conversation:', result.deletedCount, 'messages');
+            
+            // Clean up local state
+            setChatUnreadCounts(prev => {
+              const updated = { ...prev };
+              delete updated[chatToDelete.id];
+              return updated;
+            });
+            
+            setNotification({
+              message: `Deleted conversation with ${chatName}`,
+              name: '',
+              emoji: '🗑️'
+            });
+          } else {
+            console.error('🔍 SWIPE_DELETE: Failed to delete conversation:', result.error);
+            setNotification({
+              message: "Failed to delete conversation",
+              name: '',
+              emoji: '❌'
+            });
+          }
+        } catch (error) {
+          console.error('🔍 SWIPE_DELETE: Error deleting conversation:', error);
+          setNotification({
+            message: "Error deleting conversation",
+            name: '',
+            emoji: '❌'
+          });
+        }
+      }
+    } else {
+      // Handle non-Firebase chats (just hide locally)
+      setChatUnreadCounts(prev => {
+        const updated = { ...prev };
+        delete updated[chatToDelete.id];
+        return updated;
+      });
+      setDeletedChats(prev => new Set([...prev, chatToDelete.id]));
+      
+      setNotification({
+        message: `Deleted conversation with ${chatName}`,
+        name: '',
+        emoji: '🗑️'
+      });
+    }
+  }, [chatsToShow, user?.id]);
 
   const [readNotifications, setReadNotifications] = useState(new Set());
 
-  const handleNotificationClick = useCallback((notificationId) => {
+  const handleNotificationClick = useCallback(async (notificationId) => {
     // Mark notification as read locally
     setReadNotifications(prev => new Set([...prev, notificationId]));
     
-    // Notify parent component about notification being read (for app notifications only)
-    if (onNotificationsRead && typeof notificationId !== 'string') {
-      onNotificationsRead([notificationId]);
-    }
+    console.log('🔔 NOTIFICATION: Clicking notification', notificationId);
     
-    // Here you could add navigation logic based on notification type
+    // Find the notification to determine if it's a Firebase notification
     const notification = notifications.find(n => n.id === notificationId);
     if (notification) {
+      console.log('🔔 NOTIFICATION: Found notification', { 
+        id: notification.id, 
+        type: notification.type,
+        isFirebaseNotif: typeof notification.id === 'string' && notification.id.length > 10
+      });
+      
+      // Mark Firebase notifications as read in the database
+      if (typeof notification.id === 'string' && notification.id.length > 10) {
+        console.log('🔔 NOTIFICATION: Marking Firebase notification as read in database');
+        try {
+          const result = await notificationService.markAsRead(notification.id);
+          console.log('🔔 NOTIFICATION: Mark as read result:', result);
+        } catch (error) {
+          console.error('🔔 NOTIFICATION: Error marking notification as read:', error);
+        }
+      }
+      
+      // Notify parent component about notification being read (for app notifications only)
+      if (onNotificationsRead && typeof notificationId !== 'string') {
+        onNotificationsRead([notificationId]);
+      }
+      
+      // Navigation logic based on notification type
       switch (notification.type) {
         case 'match':
         case 'like':
         case 'action':
         case 'system':
-          // These are our new app notifications - just mark as read
+        case 'game_application':
+        case 'application_status':
+          // These are our notifications - just mark as read
           break;
         case 'court_availability':
           // Navigate to court booking or show details
@@ -797,13 +1018,28 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
     }
   }, [notifications, onNotificationsRead]);
 
-  const markAllNotificationsAsRead = useCallback(() => {
+  const markAllNotificationsAsRead = useCallback(async () => {
     const unreadNotificationIds = notifications
-      .filter(n => !readNotifications.has(n.id) && !n.isRead)
+      .filter(n => !readNotifications.has(n.id) && !n.read)
       .map(n => n.id);
+    
+    console.log('🔔 NOTIFICATION: Marking all notifications as read', unreadNotificationIds);
     
     // Mark all notifications as read locally
     setReadNotifications(prev => new Set([...prev, ...unreadNotificationIds]));
+    
+    // Mark Firebase notifications as read in the database
+    const firebaseNotificationIds = unreadNotificationIds.filter(id => typeof id === 'string' && id.length > 10);
+    if (firebaseNotificationIds.length > 0) {
+      console.log('🔔 NOTIFICATION: Marking Firebase notifications as read:', firebaseNotificationIds);
+      try {
+        const promises = firebaseNotificationIds.map(id => notificationService.markAsRead(id));
+        const results = await Promise.all(promises);
+        console.log('🔔 NOTIFICATION: Mark all as read results:', results);
+      } catch (error) {
+        console.error('🔔 NOTIFICATION: Error marking notifications as read:', error);
+      }
+    }
     
     // Notify parent component about app notifications being read
     const appNotificationIds = unreadNotificationIds.filter(id => typeof id !== 'string');
@@ -841,42 +1077,56 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
     setIsEditMode(false);
   }, [selectedChats]);
 
-  const handleDeleteSelected = useCallback(() => {
+  const handleDeleteSelected = useCallback(async () => {
     const chatIds = Array.from(selectedChats);
     console.log('🔍 DELETE: Deleting chats:', chatIds);
     
-    chatIds.forEach(chatId => {
+    let deletedCount = 0;
+    
+    for (const chatId of chatIds) {
       const chatToDelete = chatsToShow.find(chat => chat.id === chatId);
       console.log('🔍 DELETE: Found chat to delete:', chatToDelete);
       
-      if (chatToDelete) {
-        if (chatToDelete.isFirebaseChat) {
-          // For Firebase chats, we need to handle differently
-          console.log('🔍 DELETE: Deleting Firebase chat:', chatToDelete.name);
-          // For now, just remove from local state - in a real app you'd delete from Firebase
-          setChatUnreadCounts(prev => {
-            const updated = { ...prev };
-            delete updated[chatId];
-            return updated;
-          });
+      if (chatToDelete && chatToDelete.isFirebaseChat && chatToDelete.chatRoom && user?.id) {
+        const otherUserId = chatToDelete.chatRoom.participants.find(id => id !== user.id);
+        if (otherUserId) {
+          console.log('🔍 DELETE: Deleting Firebase conversation between', user.id, 'and', otherUserId);
+          
+          try {
+            const result = await messageService.deleteConversation(user.id, otherUserId);
+            if (result.success) {
+              console.log('🔍 DELETE: Successfully deleted conversation:', result.deletedCount, 'messages');
+              deletedCount++;
+              
+              // Clean up local state
+              setChatUnreadCounts(prev => {
+                const updated = { ...prev };
+                delete updated[chatId];
+                return updated;
+              });
+            } else {
+              console.error('🔍 DELETE: Failed to delete conversation:', result.error);
+            }
+          } catch (error) {
+            console.error('🔍 DELETE: Error deleting conversation:', error);
+          }
         }
-        
-        // Also remove from local chat unread counts and mark as deleted
+      } else if (chatToDelete) {
+        // Handle other types of chats (local state only)
         setChatUnreadCounts(prev => {
           const updated = { ...prev };
           delete updated[chatId];
           return updated;
         });
-        
-        // Track deleted chats
         setDeletedChats(prev => new Set([...prev, chatId]));
+        deletedCount++;
       }
-    });
+    }
     
     // Show notification for deleted chats
-    if (chatIds.length > 0) {
+    if (deletedCount > 0) {
       setNotification({
-        message: `Deleted ${chatIds.length} conversation${chatIds.length > 1 ? 's' : ''}`,
+        message: `Deleted ${deletedCount} conversation${deletedCount > 1 ? 's' : ''}`,
         name: '',
         emoji: '🗑️'
       });
@@ -884,7 +1134,7 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
     
     setSelectedChats(new Set());
     setIsEditMode(false);
-  }, [selectedChats, chatsToShow, setChatUnreadCounts, setNotification]);
+  }, [selectedChats, chatsToShow, user?.id, setChatUnreadCounts, setNotification]);
 
   const unreadNotificationsCount = useMemo(() => {
     return notifications.filter(n => {
@@ -899,12 +1149,7 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
     return chatsToShow.reduce((total, chat) => total + (chat.unread || 0), 0);
   }, [chatsToShow]);
 
-  // Notify parent component of unread count changes
-  useEffect(() => {
-    if (onUnreadCountsChange) {
-      onUnreadCountsChange(totalUnreadChats, unreadNotificationsCount);
-    }
-  }, [totalUnreadChats, unreadNotificationsCount, onUnreadCountsChange]);
+  // Note: Unread count tracking is now handled globally in App.jsx for real-time updates across all pages
 
   // If a chat is selected, show the appropriate chat component
   if (selectedChatId) {
@@ -1068,7 +1313,7 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
               {notifications.map((notification, index) => (
             <article
               key={notification.id}
-              className={`notification-card-modern fade-in-${(index % 4) + 1} ${!notification.isRead && !readNotifications.has(notification.id) ? 'unread' : ''}`}
+              className={`notification-card-modern fade-in-${(index % 4) + 1} ${!(notification.read !== undefined ? notification.read : notification.isRead) && !readNotifications.has(notification.id) ? 'unread' : ''}`}
               onClick={() => handleNotificationClick(notification.id)}
             >
               <div className="notification-icon-wrapper">
@@ -1076,7 +1321,7 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
                   <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
                   <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                 </svg>
-                {!notification.isRead && !readNotifications.has(notification.id) && <div className="notification-unread-dot"></div>}
+                {!(notification.read !== undefined ? notification.read : notification.isRead) && !readNotifications.has(notification.id) && <div className="notification-unread-dot"></div>}
               </div>
               <div className="notification-content-modern">
                 {notification.title && <strong>{notification.title}</strong>}

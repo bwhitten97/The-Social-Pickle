@@ -11,6 +11,16 @@ const Navigation = ({ unreadNotificationCount = 0, unreadChatCount = 0 }) => {
     // This ensures the navigation actually happens
   }, [location.pathname]);
   
+  // Debug logging for badge counts
+  useEffect(() => {
+    console.log('🔔 NAVIGATION: Badge counts updated', {
+      unreadNotificationCount,
+      unreadChatCount,
+      totalBadgeCount: unreadNotificationCount + unreadChatCount,
+      shouldShowBadge: (unreadNotificationCount + unreadChatCount) > 0
+    });
+  }, [unreadNotificationCount, unreadChatCount]);
+  
   return (
     <nav className="navigation">
       <div className="nav-brand">

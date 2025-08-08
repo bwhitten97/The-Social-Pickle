@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from './config/firebase';
 import Navigation from './components/Navigation';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -555,31 +555,28 @@ function AppContent() {
 
   // Set up Firebase notifications listener
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log('🔔 No user ID, clearing Firebase notifications');
+      setFirebaseNotifications([]);
+      return;
+    }
 
-    console.log('Setting up Firebase notifications listener for user:', user.id);
+    console.log('🔔 Setting up Firebase notifications listener for user:', user.id);
     const unsubscribe = notificationService.setupNotificationsListener(
       user.id,
       (firebaseNotifs) => {
-        console.log('Firebase notifications received:', firebaseNotifs);
-        // Convert Firebase notifications to app notification format
-        const convertedNotifs = firebaseNotifs.map(notif => ({
-          id: notif.id,
-          message: notif.message,
-          timestamp: notif.createdAt?.toDate?.()?.toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            hour12: true 
-          }) || 'Now',
-          isRead: notif.read || false,
-          type: notif.type || 'notification',
-          targetUser: user.id // This notification is for the current user
-        }));
-        setFirebaseNotifications(convertedNotifs);
+        console.log('🔔 Firebase notifications received:', firebaseNotifs.length, 'notifications');
+        console.log('🔔 Raw Firebase notifications:', firebaseNotifs.map(n => ({ id: n.id, read: n.read, title: n.title })));
+        
+        // Keep original Firebase notifications (don't convert to app format to avoid field confusion)
+        setFirebaseNotifications(firebaseNotifs);
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+      console.log('🔔 Cleaning up Firebase notifications listener');
+      unsubscribe();
+    };
   }, [user?.id]);
 
   // Set up incoming likes listener
@@ -595,6 +592,47 @@ function AppContent() {
 
     return () => unsubscribe();
   }, [user?.id]);
+
+  // Set up global unread count listener for real-time badge updates
+  useEffect(() => {
+    if (!user?.id) {
+      console.log('🔔 No user ID, clearing unread chat count');
+      setUnreadChatCount(0);
+      return;
+    }
+
+    console.log('🔔 Setting up global unread count listener for user:', user.id);
+    
+    // Listen to messages collection for real-time unread count updates
+    const messagesRef = collection(db, 'messages');
+    const q = query(messagesRef, where('toUserId', '==', user.id), where('read', '==', false));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const unreadMessagesCount = snapshot.size;
+      console.log('🔔 Global unread messages snapshot received:', {
+        count: unreadMessagesCount,
+        messages: snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }))
+      });
+      setUnreadChatCount(unreadMessagesCount);
+    }, (error) => {
+      console.error('🔔 Error in global unread messages listener:', error);
+      setUnreadChatCount(0);
+    });
+
+    return () => {
+      console.log('🔔 Cleaning up unread messages listener for user:', user.id);
+      unsubscribe();
+    };
+  }, [user?.id]);
+
+  // Update notification count when Firebase notifications change
+  useEffect(() => {
+    const unreadFirebaseNotifs = firebaseNotifications.filter(notif => !notif.read).length;
+    console.log('🔔 Firebase notifications unread count updated:', unreadFirebaseNotifs, 'total notifications:', firebaseNotifications.length);
+    console.log('🔔 Notification read statuses:', firebaseNotifications.map(n => ({ id: n.id, read: n.read, title: n.title })));
+    console.log('🔔 Setting unreadNotificationCount to:', unreadFirebaseNotifs);
+    setUnreadNotificationCount(unreadFirebaseNotifs);
+  }, [firebaseNotifications]);
 
   return (
     <div className="App">
@@ -727,10 +765,6 @@ function AppContent() {
                 <ErrorBoundary>
                   <Chat 
                     appNotifications={[...firebaseNotifications, ...appNotifications]}
-                    onUnreadCountsChange={(chatCount, notificationCount) => {
-                      setUnreadChatCount(chatCount);
-                      setUnreadNotificationCount(notificationCount);
-                    }}
                     onNotificationsRead={(readNotifications) => {
                       setAppNotifications(prev => 
                         prev.map(notif => 
@@ -739,7 +773,6 @@ function AppContent() {
                             : notif
                         )
                       );
-                      setUnreadNotificationCount(prev => prev - readNotifications.length);
                     }}
                   />
                 </ErrorBoundary>

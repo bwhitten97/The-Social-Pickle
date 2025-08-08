@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { config } from '../config/app';
+import { notificationService } from './notificationService';
 
 // Test Firebase connection (for debugging)
 export const testFirebaseConnection = async () => {
@@ -258,6 +259,59 @@ export const applicationService = {
         data: verifySnap.exists() ? verifySnap.data() : null
       });
       
+      // Get game details to find the host and send notification
+      try {
+        console.log('🔔 Creating notification for game host...', {
+          gameId: applicationData.gameId,
+          playerId: applicationData.playerId,
+          playerName: applicationData.playerName
+        });
+        
+        const gameRef = doc(db, 'games', applicationData.gameId);
+        const gameSnap = await getDoc(gameRef);
+        
+        if (gameSnap.exists()) {
+          const gameData = gameSnap.data();
+          const gameHostId = gameData.createdById;
+          
+          console.log('🔔 Game found for notification:', {
+            gameId: applicationData.gameId,
+            gameHostId,
+            applicantId: applicationData.playerId,
+            location: gameData.location
+          });
+          
+          if (gameHostId && gameHostId !== applicationData.playerId) {
+            console.log('🔔 About to create notification for host:', gameHostId);
+            
+            // Create notification for the game host
+            const notificationResult = await notificationService.createNotification({
+              userId: gameHostId,
+              type: 'game_application',
+              title: 'New Game Application! 🏓',
+              message: `${applicationData.playerName || 'Someone'} applied to join your game at ${gameData.location}`,
+              fromUserId: applicationData.playerId,
+              gameId: applicationData.gameId,
+              applicationId: docRef.id
+            });
+            
+            console.log('🔔 Game application notification result:', notificationResult);
+            console.log('🔔 Game application notification sent to host:', gameHostId);
+          } else {
+            console.log('🔔 Skipping notification - host is same as applicant or host ID not found', {
+              gameHostId,
+              applicantId: applicationData.playerId,
+              areEqual: gameHostId === applicationData.playerId
+            });
+          }
+        } else {
+          console.log('🔔 Game not found for notification:', applicationData.gameId);
+        }
+      } catch (notificationError) {
+        // Don't fail the entire application if notification fails
+        console.error('🔔 Failed to send game application notification:', notificationError);
+      }
+      
       return { success: true, id: docRef.id };
     } catch (error) {
       console.error('applicationService: Error creating application:', {
@@ -333,11 +387,57 @@ export const applicationService = {
   // Update application status
   async updateApplicationStatus(applicationId, status) {
     try {
+      // Get application details first to send notification
       const applicationRef = doc(db, 'applications', applicationId);
+      const applicationSnap = await getDoc(applicationRef);
+      
+      if (!applicationSnap.exists()) {
+        return { success: false, error: 'Application not found' };
+      }
+      
+      const applicationData = applicationSnap.data();
+      
+      // Update the application status
       await updateDoc(applicationRef, {
         status,
         updatedAt: serverTimestamp()
       });
+      
+      // Send notification to the applicant about status change
+      if (status === 'accepted' || status === 'rejected') {
+        try {
+          console.log('🔔 Creating status update notification for applicant...');
+          
+          // Get game details for better notification message
+          const gameRef = doc(db, 'games', applicationData.gameId);
+          const gameSnap = await getDoc(gameRef);
+          
+          let gameLocation = 'the game';
+          if (gameSnap.exists()) {
+            gameLocation = gameSnap.data().location || 'the game';
+          }
+          
+          const statusEmoji = status === 'accepted' ? '🎉' : '😔';
+          const statusMessage = status === 'accepted' 
+            ? `Your application to join the game at ${gameLocation} was accepted!`
+            : `Your application to join the game at ${gameLocation} was declined.`;
+          
+          await notificationService.createNotification({
+            userId: applicationData.playerId,
+            type: 'application_status',
+            title: `Application ${status === 'accepted' ? 'Accepted' : 'Declined'} ${statusEmoji}`,
+            message: statusMessage,
+            gameId: applicationData.gameId,
+            applicationId: applicationId,
+            status: status
+          });
+          
+          console.log('🔔 Application status notification sent to applicant:', applicationData.playerId);
+        } catch (notificationError) {
+          // Don't fail the update if notification fails
+          console.error('🔔 Failed to send application status notification:', notificationError);
+        }
+      }
       
       return { success: true };
     } catch (error) {
