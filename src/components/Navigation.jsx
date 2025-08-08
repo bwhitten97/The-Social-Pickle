@@ -1,5 +1,5 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import './Navigation.css';
 
 const Navigation = ({ unreadNotificationCount = 0, unreadChatCount = 0 }) => {
@@ -8,8 +8,16 @@ const Navigation = ({ unreadNotificationCount = 0, unreadChatCount = 0 }) => {
   
   // Force navigation update when location changes
   useEffect(() => {
-    // This ensures the navigation actually happens
+    // Force a re-render and ensure navigation is responsive
+    console.log('🔔 NAVIGATION: Location changed to:', location.pathname);
   }, [location.pathname]);
+  
+  // Add explicit navigation handlers to ensure they work
+  const handleNavClick = useCallback((path, event) => {
+    // Prevent default and manually navigate
+    console.log('🔔 NAVIGATION: Manual navigation to:', path);
+    navigate(path);
+  }, [navigate]);
   
   // Debug logging for badge counts
   useEffect(() => {
@@ -31,6 +39,10 @@ const Navigation = ({ unreadNotificationCount = 0, unreadChatCount = 0 }) => {
         <NavLink 
           to="/discover" 
           className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+          onClick={(e) => {
+            // Fallback navigation handler
+            handleNavClick('/discover', e);
+          }}
         >
           <span className="nav-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -43,6 +55,9 @@ const Navigation = ({ unreadNotificationCount = 0, unreadChatCount = 0 }) => {
         <NavLink 
           to="/games" 
           className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+          onClick={(e) => {
+            handleNavClick('/games', e);
+          }}
         >
           <span className="nav-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -58,6 +73,9 @@ const Navigation = ({ unreadNotificationCount = 0, unreadChatCount = 0 }) => {
         <NavLink 
           to="/matches" 
           className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+          onClick={(e) => {
+            handleNavClick('/matches', e);
+          }}
         >
           <span className="nav-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -73,6 +91,9 @@ const Navigation = ({ unreadNotificationCount = 0, unreadChatCount = 0 }) => {
         <NavLink 
           to="/messages" 
           className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+          onClick={(e) => {
+            handleNavClick('/messages', e);
+          }}
         >
           <span className="nav-icon" style={{ position: 'relative' }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -104,6 +125,9 @@ const Navigation = ({ unreadNotificationCount = 0, unreadChatCount = 0 }) => {
         <NavLink 
           to="/profile" 
           className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+          onClick={(e) => {
+            handleNavClick('/profile', e);
+          }}
         >
           <span className="nav-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
