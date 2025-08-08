@@ -1,48 +1,34 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to get user's city
-    function getUserCity(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.city;
-    }
     
     // Helper function to check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
     
-    // Helper function to check if two users are from the same city
-    function sameCity(userId1, userId2) {
-      return getUserCity(userId1) == getUserCity(userId2);
-    }
-    
-    // Users collection - TEMPORARY: Allow authenticated users to read all users
+    // Users collection - Simple authenticated access
     match /users/{userId} {
       // Users can read/write their own profile
       allow read, write: if isAuthenticated() && request.auth.uid == userId;
       
-      // TEMPORARY: Allow authenticated users to read other users
+      // Allow authenticated users to read other users (for discovery)
       allow read: if isAuthenticated();
     }
     
-    // Games collection - city-based filtering
+    // Games collection - Simple authenticated access
     match /games/{gameId} {
-      // TEMPORARY FIX: Allow authenticated users to read games
-      // TODO: Fix city-based filtering once getUserCity function works properly
       allow read: if isAuthenticated();
       
-      // Users can create/update their own games
+      // Users can create/update/delete their own games
       allow create: if isAuthenticated() && 
         request.auth.uid == request.resource.data.createdById;
       
-      allow update: if isAuthenticated() && 
-        request.auth.uid == resource.data.createdById;
-      
-      allow delete: if isAuthenticated() && 
+      allow update, delete: if isAuthenticated() && 
         request.auth.uid == resource.data.createdById;
     }
     
-    // Matches collection - TEMPORARY: Allow authenticated users to access matches
+    // Matches collection - Simple authenticated access for user's own matches
     match /matches/{matchId} {
       allow read, write: if isAuthenticated() && 
         request.auth.uid in resource.data.users;
@@ -51,7 +37,7 @@ service cloud.firestore {
         request.auth.uid in request.resource.data.users;
     }
     
-    // Likes collection - TEMPORARY: Allow authenticated users to access likes
+    // Likes collection - Simple authenticated access
     match /likes/{likeId} {
       allow read, write: if isAuthenticated() && (
         request.auth.uid == resource.data.likedBy ||
@@ -62,7 +48,7 @@ service cloud.firestore {
         request.auth.uid == request.resource.data.likedBy;
     }
     
-    // Passes collection - TEMPORARY: Allow authenticated users to access passes
+    // Passes collection - Simple authenticated access
     match /passes/{passId} {
       allow read, write: if isAuthenticated() && (
         request.auth.uid == resource.data.passedBy ||
@@ -73,7 +59,7 @@ service cloud.firestore {
         request.auth.uid == request.resource.data.passedBy;
     }
     
-    // Messages collection - TEMPORARY: Allow authenticated users to access messages
+    // Messages collection - Simple authenticated access
     match /messages/{messageId} {
       allow read, write: if isAuthenticated() && (
         request.auth.uid == resource.data.fromUserId ||
@@ -84,7 +70,7 @@ service cloud.firestore {
         request.auth.uid == request.resource.data.fromUserId;
     }
     
-    // Applications collection - same-city game applications
+    // Applications collection - Simple authenticated access
     match /applications/{applicationId} {
       allow read: if isAuthenticated() && (
         request.auth.uid == resource.data.playerId ||
@@ -103,7 +89,7 @@ service cloud.firestore {
         request.auth.uid == resource.data.playerId;
     }
     
-    // Notifications collection - user-specific access
+    // Notifications collection - Simple authenticated access
     match /notifications/{notificationId} {
       allow read, write: if isAuthenticated() && 
         request.auth.uid == resource.data.userId;
@@ -112,10 +98,9 @@ service cloud.firestore {
         request.auth.uid == request.resource.data.userId;
     }
     
-    // Chat Rooms collection - TEMPORARY: Allow authenticated users to access chat rooms
+    // Chat Rooms collection - Simple authenticated access
     match /chatRooms/{chatRoomId} {
-      allow read, write: if isAuthenticated();
-      allow create: if isAuthenticated();
+      allow read, write, create: if isAuthenticated();
     }
   }
 }
