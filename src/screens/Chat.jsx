@@ -636,7 +636,6 @@ const Chat = memo(({ appNotifications = [], onNotificationsRead }) => {
   const [notification, setNotification] = useState(null);
   const [realChats, setRealChats] = useState([]);
   const [isLoadingChats, setIsLoadingChats] = useState(true);
-  const [realNotifications, setRealNotifications] = useState([]);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedChats, setSelectedChats] = useState(new Set());
@@ -655,11 +654,10 @@ const Chat = memo(({ appNotifications = [], onNotificationsRead }) => {
     
     let isMounted = true;
     let unsubscribeChats = null;
-    let unsubscribeNotifications = null;
     
     // Reset loading states
     setIsLoadingChats(true);
-    setIsLoadingNotifications(true);
+    setIsLoadingNotifications(false); // No longer loading notifications from Chat.jsx
     
     try {
       // Set up chat rooms listener with error handling
@@ -671,18 +669,6 @@ const Chat = memo(({ appNotifications = [], onNotificationsRead }) => {
           console.log('🔍 CHAT: Chat rooms data:', chatRooms);
           setRealChats(chatRooms);
           setIsLoadingChats(false);
-        }
-      );
-
-      // Set up notifications listener with error handling
-      unsubscribeNotifications = notificationService.setupNotificationsListener(
-        user.id,
-        (notifications) => {
-          if (!isMounted) return;
-          console.log('🔍 CHAT: Received notifications callback with:', notifications.length, 'notifications');
-          console.log('🔍 CHAT: Notifications data:', notifications);
-          setRealNotifications(notifications);
-          setIsLoadingNotifications(false);
         }
       );
     } catch (error) {
@@ -700,9 +686,6 @@ const Chat = memo(({ appNotifications = [], onNotificationsRead }) => {
       try {
         if (typeof unsubscribeChats === 'function') {
           unsubscribeChats();
-        }
-        if (typeof unsubscribeNotifications === 'function') {
-          unsubscribeNotifications();
         }
       } catch (error) {
         console.error('🔍 CHAT: Error during listener cleanup:', error);
@@ -741,10 +724,10 @@ const Chat = memo(({ appNotifications = [], onNotificationsRead }) => {
     );
   }, [appNotifications, user?.name]);
   
-  // Combine real notifications and app notifications only
+  // Use only userNotifications (which already includes Firebase notifications from App.jsx)
   const notifications = useMemo(() => {
-    return [...realNotifications, ...userNotifications];
-  }, [realNotifications, userNotifications]);
+    return userNotifications;
+  }, [userNotifications]);
   
   // Helper function to format timestamps like iMessage
   const formatTimestamp = useCallback((timestamp) => {
