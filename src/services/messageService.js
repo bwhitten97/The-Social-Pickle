@@ -16,16 +16,18 @@ import { db } from '../config/firebase';
 import { config } from '../config/app';
 
 export const messageService = {
+  // Build a deterministic key for a conversation between two users
+  buildConversationKey(userId1, userId2) {
+    return [userId1, userId2].sort().join('_');
+  },
   // Mark messages as read in a conversation
   async markMessagesAsRead(userId1, userId2) {
     try {
       console.log('🔍 MESSAGE_SERVICE: Marking messages as read', { userId1, userId2 });
       
       const messagesRef = collection(db, 'messages');
-      const q = query(
-        messagesRef,
-        where('participants', 'array-contains-any', [userId1, userId2])
-      );
+      const conversationKey = [userId1, userId2].sort().join('_');
+      const q = query(messagesRef, where('conversationKey', '==', conversationKey));
       
       const snapshot = await getDocs(q);
       const updatePromises = [];
@@ -62,7 +64,8 @@ export const messageService = {
         city: 'default', // Temporary default city
         createdAt: serverTimestamp(),
         read: false,
-        participants: [messageData.fromUserId, messageData.toUserId] // Add participants array
+        participants: [messageData.fromUserId, messageData.toUserId], // Add participants array
+        conversationKey: [messageData.fromUserId, messageData.toUserId].sort().join('_')
       };
       
       console.log('🔍 MESSAGE_SERVICE: About to add document to Firebase', newMessage);
@@ -80,10 +83,8 @@ export const messageService = {
   async getConversation(userId1, userId2) {
     try {
       const messagesRef = collection(db, 'messages');
-      const q = query(
-        messagesRef,
-        where('participants', 'array-contains-any', [userId1, userId2])
-      );
+      const conversationKey = [userId1, userId2].sort().join('_');
+      const q = query(messagesRef, where('conversationKey', '==', conversationKey));
       
       const snapshot = await getDocs(q);
       const messages = [];
@@ -162,21 +163,14 @@ export const messageService = {
   // Set up real-time listener for conversation
   setupConversationListener(userId1, userId2, callback) {
     const messagesRef = collection(db, 'messages');
-    // Remove orderBy to avoid composite index requirement
-    const q = query(
-      messagesRef,
-      where('participants', 'array-contains-any', [userId1, userId2])
-    );
+    const conversationKey = [userId1, userId2].sort().join('_');
+    const q = query(messagesRef, where('conversationKey', '==', conversationKey));
     
     return onSnapshot(q, (snapshot) => {
       const messages = [];
       snapshot.forEach(doc => {
         const messageData = { id: doc.id, ...doc.data() };
-        // Only include messages between these two specific users
-        if ((messageData.fromUserId === userId1 && messageData.toUserId === userId2) ||
-            (messageData.fromUserId === userId2 && messageData.toUserId === userId1)) {
-          messages.push(messageData);
-        }
+        messages.push(messageData);
       });
       
       // Sort by createdAt on the client side
@@ -186,10 +180,14 @@ export const messageService = {
         return aTime - bTime; // Oldest first for conversation order
       });
       
-      callback(messages);
+      try {
+        callback(messages);
+      } catch (e) {
+        console.error('Error delivering conversation listener callback:', e);
+      }
     }, (error) => {
       console.error('Error in conversation listener:', error);
-      callback([]);
+      // Do not clear UI on transient errors; keep last known messages
     });
   },
 
@@ -249,10 +247,14 @@ export const messageService = {
       
       const chatRoomsArray = Array.from(chatRooms.values());
       console.log('🔍 MESSAGE_SERVICE: Calling callback with', chatRoomsArray.length, 'chat rooms');
-      callback(chatRoomsArray);
+      try {
+        callback(chatRoomsArray);
+      } catch (e) {
+        console.error('Error delivering chat rooms listener callback:', e);
+      }
     }, (error) => {
       console.error('🔍 MESSAGE_SERVICE: Error in chat rooms listener:', error);
-      callback([]);
+      // Do not clear chats on transient errors; keep last known list
     });
   }
 };
@@ -273,7 +275,8 @@ export const sendMessageBetweenUsers = async (fromUserId, fromUserName, toUserId
     toUserId,
     toUserName,
     message: messageText,
-    participants: [fromUserId, toUserId] // For easier querying
+    participants: [fromUserId, toUserId], // For easier querying
+    conversationKey: [fromUserId, toUserId].sort().join('_')
   };
 
   console.log('🔍 MESSAGE_SERVICE: About to create message with data', messageData);

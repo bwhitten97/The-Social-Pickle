@@ -324,85 +324,79 @@ export const GameProvider = ({ children }) => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Use real user data or fallback values for development
-  const currentUserId = user?.id || user?.uid || "dev-user"; // Fallback for development
-  const currentUserName = user?.displayName || user?.name || "Alex Thompson"; // Fallback for development
-  const currentUserSkill = user?.skillLevel || "Intermediate";
+  // Use real user data only
+  const currentUserId = user?.id || user?.uid;
+  const currentUserName = user?.displayName || user?.name;
+  const currentUserSkill = user?.skillLevel;
   
   // Track previous user ID to detect changes
   const [previousUserId, setPreviousUserId] = useState(null);
   
-  // Detect user changes and set up new listeners
+  // Set up application listeners when user changes
   useEffect(() => {
-    console.log('🔍 USEEFFECT DEBUG: User change effect running', {
+    console.log('🔍 APPLICATIONS: Setting up listeners for user change', {
       currentUserId,
       previousUserId,
-      condition1: currentUserId !== previousUserId,
-      condition2: currentUserId !== "dev-user",
-      condition3: previousUserId === "dev-user",
-      allConditions: currentUserId !== previousUserId && currentUserId !== "dev-user" && previousUserId === "dev-user"
+      isAuthenticated,
+      userExists: !!user
     });
     
+    if (!isAuthenticated || !user?.id) {
+      console.log('🔍 APPLICATIONS: No authenticated user, clearing listeners');
+      setApplications([]);
+      setHostApplications([]);
+      setPreviousUserId(currentUserId);
+      return;
+    }
+
+    // Only set up new listeners if user actually changed
+    if (user.id === previousUserId) {
+      console.log('🔍 APPLICATIONS: User unchanged, keeping existing listeners');
+      return;
+    }
+
     let isMounted = true;
     let unsubscribeApplications = null;
     let unsubscribeHostApplications = null;
-    
-    if (currentUserId !== previousUserId && currentUserId !== "dev-user" && previousUserId === "dev-user") {
-      console.log('🔍 USER CHANGE DETECTED: Setting up new listeners', {
-        previousUserId,
-        currentUserId,
-        isAuthenticated
-      });
-      
-      // Clear existing data
-      if (isMounted) {
-        setApplications([]);
-        setHostApplications([]);
-      }
-      
-      // Set up new listeners for the authenticated user
-      if (currentUserId && isMounted) {
-        console.log('🔍 USER CHANGE: Setting up application listeners for new user:', currentUserId);
-        
-        try {
-          // Listen for user's own applications
-          unsubscribeApplications = applicationService.setupUserApplicationsListener(
-            currentUserId, 
-            (applicationsData) => {
-              if (!isMounted) return;
-              console.log('🔍 USER CHANGE: Received applications update for new user:', {
-                userId: currentUserId,
-                count: applicationsData.length,
-                applications: applicationsData
-              });
-              setApplications(applicationsData);
-            }
-          );
-          
-          // Listen for applications to games hosted by user
-          unsubscribeHostApplications = applicationService.setupGameHostApplicationsListener(
-            currentUserId,
-            (hostApplicationsData) => {
-              if (!isMounted) return;
-              console.log('🔍 USER CHANGE: Received host applications update for new user:', {
-                userId: currentUserId,
-                count: hostApplicationsData.length
-              });
-              setHostApplications(hostApplicationsData);
-            }
-          );
-        } catch (error) {
-          console.error('🔍 USER CHANGE: Error setting up listeners:', error);
-        }
-      }
-    }
-    
-    setPreviousUserId(currentUserId);
 
-    // Cleanup function to prevent memory leaks
+    console.log('🔍 APPLICATIONS: Setting up new listeners for user:', user.id);
+
+    try {
+      // Listen for user's own applications
+      unsubscribeApplications = applicationService.setupUserApplicationsListener(
+        user.id, 
+        (applicationsData) => {
+          if (!isMounted) return;
+          console.log('🔍 APPLICATIONS: User applications updated:', {
+            userId: user.id,
+            count: applicationsData.length
+          });
+          setApplications(applicationsData);
+        }
+      );
+      
+      // Listen for applications to games hosted by user
+      unsubscribeHostApplications = applicationService.setupGameHostApplicationsListener(
+        user.id,
+        (hostApplicationsData) => {
+          if (!isMounted) return;
+          console.log('🔍 APPLICATIONS: Host applications updated:', {
+            userId: user.id,
+            count: hostApplicationsData.length
+          });
+          setHostApplications(hostApplicationsData);
+        }
+      );
+    } catch (error) {
+      console.error('🔍 APPLICATIONS: Error setting up listeners:', error);
+    }
+
+    setPreviousUserId(user.id);
+
+    // Cleanup function
     return () => {
       isMounted = false;
-      console.log('🔍 GAMECONTEXT: Cleaning up listeners for user:', currentUserId);
+      console.log('🔍 APPLICATIONS: Cleaning up listeners for user:', user.id);
       
       try {
         if (typeof unsubscribeApplications === 'function') {
@@ -412,10 +406,10 @@ export const GameProvider = ({ children }) => {
           unsubscribeHostApplications();
         }
       } catch (error) {
-        console.error('🔍 GAMECONTEXT: Error during listener cleanup:', error);
+        console.error('🔍 APPLICATIONS: Error during cleanup:', error);
       }
     };
-  }, [currentUserId, previousUserId, isAuthenticated]);
+  }, [user?.id, isAuthenticated]);
   
   // Log authentication status for debugging
   console.log('GameContext: User authentication status', {
@@ -426,21 +420,6 @@ export const GameProvider = ({ children }) => {
     userObject: user
   });
 
-  // DIRECT FIX: Check immediately if we should refresh applications
-  if (isAuthenticated && currentUserId !== "dev-user" && isInitialized && applications.length === 0) {
-    console.log('🔧 DIRECT FIX: Conditions met, refreshing applications immediately', currentUserId);
-    
-    // Call directly without useEffect
-    applicationService.getUserApplications(currentUserId).then(result => {
-      console.log('🔧 DIRECT FIX: getUserApplications result:', result);
-      if (result && result.success && result.applications && result.applications.length > 0) {
-        console.log('🔧 DIRECT FIX: Setting applications to:', result.applications);
-        setApplications(result.applications);
-      }
-    }).catch(error => {
-      console.error('🔧 DIRECT FIX: Error getting applications:', error);
-    });
-  }
 
 
   // Initialize Firestore data and set up real-time listeners
@@ -480,50 +459,7 @@ export const GameProvider = ({ children }) => {
             setGames([]); // Clear games while waiting
           }
           
-          // Set up real-time listeners for user applications
-          let unsubscribeApplications = null;
-          let unsubscribeHostApplications = null;
-          const userId = currentUserId; // Use the computed current user ID
-          
-          // Set up listeners for valid user IDs (including development fallback)
-          if (userId && userId !== "anonymous-user") {
-            console.log('GameContext: Setting up application listeners for user:', userId);
-            
-            // Listen for user's own applications
-            console.log('🔍 GAMECONTEXT DEBUG: About to set up applications listener for userId:', userId);
-            unsubscribeApplications = applicationService.setupUserApplicationsListener(
-              userId, 
-              (applicationsData) => {
-                console.log('🔍 GAMECONTEXT DEBUG: Applications listener callback fired!', {
-                  userId,
-                  count: applicationsData.length,
-                  applications: applicationsData,
-                  rawData: applicationsData
-                });
-                setApplications(applicationsData);
-                console.log('GameContext: Applications state updated, new length:', applicationsData.length);
-              }
-            );
-            
-            console.log('GameContext: Applications listener set up, current applications:', applications.length);
-            
-            // Listen for applications to games hosted by user
-            unsubscribeHostApplications = applicationService.setupGameHostApplicationsListener(
-              userId,
-              (hostApplicationsData) => {
-                console.log('GameContext: Received host applications update:', {
-                  userId,
-                  count: hostApplicationsData.length
-                });
-                setHostApplications(hostApplicationsData);
-              }
-            );
-          } else {
-            console.log('GameContext: No userId or anonymous user, clearing applications');
-            // Clear applications for unauthenticated users
-            setApplications([]);
-            setHostApplications([]);
-          }
+          // Application listeners are now set up in a separate useEffect
           
           // Initialize other data (keeping some mock data for now)
           setChatRooms([]);
@@ -536,12 +472,6 @@ export const GameProvider = ({ children }) => {
           // Cleanup function
           return () => {
             unsubscribeGames();
-            if (unsubscribeApplications) {
-              unsubscribeApplications();
-            }
-            if (unsubscribeHostApplications) {
-              unsubscribeHostApplications();
-            }
           };
           
         } catch (error) {
@@ -556,7 +486,7 @@ export const GameProvider = ({ children }) => {
     };
     
     initializeData();
-  }, [isInitialized, user, user?.city]);
+  }, [isInitialized, user?.id, user?.city, isAuthenticated]);
 
   // Function to clean up expired games (games that are more than 1 hour past their start time)
   const cleanupExpiredGames = React.useCallback(() => {

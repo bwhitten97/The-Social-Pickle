@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { collection, query, where, getDocs, orderBy, onSnapshot, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -534,8 +534,10 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
 
   // Handle navigation state for opening chat with specific user (from Games page)
   useEffect(() => {
+    // Guard to ensure we handle navigation state only once per mount
+    const handledRef = (Chat.__handledNavRef = Chat.__handledNavRef || { current: false });
     try {
-      if (location.state?.openChatWithUser) {
+      if (!handledRef.current && location.state?.openChatWithUser) {
         const openChatUser = location.state.openChatWithUser;
         console.log('🔍 CHAT: Opening chat with user from navigation:', openChatUser);
         
@@ -544,13 +546,7 @@ const Chat = memo(({ appNotifications = [], onUnreadCountsChange, onNotification
           setSelectedChatId(openChatUser.id);
           setSelectedChatName(openChatUser.name);
           setActiveTab('chat');
-          
-          // Delay clearing the navigation state to ensure chat is set up
-          setTimeout(() => {
-            if (window.history.replaceState) {
-              window.history.replaceState({}, '', window.location.pathname);
-            }
-          }, 100);
+          handledRef.current = true;
         } else {
           console.warn('🔍 CHAT: Invalid openChatWithUser data:', openChatUser);
         }

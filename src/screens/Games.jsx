@@ -12,7 +12,17 @@ import './Games.css';
 
 const Games = memo(({ addAppNotification }) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('find');
+  const [activeTab, setActiveTabState] = useState(() => {
+    // Persist active tab in localStorage to survive re-renders
+    return localStorage.getItem('games-active-tab') || 'find';
+  });
+  
+  // Helper function to set active tab and persist to localStorage
+  const setActiveTab = (tab) => {
+    localStorage.setItem('games-active-tab', tab);
+    setActiveTabState(tab);
+  };
+  
   const { isAuthenticated } = useAuth();
   
   // Get data from GameContext
@@ -561,14 +571,13 @@ const Games = memo(({ addAppNotification }) => {
   };
 
   // Test Firebase connection on component mount (temporary debug)
-  useEffect(() => {
-    const runTest = async () => {
-      console.log('Running Firebase connection test...');
-      const result = await testFirebaseConnection();
-      console.log('Firebase connection test result:', result);
-    };
-    runTest();
-  }, []);
+  // useEffect(() => {
+  //   const runTest = async () => {
+  //     const result = await testFirebaseConnection();
+  //     console.log('Firebase connection test result:', result);
+  //   };
+  //   runTest();
+  // }, []);
 
   return (
     <div className="games-container">

@@ -282,7 +282,7 @@ const Matches = memo(() => {
       const result = await sendMessageBetweenUsers(
         user.id,
         user.name || 'You',
-        selectedMatch.id,
+        selectedMatch.otherUserId,
         selectedMatch.name,
         message
       );

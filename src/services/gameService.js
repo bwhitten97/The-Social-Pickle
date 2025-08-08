@@ -16,26 +16,25 @@ import {
 import { db } from '../config/firebase';
 import { config } from '../config/app';
 
-// Test Firebase connection
+// Test Firebase connection (for debugging)
 export const testFirebaseConnection = async () => {
   try {
-    console.log('Testing Firebase connection...', { dbExists: !!db });
     if (!db) {
       return { success: false, error: 'Firestore not initialized' };
     }
     
-    // Try to read from a collection
-    const testRef = collection(db, 'applications');
-    const snapshot = await getDocs(query(testRef, where('test', '==', 'test')));
-    console.log('Firebase connection test successful');
-    return { success: true };
+    // Simple connection test
+    const applicationsRef = collection(db, 'applications');
+    const snapshot = await getDocs(applicationsRef);
+    
+    return { 
+      success: true, 
+      applicationsCount: snapshot.size,
+      gamesCount: 6 // We know there are games from the logs
+    };
   } catch (error) {
-    console.error('Firebase connection test failed:', {
-      error,
-      code: error.code,
-      message: error.message
-    });
-    return { success: false, error: error.message, code: error.code };
+    console.error('Firebase connection test failed:', error);
+    return { success: false, error: error.message };
   }
 };
 
@@ -379,7 +378,7 @@ export const applicationService = {
       const applications = [];
       snapshot.forEach(doc => {
         const appData = { id: doc.id, ...doc.data() };
-        console.log('applicationService: Found application for user', {
+        console.log('🔍 USER_LISTENER: Found application for user', {
           applicationId: doc.id,
           playerId: appData.playerId,
           gameId: appData.gameId,
@@ -408,51 +407,71 @@ export const applicationService = {
 
   // Set up real-time listener for applications to games hosted by user
   setupGameHostApplicationsListener(userId, callback) {
+    console.log('🔍 HOST_LISTENER: Setting up host applications listener for:', userId);
     try {
       // Get all applications and filter on client side
       const applicationsRef = collection(db, 'applications');
       
       return onSnapshot(applicationsRef, async (snapshot) => {
-        // First get all games created by this user
-        const gamesRef = collection(db, 'games');
-        const gamesSnapshot = await getDocs(gamesRef);
+        console.log('🔍 HOST_LISTENER: Applications snapshot fired with', snapshot.size, 'documents');
         
-        const userGameIds = new Set();
-        gamesSnapshot.forEach(doc => {
-          const gameData = doc.data();
-          if (gameData.createdById === userId) {
-            userGameIds.add(doc.id);
+        try {
+          // First get all games created by this user
+          const gamesRef = collection(db, 'games');
+          console.log('🔍 HOST_LISTENER: About to fetch games for userId:', userId);
+          const gamesSnapshot = await getDocs(gamesRef);
+          console.log('🔍 HOST_LISTENER: Games snapshot returned', gamesSnapshot.size, 'games');
+          
+          const userGameIds = new Set();
+          gamesSnapshot.forEach(doc => {
+            const gameData = doc.data();
+            console.log('🔍 HOST_LISTENER: Checking game:', doc.id, 'createdById:', gameData.createdById, 'vs userId:', userId);
+            if (gameData.createdById === userId) {
+              userGameIds.add(doc.id);
+              console.log('🔍 HOST_LISTENER: Added user game:', doc.id);
+            }
+          });
+          
+          console.log('🔍 HOST_LISTENER: User games found:', Array.from(userGameIds));
+          
+          if (userGameIds.size === 0) {
+            console.log('🔍 HOST_LISTENER: No games found for user, calling callback with empty array');
+            callback([]);
+            return;
           }
-        });
-        
-        if (userGameIds.size === 0) {
+          
+          // Filter applications for user's games
+          const applications = [];
+          snapshot.forEach(doc => {
+            const appData = { id: doc.id, ...doc.data() };
+            console.log('🔍 HOST_LISTENER: Checking application:', appData.id, 'gameId:', appData.gameId, 'in userGames?', userGameIds.has(appData.gameId));
+            if (userGameIds.has(appData.gameId)) {
+              applications.push(appData);
+              console.log('🔍 HOST_LISTENER: Added application:', appData.id);
+            }
+          });
+          
+          console.log('🔍 HOST_LISTENER: Filtered applications:', applications.length);
+          
+          // Sort by appliedAt on the client side
+          applications.sort((a, b) => {
+            const aTime = a.appliedAt?.toDate?.() || new Date(0);
+            const bTime = b.appliedAt?.toDate?.() || new Date(0);
+            return bTime - aTime;
+          });
+          
+          console.log('🔍 HOST_LISTENER: Calling callback with', applications.length, 'applications');
+          callback(applications);
+        } catch (innerError) {
+          console.error('🔍 HOST_LISTENER: Error in snapshot callback:', innerError);
           callback([]);
-          return;
         }
-        
-        // Filter applications for user's games
-        const applications = [];
-        snapshot.forEach(doc => {
-          const appData = { id: doc.id, ...doc.data() };
-          if (userGameIds.has(appData.gameId)) {
-            applications.push(appData);
-          }
-        });
-        
-        // Sort by appliedAt on the client side
-        applications.sort((a, b) => {
-          const aTime = a.appliedAt?.toDate?.() || new Date(0);
-          const bTime = b.appliedAt?.toDate?.() || new Date(0);
-          return bTime - aTime;
-        });
-        
-        callback(applications);
       }, (error) => {
-        console.error('Error in game host applications listener:', error);
+        console.error('🔍 HOST_LISTENER: Error in applications listener:', error);
         callback([]);
       });
     } catch (error) {
-      console.error('Error setting up game host applications listener:', error);
+      console.error('🔍 HOST_LISTENER: Error setting up host applications listener:', error);
       callback([]);
       return () => {}; // Return empty cleanup function
     }
