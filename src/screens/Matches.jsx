@@ -17,6 +17,7 @@ const Matches = memo(() => {
   const [isLoadingMatches, setIsLoadingMatches] = useState(true);
   const [matchConversations, setMatchConversations] = useState({});
   const [conversationUnreadCounts, setConversationUnreadCounts] = useState({});
+  const [messageText, setMessageText] = useState('');
 
   // Fetch conversation data for a match
   const fetchMatchConversationData = async (matchId, otherUserId) => {
@@ -273,6 +274,7 @@ const Matches = memo(() => {
   const closeMessageModal = useCallback(() => {
     setShowMessageModal(false);
     setSelectedMatch(null);
+    setMessageText('');
   }, []);
 
   const sendMessage = useCallback(async (message) => {
@@ -558,7 +560,8 @@ const Matches = memo(() => {
                 <textarea 
                   placeholder="Type your message here..."
                   rows="4"
-                  id="messageText"
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
                 />
                 <div className="matches-message-actions">
                   <button 
@@ -570,7 +573,6 @@ const Matches = memo(() => {
                   <button 
                     className="matches-btn matches-btn-primary"
                     onClick={() => {
-                      const messageText = document.getElementById('messageText').value;
                       if (messageText.trim()) {
                         sendMessage(messageText);
                       }
