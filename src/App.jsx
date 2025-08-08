@@ -191,37 +191,35 @@ function AppContent() {
     }
   };
 
-  // Fetch users when component mounts or user changes
+  // Stagger Firebase operations to prevent UI blocking after sign-in
   useEffect(() => {
     if (isAuthenticated && user) {
+      // Start with users immediately
       fetchUsers();
+      
+      // Stagger other operations to prevent blocking navigation
+      setTimeout(() => {
+        if (user?.id) {
+          fetchPassedUsers();
+        }
+      }, 300);
+      
+      setTimeout(() => {
+        if (user?.id) {
+          fetchLikedUsers();
+        }
+      }, 600);
     } else {
       setPlayers([]);
       setIsLoadingPlayers(false);
-    }
-  }, [isAuthenticated, user]);
-
-  // Fetch passed users when component mounts or user changes
-  useEffect(() => {
-    if (isAuthenticated && user?.id) {
-      fetchPassedUsers();
-    } else {
       setPassedUserIds(new Set());
       setIsLoadingPasses(false);
-    }
-  }, [isAuthenticated, user?.id]);
-
-  // Fetch liked users when component mounts or user changes
-  useEffect(() => {
-    if (isAuthenticated && user?.id) {
-      fetchLikedUsers();
-    } else {
       setLikedUserIds(new Set());
       setIsLoadingLikes(false);
     }
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, user]);
 
-  // Load discovery preferences when user is authenticated
+  // Load discovery preferences when user is authenticated (with delay to prevent blocking)
   useEffect(() => {
     const loadPreferences = async () => {
       if (isAuthenticated && user?.id) {
@@ -237,16 +235,24 @@ function AppContent() {
         } catch (error) {
           console.error('❌ Error loading discovery preferences:', error);
         }
+        setIsLoadingPreferences(false);
       } else {
         // Reset to defaults when not authenticated
         setFilter('All');
         setAdvancedFilters(null);
         setCurrentIndex(0);
+        setIsLoadingPreferences(false);
       }
-      setIsLoadingPreferences(false);
     };
 
-    loadPreferences();
+    // Delay preferences loading to prevent blocking navigation after sign-in
+    if (isAuthenticated && user?.id) {
+      setTimeout(() => {
+        loadPreferences();
+      }, 900);
+    } else {
+      loadPreferences();
+    }
   }, [isAuthenticated, user?.id]);
 
   // Save current discovery position when it changes
