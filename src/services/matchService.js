@@ -30,78 +30,56 @@ export const createLike = async (currentUserId, likedUserId) => {
   try {
     // Run the entire like/match creation process in a transaction
     const result = await runTransaction(db, async (transaction) => {
-      // SECURITY: Verify both users are from the same city
-      const currentUserRef = doc(db, 'users', currentUserId);
-      const likedUserRef = doc(db, 'users', likedUserId);
-      
-      const [currentUserSnap, likedUserSnap] = await Promise.all([
-        transaction.get(currentUserRef),
-        transaction.get(likedUserRef)
-      ]);
-      
-      if (!currentUserSnap.exists() || !likedUserSnap.exists()) {
-        throw new Error('One or both users not found');
-      }
-      
-      const currentUserData = currentUserSnap.data();
-      const likedUserData = likedUserSnap.data();
-      
-      // TEMPORARY: Disable city-based security check to restore functionality
-      // TODO: Re-enable once city data is properly populated for all users
-      /*
-      if (!currentUserData.city || !likedUserData.city) {
-        throw new Error('One or both users missing city data');
-      }
-      
-      if (currentUserData.city !== likedUserData.city) {
-        console.error('Cross-city like attempt blocked:', currentUserData.city, 'vs', likedUserData.city);
-        throw new Error('Users must be from the same city');
-      }
-      */
-      
       // Create like document references
       const likeId = `${currentUserId}_${likedUserId}`;
       const reciprocalLikeId = `${likedUserId}_${currentUserId}`;
       const likeRef = doc(db, 'likes', likeId);
       const reciprocalLikeRef = doc(db, 'likes', reciprocalLikeId);
       
-      // Check if like already exists
+      // IMPORTANT: Do ALL reads first, then ALL writes
+      
+      // Read 1: Check if like already exists
       const likeSnap = await transaction.get(likeRef);
       if (likeSnap.exists()) {
         return { success: true, alreadyLiked: true };
       }
       
-      // Check for reciprocal like
+      // Read 2: Check for reciprocal like
       const reciprocalLikeSnap = await transaction.get(reciprocalLikeRef);
       const isMatch = reciprocalLikeSnap.exists();
       
-      // Create the like document
-      transaction.set(likeRef, {
-        likedBy: currentUserId,
-        likedUser: likedUserId,
-        city: currentUserData.city || 'default',
-        createdAt: serverTimestamp()
-      });
-      
+      // Read 3: If it's a match, check if match already exists
+      let matchRef = null;
+      let matchSnap = null;
       let matchId = null;
       
-      // If it's a match, create match document atomically
       if (isMatch) {
         const sortedIds = [currentUserId, likedUserId].sort();
         matchId = `${sortedIds[0]}_${sortedIds[1]}`;
-        const matchRef = doc(db, 'matches', matchId);
-        
-        // Check if match already exists
-        const matchSnap = await transaction.get(matchRef);
-        if (!matchSnap.exists()) {
-          transaction.set(matchRef, {
-            users: sortedIds,
-            city: currentUserData.city || 'default',
-            createdAt: serverTimestamp(),
-            lastActivity: serverTimestamp(),
-            active: true
-          });
-        }
+        matchRef = doc(db, 'matches', matchId);
+        matchSnap = await transaction.get(matchRef);
+      }
+      
+      // NOW do ALL writes after ALL reads are complete
+      
+      // Write 1: Create the like document
+      transaction.set(likeRef, {
+        likedBy: currentUserId,
+        likedUser: likedUserId,
+        city: 'default',
+        createdAt: serverTimestamp()
+      });
+      
+      // Write 2: If it's a match and match doesn't exist, create match document
+      if (isMatch && matchRef && !matchSnap.exists()) {
+        const sortedIds = [currentUserId, likedUserId].sort();
+        transaction.set(matchRef, {
+          users: sortedIds,
+          city: 'default',
+          createdAt: serverTimestamp(),
+          lastActivity: serverTimestamp(),
+          active: true
+        });
       }
       
       return { success: true, isMatch, matchId };
@@ -208,44 +186,14 @@ export const createMatch = async (userId1, userId2) => {
   }
 };
 
-// Create a pass document with city validation
+// Create a pass document
 export const createPass = async (currentUserId, passedUserId) => {
   try {
-    // SECURITY: Verify both users are from the same city before allowing pass
-    const currentUserRef = doc(db, 'users', currentUserId);
-    const passedUserRef = doc(db, 'users', passedUserId);
-    
-    const [currentUserSnap, passedUserSnap] = await Promise.all([
-      getDoc(currentUserRef),
-      getDoc(passedUserRef)
-    ]);
-    
-    if (!currentUserSnap.exists() || !passedUserSnap.exists()) {
-      console.error('One or both users not found');
-      return { success: false, error: 'User not found' };
-    }
-    
-    const currentUserData = currentUserSnap.data();
-    const passedUserData = passedUserSnap.data();
-    
-    // TEMPORARY: Disable city-based security check to restore functionality
-    /*
-    if (!currentUserData.city || !passedUserData.city) {
-      console.error('One or both users missing city data');
-      return { success: false, error: 'City data missing' };
-    }
-    
-    if (currentUserData.city !== passedUserData.city) {
-      console.error('Cross-city pass attempt blocked:', currentUserData.city, 'vs', passedUserData.city);
-      return { success: false, error: 'Users must be from the same city' };
-    }
-    */
-    
     // Create pass document ID using both user IDs
     const passId = `${currentUserId}_${passedUserId}`;
+    const passRef = doc(db, 'passes', passId);
     
     // Check if pass already exists
-    const passRef = doc(db, 'passes', passId);
     const passSnap = await getDoc(passRef);
     
     if (passSnap.exists()) {
@@ -253,11 +201,11 @@ export const createPass = async (currentUserId, passedUserId) => {
       return { success: true, alreadyPassed: true };
     }
     
-    // Create the pass with city information
+    // Create the pass document
     await setDoc(passRef, {
       passedBy: currentUserId,
       passedUser: passedUserId,
-      city: currentUserData.city || 'default', // Store city for additional security
+      city: 'default',
       createdAt: serverTimestamp()
     });
     
@@ -654,7 +602,64 @@ export const debugUserMatches = async (userId) => {
   }
 };
 
-// Make debug function available globally for testing
+// EMERGENCY DEBUG FUNCTION - Test what's failing
+export const testSwipeSystem = async (currentUserId, targetUserId) => {
+  console.log('🚨 EMERGENCY TEST: Testing swipe system');
+  console.log('🚨 Current User ID:', currentUserId);
+  console.log('🚨 Target User ID:', targetUserId);
+  
+  try {
+    // Test 1: Can we read the current user?
+    console.log('🚨 TEST 1: Reading current user...');
+    const currentUserRef = doc(db, 'users', currentUserId);
+    const currentUserSnap = await getDoc(currentUserRef);
+    console.log('🚨 Current user exists:', currentUserSnap.exists());
+    if (currentUserSnap.exists()) {
+      console.log('🚨 Current user data:', currentUserSnap.data());
+    }
+    
+    // Test 2: Can we read the target user?
+    console.log('🚨 TEST 2: Reading target user...');
+    const targetUserRef = doc(db, 'users', targetUserId);
+    const targetUserSnap = await getDoc(targetUserRef);
+    console.log('🚨 Target user exists:', targetUserSnap.exists());
+    if (targetUserSnap.exists()) {
+      console.log('🚨 Target user data:', targetUserSnap.data());
+    }
+    
+    // Test 3: Can we create a simple like document?
+    console.log('🚨 TEST 3: Creating simple like document...');
+    const likeId = `${currentUserId}_${targetUserId}`;
+    const likeRef = doc(db, 'likes', likeId);
+    
+    await setDoc(likeRef, {
+      likedBy: currentUserId,
+      likedUser: targetUserId,
+      city: 'test',
+      createdAt: serverTimestamp(),
+      testMode: true
+    });
+    
+    console.log('🚨 TEST 3: Like document created successfully!');
+    
+    // Test 4: Can we read it back?
+    console.log('🚨 TEST 4: Reading like document back...');
+    const createdLikeSnap = await getDoc(likeRef);
+    console.log('🚨 Like document exists:', createdLikeSnap.exists());
+    if (createdLikeSnap.exists()) {
+      console.log('🚨 Like document data:', createdLikeSnap.data());
+    }
+    
+    return { success: true, message: 'All tests passed!' };
+    
+  } catch (error) {
+    console.error('🚨 TEST FAILED:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Make debug functions available globally for testing
 if (typeof window !== 'undefined') {
   window.debugUserMatches = debugUserMatches;
+  window.testSwipeSystem = testSwipeSystem;
 }

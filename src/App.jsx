@@ -438,43 +438,32 @@ function AppContent() {
     const passedPlayerName = passedPlayer.name;
     const passedPlayerSkillLevel = passedPlayer.skillLevel;
     
-    // Add to local state immediately for smooth UX
-    setPassedUserIds(prev => new Set([...prev, passedPlayerId]));
+    console.log('📝 Creating pass record for:', passedPlayerName, passedPlayerId);
     
-    // Remove current player from stable array to prevent recalculation issues
-    setStableFilteredPlayers(prev => prev.filter(player => player.id !== passedPlayerId));
-    
-    console.log('📝 Passed player removed from stable array:', passedPlayerName);
-    
-    // Don't increment index since we removed the current player from the array
-    
-    // Handle Firebase operations in background
+    // Handle Firebase operations FIRST before updating UI
     try {
-      console.log('📝 Creating pass record for:', passedPlayerName, passedPlayerId);
       const passResult = await createPass(user.id, passedPlayerId);
       console.log('✅ Pass result:', passResult);
       
       if (passResult.success) {
+        // Only update local state AFTER Firebase success
+        setPassedUserIds(prev => new Set([...prev, passedPlayerId]));
+        
+        // Remove current player from stable array ONLY after Firebase confirms
+        setStableFilteredPlayers(prev => prev.filter(player => player.id !== passedPlayerId));
+        
+        console.log('📝 Passed player removed from stable array:', passedPlayerName);
+        
         // Log analytics event
         logPlayerPassed(user.id, passedPlayerId, passedPlayerSkillLevel);
         showNotification("You passed on", passedPlayerName, "👋", "action");
       } else {
         console.error('❌ Failed to create pass:', passResult.error);
-        // Revert local state if Firebase operation failed
-        setPassedUserIds(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(passedPlayerId);
-          return newSet;
-        });
+        showNotification("Failed to save pass", "", "❌", "error");
       }
     } catch (error) {
       console.error('💥 Error handling pass:', error);
-      // Revert local state if there was an error
-      setPassedUserIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(passedPlayerId);
-        return newSet;
-      });
+      showNotification("Error saving pass", "", "❌", "error");
     }
   };
 

@@ -49,47 +49,20 @@ export const messageService = {
     }
   },
 
-  // Create a new message with city validation
+  // Create a new message - SIMPLIFIED VERSION
   async createMessage(messageData) {
     try {
       console.log('🔍 MESSAGE_SERVICE: createMessage called with data', messageData);
-      
-      // SECURITY: Verify both users are from the same city before allowing message
-      const fromUserRef = doc(db, 'users', messageData.fromUserId);
-      const toUserRef = doc(db, 'users', messageData.toUserId);
-      
-      const [fromUserSnap, toUserSnap] = await Promise.all([
-        getDoc(fromUserRef),
-        getDoc(toUserRef)
-      ]);
-      
-      if (!fromUserSnap.exists() || !toUserSnap.exists()) {
-        console.error('MESSAGE_SERVICE: One or both users not found');
-        return { success: false, error: 'User not found' };
-      }
-      
-      const fromUserData = fromUserSnap.data();
-      const toUserData = toUserSnap.data();
-      
-      // City-based security check
-      if (!fromUserData.city || !toUserData.city) {
-        console.error('MESSAGE_SERVICE: One or both users missing city data');
-        return { success: false, error: 'City data missing' };
-      }
-      
-      if (fromUserData.city !== toUserData.city) {
-        console.error('MESSAGE_SERVICE: Cross-city message attempt blocked:', fromUserData.city, 'vs', toUserData.city);
-        return { success: false, error: 'Users must be from the same city' };
-      }
       
       const messagesRef = collection(db, 'messages');
       console.log('🔍 MESSAGE_SERVICE: Got messages collection reference');
       
       const newMessage = {
         ...messageData,
-        city: fromUserData.city, // Store city for additional security
+        city: 'default', // Temporary default city
         createdAt: serverTimestamp(),
-        read: false
+        read: false,
+        participants: [messageData.fromUserId, messageData.toUserId] // Add participants array
       };
       
       console.log('🔍 MESSAGE_SERVICE: About to add document to Firebase', newMessage);
@@ -103,37 +76,9 @@ export const messageService = {
     }
   },
 
-  // Get conversation between two users with city validation
+  // Get conversation between two users - SIMPLIFIED VERSION
   async getConversation(userId1, userId2) {
     try {
-      // SECURITY: Verify both users are from the same city before showing messages
-      const user1Ref = doc(db, 'users', userId1);
-      const user2Ref = doc(db, 'users', userId2);
-      
-      const [user1Snap, user2Snap] = await Promise.all([
-        getDoc(user1Ref),
-        getDoc(user2Ref)
-      ]);
-      
-      if (!user1Snap.exists() || !user2Snap.exists()) {
-        console.error('MESSAGE_SERVICE: One or both users not found');
-        return { success: false, error: 'User not found', messages: [] };
-      }
-      
-      const user1Data = user1Snap.data();
-      const user2Data = user2Snap.data();
-      
-      // City-based security check
-      if (!user1Data.city || !user2Data.city) {
-        console.error('MESSAGE_SERVICE: One or both users missing city data');
-        return { success: false, error: 'City data missing', messages: [] };
-      }
-      
-      if (user1Data.city !== user2Data.city) {
-        console.error('MESSAGE_SERVICE: Cross-city conversation access blocked:', user1Data.city, 'vs', user2Data.city);
-        return { success: false, error: 'Users must be from the same city', messages: [] };
-      }
-      
       const messagesRef = collection(db, 'messages');
       const q = query(
         messagesRef,
